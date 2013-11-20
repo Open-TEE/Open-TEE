@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <stdlib.h>
 #include <sys/un.h>
 
 #include "utils.h"
@@ -194,6 +195,10 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 			     void *connection_data, TEEC_Operation *operation,
 			     uint32_t *return_origin)
 {
+	context = context; session = session; destination = destination;
+	connection_method = connection_method; connection_data = connection_data;
+	operation = operation; return_origin = return_origin;
+
 	return TEEC_SUCCESS;
 }
 
@@ -208,6 +213,8 @@ void TEEC_CloseSession(TEEC_Session *session)
 TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 			       TEEC_Operation *operation, uint32_t *return_origin)
 {
+	session = session; command_id = command_id;
+	operation = operation; return_origin = return_origin;
 	return TEEC_SUCCESS;
 }
 
