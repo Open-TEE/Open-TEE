@@ -17,8 +17,6 @@
 #ifndef __TEE_OPEN_EMU_UTILS_H__
 #define __TEE_OPEN_EMU_UTILS_H__
 
-#include <inttypes.h>
-
 /*!
  * \brief generate_random_path Generate a path, that can be used for a shared memory path
  * Memory for the path will be allocated in this function but it is the callers responsibility
@@ -26,6 +24,6 @@
  * \param path [OUT] the path that is created by this function
  * \return 0 on success, -1 if no memory available
  */
-int generate_random_path(char *path);
+int generate_random_path(char **path);
 
 #endif

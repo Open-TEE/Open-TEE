@@ -20,6 +20,12 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+#define EMULATOR
+
+#ifdef EMULATOR
+#include "tee_emu_client_api.h"
+#endif
+
 /*!
  * \brief TEEC_Result Contains the return codes, the result of invoking a TEE Client API function
  */
@@ -34,27 +40,6 @@ typedef struct {
 	uint16_t timeHiAndVersion;
 	uint8_t  clockSeqAndNode[8];
 } TEEC_UUID;
-
-/*!
- * \brief TEEC_Context Logical container linking the Client Application to a particular TEE
- */
-typedef struct context_t TEEC_Context;
-
-/*!
- * \brief TEEC_Session Container linking a Client Application to a particular Trusted Application
- */
-typedef struct session_t TEEC_Session;
-
-/*!
-  * \brief TEEC_SharedMemory A shared memory block that has been registered or allocated
-  */
-typedef struct {
-	void *buffer; /*!< pointer to a memory buffer that is shared with TEE */
-	size_t size;  /*!< The size of the memory buffer in bytes */
-	uint32_t flags; /*!< bit vector that can contain TEEC_MEM_INPUT or TEEC_MEM_OUTPUT */
-	/* TODO what should be done about the opaque type <implementation defined> section */
-	void *imp;
-} TEEC_SharedMemory;
 
 /*!
  * \brief TEEC_TempMemoryReference A Temporary memorry Reference as used by \sa TEEC_Operation
@@ -101,7 +86,7 @@ typedef struct {
 } TEEC_Operation;
 
 /*
- * 4GB default ia 32 bit- TODO this should be checked on platform basis, so should be possible
+ * 4GB default 32 bit- TODO this should be checked on platform basis, so should be possible
  * to define it it at compile time "-DTEEC_CONFIG_SHAREDMEM_MAX_SIZE=XXX"
  */
 #ifndef TEEC_CONFIG_SHAREDMEM_MAX_SIZE
@@ -184,7 +169,7 @@ void TEEC_FinalizeContext(TEEC_Context *context);
  * \param sharedMem Must point to the shared memory region to be registered
  * \return TEEC_SUCCESS on success, TEEC_ERROR_OUT_OF_MEMORY when no memory or another Return Code
  */
-TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context, TEEC_SharedMemory *sharedMem);
+TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context, TEEC_SharedMemory *shared_mem);
 
 /*!
  * \brief TEEC_AllocateSharedMemory
@@ -196,14 +181,14 @@ TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context, TEEC_SharedMemory *
  * must also be set to indicate the direction of flow for the memory.
  * \return TEEC_SUCCESS on success, TEEC_ERROR_OUT_OF_MEMORY when no memory or another Return Code
  */
-TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context, TEEC_SharedMemory *sharedMem);
+TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context, TEEC_SharedMemory *shared_mem);
 
 /*!
  * \brief TEEC_ReleaseSharedMemory
  * Deregister or deallocate a previously initialized block of Shared Memory
  * \param sharedMem A pointer to a valid shared memory region
  */
-void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *sharedMem);
+void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shared_mem);
 
 /*!
  * \brief TEEC_OpenSession
@@ -218,9 +203,9 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *sharedMem);
  * \return TEEC_SUCCEESS or another Return Code on error
  */
 TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
-			     const TEEC_UUID *destination, uint32_t connectionMethod,
-			     void *connectionData, TEEC_Operation *operation,
-			     uint32_t *returnOrigin);
+			     const TEEC_UUID *destination, uint32_t connection_method,
+			     void *connection_data, TEEC_Operation *operation,
+			     uint32_t *return_origin);
 
 /*!
  * \brief TEEC_CloseSession
@@ -238,8 +223,8 @@ void TEEC_CloseSession(TEEC_Session *session);
  * \param returnOrigin The origin of the returned result
  * \return TEEC_SUCCEESS or another Return Code on error
  */
-TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t commandID,
-			       TEEC_Operation *operation, uint32_t *returnOrigin);
+TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
+			       TEEC_Operation *operation, uint32_t *return_origin);
 
 /*!
  * \brief TEEC_RequestCancellation

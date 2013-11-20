@@ -23,16 +23,13 @@
 #include <uuid/uuid.h>
 #include <string.h>
 
-int generate_random_path(char *path)
+int generate_random_path(char **path)
 {
 	time_t time_val;
 	const char *str_time;
 	uuid_t uuid;
 	char salt[20];
-	char *raw_rand;
-
-	if (path) /* We will allocate the memory here */
-		return -1;
+	char *raw_rand, *tmp;
 
 	time_val = time(NULL);
 	str_time = ctime(&time_val);
@@ -44,12 +41,20 @@ int generate_random_path(char *path)
 
 	raw_rand = strrchr(crypt(str_time, salt), '$');
 
-	path = malloc(strlen(raw_rand) + 1);
-	if (!path)
+	/* shm_open does not like to have path seperators '/' in teh name so remove them */
+	tmp = raw_rand;
+	while (*tmp) {
+		if (*tmp == '/')
+			*tmp = '_';
+		tmp++;
+	}
+
+	*path = malloc(strlen(raw_rand) + 1);
+	if (!*path)
 		return -1;
 
-	memcpy(path, raw_rand, strlen(raw_rand) + 1);
-	path[0] = '/';
+	memcpy(*path, raw_rand, strlen(raw_rand) + 1);
+	*(path[0]) = '/';
 
 	return 0;
 }
