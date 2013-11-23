@@ -8,7 +8,7 @@ DynamicLibrary {
 
     Export {
         Depends { name: "cpp" }
-        cpp.includePaths: "./include"
+        cpp.includePaths: "include"
     }
 
     files: ["include/tee_client_api.h", "include/tee_emu_client_api.h",
