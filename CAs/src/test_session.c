@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <string.h>
 
+
 int main()
 {
 	TEEC_Context context;
@@ -30,7 +31,7 @@ int main()
 
 	ret = TEEC_InitializeContext(NULL, &context);
 	if (ret != TEEC_SUCCESS)
-		printf("Error Connecting to the daemon: 0x%x", ret);
+		printf("Error Connecting to the daemon: 0x%x\n", ret);
 
 	shared_mem.size = 1024;
 	shared_mem.flags = TEEC_MEM_INPUT | TEEC_MEM_INPUT;
@@ -41,6 +42,8 @@ int main()
 		printf("Error is %s: %d\n", strerror(errno), errno);
 	}
 
+	printf("Session entering while loop\n");
+	fflush(stdout);
 	TEEC_ReleaseSharedMemory(&shared_mem);
 
 	while(1) {
