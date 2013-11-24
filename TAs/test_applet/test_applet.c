@@ -16,13 +16,17 @@
 
 #include "tee_internal_api.h"
 
+#include "syslog.h"
+
 TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
+	syslog(LOG_ERR, "Calling the create entry point");
 	return TEE_SUCCESS;
 }
 
 void TA_EXPORT TA_DestroyEntryPoint(void)
 {
+	syslog(LOG_ERR, "Calling the Destroy entry point");
 	return;
 }
 
@@ -38,6 +42,8 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 {
 	sessionContext = sessionContext;
+
+	syslog(LOG_ERR, "Calling the close session");
 	return;
 }
 
