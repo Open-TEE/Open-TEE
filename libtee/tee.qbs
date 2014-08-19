@@ -6,6 +6,8 @@ DynamicLibrary {
     cpp.includePaths: ["include"]
     cpp.dynamicLibraries: ["uuid", "rt", "crypt"]
 
+    destinationDirectory: '.'
+
     Export {
         Depends { name: "cpp" }
         cpp.includePaths: "include"
