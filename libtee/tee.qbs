@@ -17,6 +17,7 @@ DynamicLibrary {
         "include/tee_shared_data_types.h",
         'src/open_emu_ipc/tee_client_api_emu_ipc.c',
         'src/open_emu_ipc/list.h', 'src/open_emu_ipc/list.c',
-        'src/open_emu_ipc/utils.h', 'src/open_emu_ipc/utils.c'
+        'src/open_emu_ipc/utils.h', 'src/open_emu_ipc/utils.c',
+        "include/tee_ta_propertie.h"
     ]
 }
