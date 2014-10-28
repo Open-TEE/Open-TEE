@@ -1,5 +1,5 @@
 /*****************************************************************************
-** Copyright (C) 2013 Intel Corporation.                                    **
+** Copyright (C) 2014 Intel Corporation.                                    **
 **                                                                          **
 ** Licensed under the Apache License, Version 2.0 (the "License");          **
 ** you may not use this file except in compliance with the License.         **
@@ -14,20 +14,14 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include "tee_client_api.h"
-#include <sys/mman.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/socket.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 #include <sys/un.h>
+#include <unistd.h>
 
+#include "tee_client_api.h"
 #include "utils.h"
-
-#define INITIALIZED 0xca
-
-/* TODO fix this to point to the correct location */
-const char *sock_path = "/tmp/open_tee_sock";
 
 /*!
  * \brief create_shared_mem_internal
@@ -39,7 +33,7 @@ const char *sock_path = "/tmp/open_tee_sock";
  * \return TEEC_SUCCESS on success, other error on failure
  */
 static TEEC_Result create_shared_mem_internal(TEEC_Context *context, TEEC_SharedMemory *shared_mem,
-					      enum mem_type type)
+						  enum mem_type type)
 {
 	int flag = 0;
 	int fd;
@@ -62,7 +56,7 @@ static TEEC_Result create_shared_mem_internal(TEEC_Context *context, TEEC_Shared
 		flag |= O_RDWR;
 
 	fd = shm_open(shared_mem->shm_uuid, (flag | O_CREAT | O_EXCL),
-		      (S_IRUSR | S_IRGRP | S_IWUSR | S_IWGRP));
+			  (S_IRUSR | S_IRGRP | S_IWUSR | S_IWGRP));
 	if (fd == -1) {
 		ret = TEEC_ERROR_GENERIC;
 		goto errorExit;
@@ -78,8 +72,8 @@ static TEEC_Result create_shared_mem_internal(TEEC_Context *context, TEEC_Shared
 	 * size of 1 byte, though it will probably be mapped to a page
 	 */
 	address = mmap(NULL, shared_mem->size != 0 ? shared_mem->size : 1,
-		       ((flag == O_RDONLY) ? PROT_READ : (PROT_WRITE | PROT_READ)),
-		       MAP_SHARED, fd, 0);
+			   ((flag == O_RDONLY) ? PROT_READ : (PROT_WRITE | PROT_READ)),
+			   MAP_SHARED, fd, 0);
 	if (address == MAP_FAILED) {
 		ret = TEEC_ERROR_OUT_OF_MEMORY;
 		goto errorTruncate;
@@ -108,46 +102,6 @@ errorTruncate:
 errorExit:
 	free(shared_mem->shm_uuid);
 	return ret;
-}
-
-TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
-{
-	int sockfd;
-	struct sockaddr_un sock_addr;
-
-	/* We ignore the name as we are only communicating with a single instance of the emulator */
-	(void)name;
-
-	if (!context || context->init == INITIALIZED)
-		return TEEC_ERROR_BAD_PARAMETERS;
-
-	if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
-		return TEEC_ERROR_COMMUNICATION;
-
-	memset(&sock_addr, 0, sizeof(struct sockaddr_un));
-	strncpy(sock_addr.sun_path, sock_path, sizeof(sock_addr.sun_path) - 1);
-	sock_addr.sun_family = AF_UNIX;
-
-	if (connect(sockfd, (struct sockaddr *)&sock_addr, sizeof(struct sockaddr_un)) == -1) {
-		close(sockfd);
-		return TEEC_ERROR_COMMUNICATION;
-	}
-
-	context->sockfd = sockfd;
-	context->init = INITIALIZED;
-
-	return TEEC_SUCCESS;
-}
-
-void TEEC_FinalizeContext(TEEC_Context *context)
-{
-	if (!context || context->init != INITIALIZED)
-		return;
-
-	//TODO should check that we do not have any open sessions first
-	close(context->sockfd);
-	context->init = 0xFF;
-	return;
 }
 
 TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context, TEEC_SharedMemory *shared_mem)
@@ -190,38 +144,3 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shared_mem)
 	return;
 }
 
-TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
-			     const TEEC_UUID *destination, uint32_t connection_method,
-			     void *connection_data, TEEC_Operation *operation,
-			     uint32_t *return_origin)
-{
-	context = context; session = session; destination = destination;
-	connection_method = connection_method; connection_data = connection_data;
-	operation = operation; return_origin = return_origin;
-
-	return TEEC_SUCCESS;
-}
-
-void TEEC_CloseSession(TEEC_Session *session)
-{
-	if (!session)
-		return;
-
-	return;
-}
-
-TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
-			       TEEC_Operation *operation, uint32_t *return_origin)
-{
-	session = session; command_id = command_id;
-	operation = operation; return_origin = return_origin;
-	return TEEC_SUCCESS;
-}
-
-void TEEC_RequestCancellation(TEEC_Operation *operation)
-{
-	if (!operation)
-		return;
-
-	return;
-}

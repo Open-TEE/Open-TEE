@@ -23,7 +23,8 @@ DynamicLibrary {
         "include/tee_ta_propertie.h",
         "src/com_protocol.c",
         "src/socket_help.c",
-        "src/tee_client_api_emu_ipc.c",
+        "src/tee_client_ipc_api.c",
+        "src/tee_client_mem_api.c",
         "src/utils.h",
         "src/utils.c",
     ]

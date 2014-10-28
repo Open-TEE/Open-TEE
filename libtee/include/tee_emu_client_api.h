@@ -19,6 +19,8 @@
 
 #include <inttypes.h>
 
+#define INITIALIZED 0xca
+
 /*!
  * \brief TEEC_Context Logical container linking the Client Application to a particular TEE
  */
