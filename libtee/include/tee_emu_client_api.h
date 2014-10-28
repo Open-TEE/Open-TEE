@@ -18,6 +18,7 @@
 #define __TEE_EMU_CLIENT_API_H__
 
 #include <inttypes.h>
+#include <pthread.h>
 
 #define INITIALIZED 0xca
 
@@ -25,6 +26,7 @@
  * \brief TEEC_Context Logical container linking the Client Application to a particular TEE
  */
 typedef struct {
+	pthread_mutex_t mutex;
 	int sockfd;
 	uint8_t init;
 } TEEC_Context;
