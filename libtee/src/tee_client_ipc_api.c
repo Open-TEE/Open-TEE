@@ -163,9 +163,90 @@ void TEEC_CloseSession(TEEC_Session *session)
 TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 			       TEEC_Operation *operation, uint32_t *return_origin)
 {
-	session = session; command_id = command_id;
-	operation = operation; return_origin = return_origin;
-	return TEEC_SUCCESS;
+	struct com_msg_invoke_cmd invoke_msg;
+	struct com_msg_invoke_cmd *recv_msg = NULL;
+	int ret = 0, recv_bytes;
+	TEEC_Result result = TEEC_SUCCESS;
+	uint8_t msg_name, msg_type;
+
+	command_id = command_id; /* Not used on purpose. Reminding about implement memory stuff */
+
+	if (!session || !operation || session->init != INITIALIZED) {
+		OT_LOG(LOG_ERR, "session or operation NULL or session not initialized")
+		if (return_origin)
+			*return_origin = TEE_ORIGIN_API;
+		return TEEC_ERROR_BAD_PARAMETERS;
+	}
+
+	/* Fill message */
+	invoke_msg.msg_hdr.msg_name = COM_MSG_NAME_INVOKE_CMD;
+	invoke_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
+	invoke_msg.msg_hdr.sess_id = 0; /* manager filled */
+	invoke_msg.msg_hdr.sender_type = 0; /* manger filled */
+
+	/* ## TODO/NOTE: Map operation to message! ## */
+
+	/* Message filled. Send message */
+	if (pthread_mutex_lock(&session->mutex)) {
+		OT_LOG(LOG_ERR, "Failed to lock mutex");
+		if (return_origin)
+			*return_origin = TEE_ORIGIN_API;
+		return TEEC_ERROR_GENERIC;
+	}
+
+	/* Message filled. Send message */
+	if (com_send_msg(session->sockfd, &invoke_msg, sizeof(struct com_msg_invoke_cmd)) !=
+			sizeof(struct com_msg_invoke_cmd)) {
+		OT_LOG(LOG_ERR, "Failed to send message TEE")
+		goto err_com_1;
+	}
+
+	/* Wait for answer */
+	ret = com_recv_msg(session->sockfd, (void **)(&recv_msg), &recv_bytes);
+	if (ret == -1) {
+		OT_LOG(LOG_ERR, "Socket error")
+		goto err_com_1;
+	} else if (ret > 0) {
+		OT_LOG(LOG_ERR, "Received bad message, discarding")
+		/* TODO: Do what? End session? Problem: We do not know what message was
+		 * incomming. Error or Response to invoke cmd message. Worst case situation is
+		 * that task is complited, but message delivery only failed. For now, just report
+		 * communication error and dump problem "upper layer". */
+		goto err_com_1;
+	}
+
+	if (pthread_mutex_unlock(&session->mutex))
+		OT_LOG(LOG_ERR, "Failed to unlock mutex") /* No action */
+
+	/* Check received message */
+	if (com_get_msg_name(recv_msg, &msg_name) || com_get_msg_type(recv_msg, &msg_type)) {
+		OT_LOG(LOG_ERR, "Failed to retreave message name and type");
+		goto err_com_2;
+	}
+
+	if (msg_name != COM_MSG_NAME_INVOKE_CMD || msg_type != COM_TYPE_RESPONSE) {
+		OT_LOG(LOG_ERR, "Received wrong message, discarding");
+		goto err_com_2;
+	}
+
+	/* Success. Let see result */
+	result = recv_msg->return_code;
+	if (return_origin)
+		*return_origin = recv_msg->return_origin;
+
+	/* ## TODO/NOTE: Take operation parameter from message! ## */
+
+	free(recv_msg);
+	return result;
+
+err_com_1:
+	if (pthread_mutex_unlock(&session->mutex))
+		OT_LOG(LOG_ERR, "Failed to unlock mutex");
+err_com_2:
+	if (return_origin)
+		*return_origin = TEE_ORIGIN_COMMS;
+	free(recv_msg);
+	return TEEC_ERROR_COMMUNICATION;
 }
 
 void TEEC_RequestCancellation(TEEC_Operation *operation)
