@@ -1,17 +1,10 @@
 import qbs
 
-CppApplication {
-    type: "application"
-    name: "test_session"
-    Depends { name: "tee" }
-    consoleApplication: true
-
-    files: ['src/test_session.c']
+Project {
+    name: "test_client"
+    references: [
+        "conn_test_app/conn_test_app.qbs",
+        "test_session/test_session.qbs",
+    ]
 }
 
-//CppApplication {
-//    type: "application"
-//    name: "test_write_sock"
-//    Depends { name: "tee" }
-//    files: "src/raw_socket.c"
-//}
