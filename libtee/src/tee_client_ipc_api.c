@@ -31,6 +31,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 {
 	int sockfd, recv_bytes;
 	TEE_Result ret = TEEC_SUCCESS;
+	uint8_t msg_name, msg_type;
 	struct sockaddr_un sock_addr;
 	struct com_msg_ca_init_tee_conn init_msg;
 	struct com_msg_ca_init_tee_conn *recv_msg = NULL;
@@ -84,15 +85,22 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 		goto err_2;
 	}
 
-	/* Check message */
-	if (recv_msg->msg_hdr.msg_name != COM_MSG_NAME_CA_INIT_CONTEXT ||
-			recv_msg->msg_hdr.msg_type != COM_TYPE_RESPONSE) {
+	/* Check received message */
+	if (com_get_msg_name(recv_msg, &msg_name) || com_get_msg_type(recv_msg, &msg_type)) {
+		OT_LOG(LOG_ERR, "Failed to retreave message name and type");
+		ret = TEEC_ERROR_COMMUNICATION;
+		goto err_2;
+	}
+
+	if (msg_name != COM_MSG_NAME_CA_INIT_CONTEXT || msg_type != COM_TYPE_RESPONSE) {
+		OT_LOG(LOG_ERR, "Received wrong message, discarding");
 		ret = TEEC_ERROR_COMMUNICATION;
 		goto err_2;
 	}
 
 	context->init = INITIALIZED;
 	context->sockfd  = sockfd;
+	ret = recv_msg->ret;
 	free(recv_msg);
 
 	return ret;

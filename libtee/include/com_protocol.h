@@ -100,7 +100,7 @@ struct com_msg_hdr {
  */
 struct com_msg_ca_init_tee_conn {
 	struct com_msg_hdr msg_hdr;
-	/* Empty */
+	TEE_Result ret;
 } __attribute__ ((aligned));
 
 /*!
