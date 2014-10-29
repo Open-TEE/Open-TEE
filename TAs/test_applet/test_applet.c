@@ -15,19 +15,18 @@
 *****************************************************************************/
 
 #include "tee_internal_api.h"
-
-#include "syslog.h"
+#include "tee_logging.h"
 
 TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
-	syslog(LOG_ERR, "Calling the create entry point");
+	OT_LOG(LOG_ERR, "Calling the create entry point");
+
 	return TEE_SUCCESS;
 }
 
 void TA_EXPORT TA_DestroyEntryPoint(void)
 {
-	syslog(LOG_ERR, "Calling the Destroy entry point");
-	return;
+	OT_LOG(LOG_ERR, "Calling the Destroy entry point");
 }
 
 TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
@@ -36,6 +35,9 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 	paramTypes = paramTypes;
 	params = params;
 	sessionContext = sessionContext;
+
+	OT_LOG(LOG_ERR, "Calling the Open session entry point");
+
 	return TEE_SUCCESS;
 }
 
@@ -43,8 +45,7 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 {
 	sessionContext = sessionContext;
 
-	syslog(LOG_ERR, "Calling the close session");
-	return;
+	OT_LOG(LOG_ERR, "Calling the Close session entry point");
 }
 
 TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t commandID,
@@ -54,6 +55,8 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t c
 	commandID = commandID;
 	paramTypes = paramTypes;
 	params = params;
+
+	OT_LOG(LOG_ERR, "Calling the Invoke command entry point");
 
 	return TEE_SUCCESS;
 }
