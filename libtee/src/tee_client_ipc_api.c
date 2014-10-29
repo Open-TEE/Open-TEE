@@ -20,6 +20,7 @@
 #include <unistd.h>
 
 #include "com_protocol.h"
+#include "socket_help.h"
 #include "tee_client_api.h"
 #include "tee_logging.h"
 
@@ -145,19 +146,158 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 			     void *connection_data, TEEC_Operation *operation,
 			     uint32_t *return_origin)
 {
-	context = context; session = session; destination = destination;
-	connection_method = connection_method; connection_data = connection_data;
-	operation = operation; return_origin = return_origin;
+	struct com_msg_open_session open_msg;
+	struct com_msg_open_session *recv_msg = NULL;
+	int recv_bytes, ret = 0;
+	uint8_t msg_name, msg_type;
+	TEEC_Result result = TEEC_SUCCESS;
 
-	return TEEC_SUCCESS;
+	/* Not used on purpose. Reminding about implement memory stuff. (only UUID is handeled) */
+	connection_method = connection_method;
+	connection_data = connection_data;
+	operation = operation;
+
+	if (!context || context->init != INITIALIZED || !session || session->init == INITIALIZED) {
+		OT_LOG(LOG_ERR, "Context or session NULL or in improper state");
+		if (return_origin)
+			*return_origin = TEE_ORIGIN_API;
+		return TEEC_ERROR_BAD_PARAMETERS;
+	}
+
+	/* Init context mutex */
+	if (pthread_mutex_init(&session->mutex, NULL)) {
+		OT_LOG(LOG_ERR, "Failed to init mutex");
+		if (return_origin)
+			*return_origin = TEE_ORIGIN_API;
+		return TEEC_ERROR_GENERIC;
+	}
+
+	/* Fill open msg */
+
+	/* Header section */
+	open_msg.msg_hdr.msg_name = COM_MSG_NAME_OPEN_SESSION;
+	open_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
+	open_msg.msg_hdr.sess_id = 0; /* manager filled */
+	open_msg.msg_hdr.sender_type = 0; /* manger filled */
+
+	/* UUID */
+	memcpy(&open_msg.uuid, destination, sizeof(TEEC_UUID));
+
+	/* ## TODO: Operation parameters and rest params ## */
+
+	/* Message filled. Send message */
+	if (pthread_mutex_lock(&context->mutex)) {
+		OT_LOG(LOG_ERR, "Failed to lock mutex");
+		if (return_origin)
+			*return_origin = TEE_ORIGIN_API;
+		return TEEC_ERROR_GENERIC;
+	}
+
+	/* Message filled. Send message */
+	if (com_send_msg(context->sockfd, &open_msg, sizeof(struct com_msg_open_session)) !=
+	    sizeof(struct com_msg_open_session)) {
+		OT_LOG(LOG_ERR, "Failed to send message TEE");
+		goto err_com;
+	}
+
+	/* Wait for answer */
+	ret = com_recv_msg(context->sockfd, (void **)(&recv_msg), &recv_bytes);
+	if (ret == -1) {
+		OT_LOG(LOG_ERR, "Socket error");
+		goto err_com;
+
+	} else if (ret > 0) {
+		OT_LOG(LOG_ERR, "Received bad message, discarding");
+		/* TODO: Do what? End session? Problem: We do not know what message was
+		 * incomming. Error or Response to open session message. Worst case situation is
+		 * that task is complited, but message delivery only failed. Just report
+		 * communication error and dump problem "upper layer". */
+		goto err_com;
+	}
+
+	/* Check received message */
+	if (com_get_msg_name(recv_msg, &msg_name) || com_get_msg_type(recv_msg, &msg_type)) {
+		OT_LOG(LOG_ERR, "Failed to retreave message name and type");
+		goto err_com;
+	}
+
+	if (msg_name != COM_MSG_NAME_OPEN_SESSION || msg_type != COM_TYPE_RESPONSE) {
+		OT_LOG(LOG_ERR, "Received wrong message, discarding");
+		goto err_com;
+	}
+
+	if (recv_msg->return_code_open_session == TEEC_SUCCESS) {
+		/* Session opened succesfully. Manager is sending now session socket */
+
+		if (recv_fd(context->sockfd, &session->sockfd) == -1) {
+			OT_LOG(LOG_ERR, "Failed to receive socket");
+			goto err_com;
+		}
+	}
+
+	if (pthread_mutex_unlock(&context->mutex))
+		OT_LOG(LOG_ERR, "Failed to unlock mutex"); /* No action */
+
+	/* Success. Let see result */
+	result = recv_msg->return_code_open_session;
+	if (return_origin)
+		*return_origin = recv_msg->return_origin;
+
+	/* ## TODO/NOTE: Take operation parameter from message! ## */
+
+	session->init = INITIALIZED;
+	free(recv_msg);
+	return result;
+
+err_com:
+	pthread_mutex_destroy(&session->mutex);
+	if (pthread_mutex_unlock(&context->mutex))
+		OT_LOG(LOG_ERR, "Failed to unlock mutex");
+
+	if (return_origin)
+		*return_origin = TEE_ORIGIN_COMMS;
+	free(recv_msg);
+	return TEEC_ERROR_COMMUNICATION;
 }
 
 void TEEC_CloseSession(TEEC_Session *session)
 {
-	if (!session)
-		return;
+	struct com_msg_close_session close_msg;
 
-	return;
+	if (!session || session->init != INITIALIZED) {
+		OT_LOG(LOG_ERR, "Session NULL or not initialized");
+		return;
+	}
+
+	close_msg.msg_hdr.msg_name = COM_MSG_NAME_CLOSE_SESSION;
+	close_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
+	close_msg.msg_hdr.sess_id = 0; /* manager filled */
+	close_msg.msg_hdr.sender_type = 0; /* manger filled */
+
+	/* Message filled. Send message */
+	if (pthread_mutex_lock(&session->mutex)) {
+		OT_LOG(LOG_ERR, "Failed to lock mutex")
+		goto err;
+	}
+
+	/* Message filled. Send message */
+	if (com_send_msg(session->sockfd, &close_msg, sizeof(struct com_msg_close_session)) !=
+	    sizeof(struct com_msg_close_session))
+		OT_LOG(LOG_ERR, "Failed to send message TEE");
+
+	if (pthread_mutex_unlock(&session->mutex))
+		OT_LOG(LOG_ERR, "Failed to unlock mutex")
+
+err:
+	close(session->sockfd);
+	session->init = 0;
+	while (pthread_mutex_destroy(&session->mutex)) {
+		if (errno != EBUSY) {
+			OT_LOG(LOG_ERR, "Failed to destroy mutex")
+			break;
+		}
+		/* Busy loop */
+	}
 }
 
 TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
