@@ -35,9 +35,9 @@ int main()
 	}
 
 	printf("END: conn test app\n");
-
 	exit(EXIT_SUCCESS);
 
 err:
+	printf("END: conn test app\n");
 	exit(EXIT_FAILURE);
 }
