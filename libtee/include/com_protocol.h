@@ -56,6 +56,7 @@
 #define COM_MSG_NAME_CA_FINALIZ_CONTEXT		0x06
 #define COM_MSG_NAME_PROC_STATUS_CHANGE		0x07
 #define COM_MSG_NAME_FD_ERR			0x08
+#define COM_MSG_NAME_ERROR			0x09
 
 /* Request is used internally */
 #define COM_TYPE_QUERY				1
@@ -182,6 +183,16 @@ struct com_msg_fd_err {
 	void *proc_ptr;
 	int err_no;
 } __attribute__ ((aligned));
+
+/*!
+ * \brief The com_msg_gen_err struct
+ * Generic error message.
+ */
+struct com_msg_error {
+	struct com_msg_hdr msg_hdr;
+	TEE_Result ret;
+	uint32_t ret_origin;
+};
 
 /*
  *  ## Message section end ##
