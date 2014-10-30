@@ -44,7 +44,6 @@ static int read_iov_element(int fd, struct iovec *iov)
 	while (1) {
 
 		read_bytes = readv(fd, iov, 1);
-
 		if (read_bytes == -1) {
 
 			if (errno == EINTR)
@@ -53,6 +52,8 @@ static int read_iov_element(int fd, struct iovec *iov)
 			OT_LOG(LOG_ERR, "read error");
 			return -1;
 		}
+
+		break;
 	}
 
 	return read_bytes;
@@ -64,8 +65,8 @@ int com_recv_msg(int sockfd, void **msg, int *msg_len)
 	int ret;
 	struct com_transport_info com_recv_trans_info;
 
-	if (!*msg || !msg_len) {
-		OT_LOG(LOG_ERR, "Invalid parameters")
+	if (!msg) {
+		OT_LOG(LOG_ERR, "msg null")
 		return 1;
 	}
 
@@ -79,18 +80,19 @@ int com_recv_msg(int sockfd, void **msg, int *msg_len)
 	/* Read transport capsule */
 	if (read_iov_element(sockfd, &iov[0]) == -1) {
 		OT_LOG(LOG_ERR, "Problem with reading transport capsule");
+		ret = -1;
 		goto err;
 	}
 
 	/* Transport information read. Verify bit sequence */
 	if (com_recv_trans_info.start != COM_MSG_START) {
 		OT_LOG(LOG_ERR, "Read data is not beginning correctly");
+		ret = 1;
 		goto err;
 	}
 
 	/* Malloc space for incomming message and read message */
-	*msg_len = com_recv_trans_info.data_len;
-	*msg = calloc(1, *msg_len);
+	*msg = calloc(1, com_recv_trans_info.data_len);
 	if (!*msg) {
 		OT_LOG(LOG_ERR, "Out of memory");
 		ret = 1;
@@ -98,24 +100,30 @@ int com_recv_msg(int sockfd, void **msg, int *msg_len)
 	}
 
 	iov[1].iov_base = *msg;
-	iov[1].iov_len = *msg_len;
+	iov[1].iov_len = com_recv_trans_info.data_len;
 
 	if (read_iov_element(sockfd, &iov[1]) == -1) {
 		OT_LOG(LOG_ERR, "Problem with reading msg");
+		ret = -1;
 		goto err;
 	}
 
 	/* Calculate and verify checksum */
-	if (com_recv_trans_info.checksum != crc32(0, *msg, *msg_len)) {
+	if (com_recv_trans_info.checksum != crc32(0, *msg, com_recv_trans_info.data_len)) {
 		OT_LOG(LOG_ERR, "Message checksum is not matching, discard msg");
+		ret = 1;
 		goto err;
 	}
+
+	if (msg_len)
+		*msg_len = com_recv_trans_info.data_len;
 
 	return 0;
 
 err:
 	free(*msg); /* Discardin msg */
-	*msg_len = 0;
+	if (msg_len)
+		*msg_len = 0;
 	*msg = NULL;
 	return ret;
 }
@@ -153,6 +161,8 @@ int com_send_msg(int sockfd, void *msg, int msg_len)
 			OT_LOG(LOG_ERR, "send error");
 			return -1;
 		}
+
+		break;
 	}
 
 	return bytes_write - sizeof(struct com_transport_info);
