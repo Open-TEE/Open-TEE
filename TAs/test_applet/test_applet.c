@@ -17,6 +17,13 @@
 #include "tee_internal_api.h"
 #include "tee_logging.h"
 
+#ifdef TA_PLUGIN
+#include "tee_ta_properties.h"
+
+SET_TA_PROPERTIES({ 0x3E93632E, 0xA710, 0x469E,
+		    { 0xAC, 0xC8, 0x5E, 0xDF, 0x8C, 0x85, 0x90, 0xE1 } }, 512, 255, 1, 1, 1)
+#endif
+
 TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
 	OT_LOG(LOG_ERR, "Calling the create entry point");
