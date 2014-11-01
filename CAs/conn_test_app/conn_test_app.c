@@ -20,6 +20,7 @@
 #include "tee_client_api.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 int main()
 {
