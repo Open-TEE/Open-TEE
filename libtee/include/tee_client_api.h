@@ -27,7 +27,6 @@
 #endif
 
 #include "tee_shared_data_types.h"
-#include "tee_ta_propertie.h"
 
 /* Shared Memory Control Flags */
 #define TEEC_MEM_INPUT			0x00000001

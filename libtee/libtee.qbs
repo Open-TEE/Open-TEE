@@ -20,7 +20,6 @@ DynamicLibrary {
         "include/tee_emu_client_api.h",
         "include/tee_logging.h",
         "include/tee_shared_data_types.h",
-        "include/tee_ta_propertie.h",
         "src/com_protocol.c",
         "src/socket_help.c",
         "src/tee_client_ipc_api.c",
