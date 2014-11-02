@@ -152,7 +152,7 @@ struct com_msg_ta_created {
  */
 struct com_msg_close_session {
 	struct com_msg_hdr msg_hdr;
-	uint32_t should_ta_destroy;
+	int should_ta_destroy;
 } __attribute__ ((aligned));
 
 /*!
