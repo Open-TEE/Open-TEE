@@ -36,4 +36,19 @@
 #define OT_LOG1(level, message, ...) syslog(level, message, ##__VA_ARGS__);
 
 
+/*!
+  Print LOG_ERR level message to syslog
+*/
+#define OT_LOG_ERR(message, ...) syslog(LOG_ERR, message, ##__VA_ARGS__);
+
+/*!
+  Print LOG_ERR level interger to syslog
+*/
+#define OT_LOG_INT(integer) syslog(LOG_ERR, "%d", integer);
+
+/*!
+  Print LOG_ERR level string to syslog
+*/
+#define OT_LOG_STR(str) syslog(LOG_ERR, "%s", str);
+
 #endif /* __TEE_LOGGING_H__ */
