@@ -17,7 +17,6 @@
 /* Extreme simply smoke tests. If something than function name is printed -> FAIL */
 
 #include <stdio.h>
-#include <syslog.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,6 +32,7 @@
 
 #include "../include/tee_internal_api.h"
 #include "../internal_api/tee_object_handle.h"
+#include "../include/tee_logging.h"
 
 /* Useful functions */
 static void pri_obj_attr(TEE_ObjectHandle object);

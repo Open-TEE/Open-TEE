@@ -17,7 +17,6 @@
 #include <openssl/rand.h>
 
 #include <stdio.h>
-#include <syslog.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,6 +26,7 @@
 
 /* NOTICE */
 #include "../include/tee_internal_api.h"
+#include "../include/tee_logging.h"
 #include "../internal_api/tee_object_handle.h"
 
 #define KEY_IN_BYTES(key_in_bits) ((key_in_bits + 7) / 8)
