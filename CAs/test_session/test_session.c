@@ -20,7 +20,6 @@
 #include <errno.h>
 #include <string.h>
 
-
 int main()
 {
 	TEEC_Context context;
@@ -46,8 +45,7 @@ int main()
 	fflush(stdout);
 	TEEC_ReleaseSharedMemory(&shared_mem);
 
-	while(1) {
-
+	while (1) {
 	}
 	return 0;
 }

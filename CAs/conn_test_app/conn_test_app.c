@@ -22,10 +22,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static const TEEC_UUID uuid =
-{
-	0x3E93632E, 0xA710, 0x469E,
-	{ 0xAC, 0xC8, 0x5E, 0xDF, 0x8C, 0x85, 0x90, 0xE1 }
+static const TEEC_UUID uuid = {
+	0x3E93632E, 0xA710, 0x469E, { 0xAC, 0xC8, 0x5E, 0xDF, 0x8C, 0x85, 0x90, 0xE1 }
 };
 
 int main()
@@ -36,9 +34,7 @@ int main()
 	uint32_t return_origin;
 	uint32_t connection_method = TEEC_LOGIN_PUBLIC;
 
-
 	printf("START: conn test app\n");
-
 
 	/* Initialize context */
 	printf("Initializing context: ");
@@ -50,20 +46,16 @@ int main()
 		printf("initiliazed\n");
 	}
 
-
-
 	/* Open session */
 	printf("Openning session: ");
-	ret = TEEC_OpenSession(&context, &session, &uuid,
-			       connection_method, NULL, NULL, &return_origin);
+	ret = TEEC_OpenSession(&context, &session, &uuid, connection_method, NULL, NULL,
+			       &return_origin);
 	if (ret != TEEC_SUCCESS) {
 		printf("TEEC_OpenSession failed: 0x%x\n", ret);
 		goto end_2;
 	} else {
 		printf("opened\n");
 	}
-
-
 
 	/* Invoke command */
 	printf("Invoking command: ");
@@ -75,15 +67,12 @@ int main()
 		printf("invoked\n");
 	}
 
-
-
 	/* Cleanup used connection/resources */
 
 end_3:
 	printf("Closing session: ");
 	TEEC_CloseSession(&session);
 	printf("Closed\n");
-
 
 end_2:
 	printf("Finalizing ctx: ");

@@ -9,7 +9,7 @@
 #include <sys/un.h>
 #include <stdlib.h>
 
-//TODO fis this to point to the real path
+// TODO fis this to point to the real path
 const char *sock_path = "/tmp/open_tee_sock";
 
 int main(void)
