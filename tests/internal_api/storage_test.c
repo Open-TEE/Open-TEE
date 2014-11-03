@@ -34,13 +34,13 @@
 /* pri_obj_attr */
 static void __attribute__((unused)) pri_obj_attr(TEE_ObjectHandle object)
 {
-	size_t i,j;
+	size_t i, j;
 	if (object == NULL)
 		return;
 
 	for (i = 0; i < object->attrs_count; ++i) {
 		for (j = 0; j < object->attrs[i].content.ref.length; j++) {
-			printf("%02x", ((unsigned char *) object->attrs[i].content.ref.buffer) [j]);
+			printf("%02x", ((unsigned char *)object->attrs[i].content.ref.buffer)[j]);
 		}
 		printf("\n");
 	}
@@ -49,7 +49,7 @@ static void __attribute__((unused)) pri_obj_attr(TEE_ObjectHandle object)
 /* pri_and_cmp_attr */
 static void __attribute__((unused)) pri_and_cmp_attr(TEE_ObjectHandle obj1, TEE_ObjectHandle obj2)
 {
-	size_t i,j, attr_count, cmp_len;
+	size_t i, j, attr_count, cmp_len;
 
 	if (obj1 == NULL || obj2 == NULL)
 		return;
@@ -67,7 +67,7 @@ static void __attribute__((unused)) pri_and_cmp_attr(TEE_ObjectHandle obj1, TEE_
 			printf("obj1: ");
 			for (j = 0; j < obj1->attrs[i].content.ref.length; j++)
 				printf("%02x",
-				       ((unsigned char *) obj1->attrs[i].content.ref.buffer) [j]);
+				       ((unsigned char *)obj1->attrs[i].content.ref.buffer)[j]);
 		} else {
 			printf("obj1: -");
 		}
@@ -75,7 +75,7 @@ static void __attribute__((unused)) pri_and_cmp_attr(TEE_ObjectHandle obj1, TEE_
 			printf("\nobj2: ");
 			for (j = 0; j < obj2->attrs[i].content.ref.length; j++)
 				printf("%02x",
-				       ((unsigned char *) obj2->attrs[i].content.ref.buffer) [j]);
+				       ((unsigned char *)obj2->attrs[i].content.ref.buffer)[j]);
 		} else {
 			printf("\nobj2: -");
 		}
@@ -106,7 +106,7 @@ static void pri_void_buf(void *buf, size_t len)
 
 	size_t i;
 	for (i = 0; i < len; ++i)
-		printf("%02x", ((unsigned char *) buf) [i]);
+		printf("%02x", ((unsigned char *)buf)[i]);
 	printf("\n");
 }
 
@@ -166,8 +166,6 @@ static void __attribute__((unused)) pri_obj_info(TEE_ObjectInfo info)
 	printf("objectUsage:   %u\n", info.objectUsage);
 }
 
-
-
 static void gen_rsa_key_pair_and_save_read()
 {
 	printf("  ####   gen_rsa_key_pair_and_save_read   ####\n");
@@ -179,7 +177,7 @@ static void gen_rsa_key_pair_and_save_read()
 	char objID[] = "56c5d1b260704de30fe7af67e5b9327613abebe6172a2b4e949d84b8e561e2fb";
 	size_t objID_len = 64;
 	uint32_t flags = 0xffffffff ^ TEE_DATA_FLAG_EXCLUSIVE;
-	void * data;
+	void *data;
 	size_t data_len = 12;
 
 	data = malloc(data_len);
@@ -206,16 +204,16 @@ static void gen_rsa_key_pair_and_save_read()
 		goto err;
 	}
 
-	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)objID,
-					 objID_len, flags, handler, data, data_len, NULL);
+	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)objID, objID_len, flags,
+					 handler, data, data_len, NULL);
 
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: per creation\n");
 		goto err;
 	}
 
-	ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, (void *)objID,
-				       objID_len, flags, &handler2);
+	ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, (void *)objID, objID_len, flags,
+				       &handler2);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: per open\n");
 		goto err;
@@ -357,7 +355,6 @@ static void data_stream_write_read()
 	size_t data_size = 50;
 	uint32_t count = 0;
 
-
 	write_data = calloc(1, data_size);
 	if (write_data == NULL)
 		goto err;
@@ -387,8 +384,8 @@ static void data_stream_write_read()
 		goto err;
 	}
 
-	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)objID, objID_len,
-					 flags, handler, NULL, 0, &per_han);
+	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)objID, objID_len, flags,
+					 handler, NULL, 0, &per_han);
 
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: per creation\n");
@@ -429,7 +426,7 @@ static void pure_data_obj_and_truncate_and_write()
 	char objID[] = "56c5d1b260704de30fe7af67e5b9327613abebe6172a2b4e949d84b8e561e2fb";
 	size_t objID_len = 64;
 	uint32_t flags = 0xffffffff ^ TEE_DATA_FLAG_EXCLUSIVE;
-	void * init_data;
+	void *init_data;
 	size_t init_data_len = 10;
 	void *write_data = NULL;
 	size_t write_data_size = 10;
@@ -444,8 +441,8 @@ static void pure_data_obj_and_truncate_and_write()
 		goto err;
 	RAND_bytes(write_data, write_data_size);
 
-	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)objID, objID_len,
-					 flags, NULL, init_data, init_data_len, &handler);
+	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)objID, objID_len, flags, NULL,
+					 init_data, init_data_len, &handler);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: per creation\n");
 		goto err;
@@ -476,7 +473,7 @@ static void gen_rand_per_data_obj(TEE_ObjectHandle *gen_obj, size_t data_len)
 	void *ID = NULL;
 	size_t ID_len = 30;
 	uint32_t flags = 0xffffffff ^ TEE_DATA_FLAG_EXCLUSIVE;
-	void * init_data = NULL;
+	void *init_data = NULL;
 	TEE_Result ret;
 
 	init_data = malloc(data_len);
@@ -493,8 +490,8 @@ static void gen_rand_per_data_obj(TEE_ObjectHandle *gen_obj, size_t data_len)
 	}
 	RAND_bytes(ID, ID_len);
 
-	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)ID, ID_len,
-					 flags, NULL, init_data, data_len, gen_obj);
+	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)ID, ID_len, flags, NULL,
+					 init_data, data_len, gen_obj);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: gen_rand_data_obj(per create)\n");
 		goto err;
@@ -513,7 +510,7 @@ static void gen_RSA_per_obj_with_data(TEE_ObjectHandle *gen_obj, size_t data_len
 	void *ID = NULL;
 	size_t ID_len = 30;
 	uint32_t flags = 0xffffffff ^ TEE_DATA_FLAG_EXCLUSIVE;
-	void * init_data;
+	void *init_data;
 
 	init_data = malloc(data_len);
 	if (init_data == NULL) {
@@ -541,8 +538,8 @@ static void gen_RSA_per_obj_with_data(TEE_ObjectHandle *gen_obj, size_t data_len
 		goto err;
 	}
 
-	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, ID, ID_len, flags, handler,
-					 init_data, data_len, gen_obj);
+	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, ID, ID_len, flags, handler, init_data,
+					 data_len, gen_obj);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: gen_RSA_per_obj_with_data(per create)\n");
 		goto err;
@@ -615,7 +612,7 @@ static void gen_per_objs_and_iter_with_enum()
 		goto err;
 	}
 
-	for(;;) {
+	for (;;) {
 		ret = TEE_GetNextPersistentObject(iter_enum2, &info, ID, &ID_len);
 		if (ret == TEE_SUCCESS) {
 			/* nothing */
@@ -632,7 +629,7 @@ static void gen_per_objs_and_iter_with_enum()
 
 	TEE_ResetPersistentObjectEnumerator(iter_enum1);
 
-	for(;;) {
+	for (;;) {
 		ret = TEE_GetNextPersistentObject(iter_enum1, &info, ID, &ID_len);
 		if (ret == TEE_SUCCESS) {
 			/* nothing */
@@ -695,7 +692,7 @@ static void rename_per_obj_and_enum_and_open_renameObj()
 		goto err;
 	}
 
-	for(;;) {
+	for (;;) {
 		ret = TEE_GetNextPersistentObject(iter_enum, &info, ret_ID, &ret_ID_len);
 		if (ret == TEE_SUCCESS) {
 			/* continue */
@@ -715,7 +712,7 @@ static void rename_per_obj_and_enum_and_open_renameObj()
 
 	TEE_ResetPersistentObjectEnumerator(iter_enum);
 
-	for(;;) {
+	for (;;) {
 		ret = TEE_GetNextPersistentObject(iter_enum, &info, ret_ID, &ret_ID_len);
 		if (ret == TEE_SUCCESS) {
 			/* continue */
@@ -727,8 +724,8 @@ static void rename_per_obj_and_enum_and_open_renameObj()
 		}
 	}
 
-	ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, (void *)ret_ID,
-				       ret_ID_len, flags, &object2);
+	ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, (void *)ret_ID, ret_ID_len, flags,
+				       &object2);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: per open\n");
 		goto err;
@@ -816,4 +813,3 @@ int main()
 	closelog();
 	return 0;
 }
-

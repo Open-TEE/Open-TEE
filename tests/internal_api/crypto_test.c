@@ -34,7 +34,7 @@
 #include "../include/tee_internal_api.h"
 #include "../internal_api/tee_object_handle.h"
 
- /* Useful functions */
+/* Useful functions */
 static void pri_obj_attr(TEE_ObjectHandle object);
 static void pri_and_cmp_attr(TEE_ObjectHandle obj1, TEE_ObjectHandle obj2);
 static void pri_void_buf(void *buf, size_t len);
@@ -49,13 +49,13 @@ static void free_attr(TEE_Attribute *params, size_t count);
 /* pri_obj_attr */
 static void __attribute__((unused)) pri_obj_attr(TEE_ObjectHandle object) /* No warning */
 {
-	size_t i,j;
+	size_t i, j;
 	if (object == NULL)
 		return;
 
 	for (i = 0; i < object->attrs_count; ++i) {
 		for (j = 0; j < object->attrs[i].content.ref.length; j++) {
-			printf("%02x", ((unsigned char *) object->attrs[i].content.ref.buffer) [j]);
+			printf("%02x", ((unsigned char *)object->attrs[i].content.ref.buffer)[j]);
 		}
 		printf("\n");
 	}
@@ -64,7 +64,7 @@ static void __attribute__((unused)) pri_obj_attr(TEE_ObjectHandle object) /* No 
 /* pri_and_cmp_attr */
 static void __attribute__((unused)) pri_and_cmp_attr(TEE_ObjectHandle obj1, TEE_ObjectHandle obj2)
 {
-	size_t i,j, attr_count, cmp_len;
+	size_t i, j, attr_count, cmp_len;
 
 	if (obj1 == NULL || obj2 == NULL)
 		return;
@@ -81,14 +81,16 @@ static void __attribute__((unused)) pri_and_cmp_attr(TEE_ObjectHandle obj1, TEE_
 		if (obj1->attrs_count > i) {
 			printf("obj1: ");
 			for (j = 0; j < obj1->attrs[i].content.ref.length; j++)
-				printf("%02x", ((unsigned char *) obj1->attrs[i].content.ref.buffer) [j]);
+				printf("%02x",
+				       ((unsigned char *)obj1->attrs[i].content.ref.buffer)[j]);
 		} else {
 			printf("obj1: -");
 		}
 		if (obj2->attrs_count > i) {
 			printf("\nobj2: ");
 			for (j = 0; j < obj2->attrs[i].content.ref.length; j++)
-				printf("%02x", ((unsigned char *) obj2->attrs[i].content.ref.buffer) [j]);
+				printf("%02x",
+				       ((unsigned char *)obj2->attrs[i].content.ref.buffer)[j]);
 		} else {
 			printf("\nobj2: -");
 		}
@@ -101,7 +103,8 @@ static void __attribute__((unused)) pri_and_cmp_attr(TEE_ObjectHandle obj1, TEE_
 			else
 				cmp_len = obj2->attrs[i].content.ref.length;
 
-			if (!bcmp(obj1->attrs[i].content.ref.buffer, obj2->attrs[i].content.ref.buffer, cmp_len))
+			if (!bcmp(obj1->attrs[i].content.ref.buffer,
+				  obj2->attrs[i].content.ref.buffer, cmp_len))
 				printf("Same1 \n");
 			else
 				printf("NO\n");
@@ -118,7 +121,7 @@ static void pri_void_buf(void *buf, size_t len)
 
 	size_t i;
 	for (i = 0; i < len; ++i)
-		printf("%02x", ((unsigned char *) buf) [i]);
+		printf("%02x", ((unsigned char *)buf)[i]);
 	printf("\n");
 }
 
@@ -189,12 +192,13 @@ static void free_attr(TEE_Attribute *params, size_t count)
 		free(params[i].content.ref.buffer);
 }
 
-static void __attribute__((unused)) gen_rand_per_data_obj(TEE_ObjectHandle *gen_obj, size_t data_len)
+static void __attribute__((unused))
+gen_rand_per_data_obj(TEE_ObjectHandle *gen_obj, size_t data_len)
 {
 	void *ID = NULL;
 	size_t ID_len = 30;
 	uint32_t flags = 0xffffffff ^ TEE_DATA_FLAG_EXCLUSIVE;
-	void * init_data = NULL;
+	void *init_data = NULL;
 	TEE_Result ret;
 
 	init_data = malloc(data_len);
@@ -211,7 +215,8 @@ static void __attribute__((unused)) gen_rand_per_data_obj(TEE_ObjectHandle *gen_
 	}
 	RAND_bytes(ID, ID_len);
 
-	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)ID, ID_len, flags, NULL, init_data, data_len, gen_obj);
+	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)ID, ID_len, flags, NULL,
+					 init_data, data_len, gen_obj);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: gen_rand_data_obj(per create)\n");
 		goto err;
@@ -222,7 +227,8 @@ err:
 	free(init_data);
 }
 
-static void __attribute__((unused)) gen_RSA_per_obj_with_data(TEE_ObjectHandle *gen_obj, size_t data_len)
+static void __attribute__((unused))
+gen_RSA_per_obj_with_data(TEE_ObjectHandle *gen_obj, size_t data_len)
 {
 	TEE_Result ret;
 	TEE_ObjectHandle handler;
@@ -230,7 +236,7 @@ static void __attribute__((unused)) gen_RSA_per_obj_with_data(TEE_ObjectHandle *
 	void *ID = NULL;
 	uint32_t ID_len = 30;
 	uint32_t flags = 0xffffffff ^ TEE_DATA_FLAG_EXCLUSIVE;
-	void * init_data;
+	void *init_data;
 
 	init_data = malloc(data_len);
 	if (init_data == NULL) {
@@ -258,7 +264,8 @@ static void __attribute__((unused)) gen_RSA_per_obj_with_data(TEE_ObjectHandle *
 		goto err;
 	}
 
-	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, ID, ID_len, flags, handler, init_data, data_len, gen_obj);
+	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, ID, ID_len, flags, handler, init_data,
+					 data_len, gen_obj);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: gen_RSA_per_obj_with_data(per create)\n");
 		goto err;
@@ -408,8 +415,8 @@ static void AES_256_xts_enc_and_dec()
 
 	write_to_cipher += write_bytes;
 	write_bytes = cipher_len - write_to_cipher;
-	ret = TEE_CipherDoFinal(enc_handle, NULL, 0,
-				(unsigned char *)cipher + write_to_cipher, &write_bytes);
+	ret = TEE_CipherDoFinal(enc_handle, NULL, 0, (unsigned char *)cipher + write_to_cipher,
+				&write_bytes);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: update enc\n");
 		goto err;
@@ -453,8 +460,8 @@ err:
 	TEE_Free(dec_plain);
 }
 
-static bool warp_sym_enc(TEE_ObjectHandle key, void *IV, size_t IV_len, uint32_t alg,
-		     void *plain, size_t plain_len, void *cipher, size_t *cipher_len)
+static bool warp_sym_enc(TEE_ObjectHandle key, void *IV, size_t IV_len, uint32_t alg, void *plain,
+			 size_t plain_len, void *cipher, size_t *cipher_len)
 {
 	TEE_Result ret;
 	TEE_OperationHandle enc_handle = NULL;
@@ -489,8 +496,8 @@ static bool warp_sym_enc(TEE_ObjectHandle key, void *IV, size_t IV_len, uint32_t
 	total_write_bytes += write_bytes;
 	write_bytes = *cipher_len - total_write_bytes;
 
-	ret = TEE_CipherDoFinal(enc_handle, NULL, 0,
-				(unsigned char *)cipher + total_write_bytes, &write_bytes);
+	ret = TEE_CipherDoFinal(enc_handle, NULL, 0, (unsigned char *)cipher + total_write_bytes,
+				&write_bytes);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: final enc\n");
 		goto err;
@@ -505,8 +512,8 @@ err:
 	return false;
 }
 
-static bool warp_sym_dec(TEE_ObjectHandle key, void *IV, size_t IV_len, uint32_t alg,
-			 void *cipher, size_t cipher_len, void *plain, size_t *plain_len)
+static bool warp_sym_dec(TEE_ObjectHandle key, void *IV, size_t IV_len, uint32_t alg, void *cipher,
+			 size_t cipher_len, void *plain, size_t *plain_len)
 {
 	TEE_Result ret = TEE_SUCCESS;
 	TEE_OperationHandle dec_handle = NULL;
@@ -541,8 +548,8 @@ static bool warp_sym_dec(TEE_ObjectHandle key, void *IV, size_t IV_len, uint32_t
 	total_write_bytes += write_bytes;
 	write_bytes = *plain_len - total_write_bytes;
 
-	ret = TEE_CipherDoFinal(dec_handle, NULL, 0,
-				(unsigned char *)plain + total_write_bytes, &write_bytes);
+	ret = TEE_CipherDoFinal(dec_handle, NULL, 0, (unsigned char *)plain + total_write_bytes,
+				&write_bytes);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: final dec\n");
 		goto err;
@@ -569,7 +576,7 @@ static void des3_cbc_enc_dec()
 	char *plain_msg = "TANEL";
 
 	size_t plain_len = 8;
-	size_t cipher_len = 8+8;
+	size_t cipher_len = 8 + 8;
 	size_t dec_plain_len = plain_len;
 	size_t IVlen = key_size + 16;
 
@@ -674,13 +681,15 @@ static void AES_256_ctr_enc_and_dec()
 	}
 
 	write_to_cipher = cipher_len;
-	if (!warp_sym_enc(key, IV, IVlen, TEE_ALG_AES_CTR, plain, plain_len, cipher, &write_to_cipher))
+	if (!warp_sym_enc(key, IV, IVlen, TEE_ALG_AES_CTR, plain, plain_len, cipher,
+			  &write_to_cipher))
 		goto err;
 
 	cipher_len = write_to_cipher;
 
 	write_to_dec_plain = dec_plain_len;
-	if (!warp_sym_dec(key, IV, IVlen, TEE_ALG_AES_CTR, cipher, cipher_len, dec_plain, &write_to_dec_plain))
+	if (!warp_sym_dec(key, IV, IVlen, TEE_ALG_AES_CTR, cipher, cipher_len, dec_plain,
+			  &write_to_dec_plain))
 		goto err;
 
 	if (bcmp(dec_plain, plain, write_to_dec_plain)) {
@@ -723,8 +732,8 @@ static void sha224_digest()
 	rand_msg_hash = TEE_Malloc(hash_len_bytes, 0);
 	clone_rand_msg_hash = TEE_Malloc(hash_len_bytes, 0);
 	cpy_hash_func = TEE_Malloc(cpy_hash_func_len, 0);
-	if (!rand_msg || !clone_rand_msg || !rand_msg_hash
-	    || !clone_rand_msg_hash || !cpy_hash_func) {
+	if (!rand_msg || !clone_rand_msg || !rand_msg_hash || !clone_rand_msg_hash ||
+	    !cpy_hash_func) {
 		printf("Fail: buf alloc\n");
 		goto err;
 	}
@@ -764,15 +773,14 @@ static void sha224_digest()
 		goto err;
 	}
 
-	ret = TEE_DigestDoFinal(clone_digest_handler, NULL, 0,
-				clone_rand_msg_hash, &clone_rand_msg_hash_len);
+	ret = TEE_DigestDoFinal(clone_digest_handler, NULL, 0, clone_rand_msg_hash,
+				&clone_rand_msg_hash_len);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: cpy digest final\n");
 		goto err;
 	}
 
-	ret = TEE_DigestDoFinal(cpy_digest_handler, NULL, 0,
-				cpy_hash_func, &cpy_hash_func_len);
+	ret = TEE_DigestDoFinal(cpy_digest_handler, NULL, 0, cpy_hash_func, &cpy_hash_func_len);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: cpy digest final\n");
 		goto err;
@@ -875,9 +883,9 @@ err:
 	TEE_Free(dec_plain);
 }
 
-static bool warp_RSA_enc(TEE_ObjectHandle key, uint32_t alg, TEE_Attribute* params,
-			 uint32_t paramCount, void *plain, uint32_t plain_len,
-			 void *cipher, uint32_t *cipher_len)
+static bool warp_RSA_enc(TEE_ObjectHandle key, uint32_t alg, TEE_Attribute *params,
+			 uint32_t paramCount, void *plain, uint32_t plain_len, void *cipher,
+			 uint32_t *cipher_len)
 {
 	TEE_Result ret = TEE_SUCCESS;
 	TEE_OperationHandle enc_handle = NULL;
@@ -897,8 +905,8 @@ static bool warp_RSA_enc(TEE_ObjectHandle key, uint32_t alg, TEE_Attribute* para
 		goto err;
 	}
 
-	ret = TEE_AsymmetricEncrypt(enc_handle, params, paramCount,
-				    plain, plain_len, cipher, cipher_len);
+	ret = TEE_AsymmetricEncrypt(enc_handle, params, paramCount, plain, plain_len, cipher,
+				    cipher_len);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: enc\n");
 		goto err;
@@ -912,9 +920,9 @@ err:
 	return false;
 }
 
-static bool warp_RSA_dec(TEE_ObjectHandle key, uint32_t alg, TEE_Attribute* params,
-			 uint32_t paramCount, void *plain, uint32_t *plain_len,
-			 void *cipher, uint32_t cipher_len)
+static bool warp_RSA_dec(TEE_ObjectHandle key, uint32_t alg, TEE_Attribute *params,
+			 uint32_t paramCount, void *plain, uint32_t *plain_len, void *cipher,
+			 uint32_t cipher_len)
 {
 	TEE_Result ret = TEE_SUCCESS;
 	TEE_OperationHandle dec_handle = NULL;
@@ -934,8 +942,8 @@ static bool warp_RSA_dec(TEE_ObjectHandle key, uint32_t alg, TEE_Attribute* para
 		goto err;
 	}
 
-	ret = TEE_AsymmetricDecrypt(dec_handle, params, paramCount,
-				    cipher, cipher_len, plain, plain_len);
+	ret = TEE_AsymmetricDecrypt(dec_handle, params, paramCount, cipher, cipher_len, plain,
+				    plain_len);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: dec\n");
 		goto err;
@@ -976,7 +984,7 @@ static void RSA_keypair_enc_dec()
 	}
 
 	memcpy(plain, plain_msg, strlen(plain_msg) + 1);
-	//RAND_bytes(plain, plain_len);
+	// RAND_bytes(plain, plain_len);
 
 	ret = TEE_AllocateTransientObject(TEE_TYPE_RSA_KEYPAIR, key_size, &rsa_keypair);
 	if (ret != TEE_SUCCESS) {
@@ -990,13 +998,11 @@ static void RSA_keypair_enc_dec()
 		goto err;
 	}
 
-	if (!warp_RSA_enc(rsa_keypair, rsa_alg, NULL, 0,
-			  plain, plain_len, cipher, &cipher_len))
+	if (!warp_RSA_enc(rsa_keypair, rsa_alg, NULL, 0, plain, plain_len, cipher, &cipher_len))
 		goto err;
 
-
-	if (!warp_RSA_dec(rsa_keypair, rsa_alg, NULL, 0,
-			  dec_plain, &dec_plain_len, (unsigned char *)cipher, cipher_len))
+	if (!warp_RSA_dec(rsa_keypair, rsa_alg, NULL, 0, dec_plain, &dec_plain_len,
+			  (unsigned char *)cipher, cipher_len))
 		goto err;
 
 	if (bcmp(dec_plain, plain, plain_len)) {
@@ -1011,9 +1017,9 @@ err:
 	TEE_Free(cipher);
 }
 
-static bool warp_RSA_sig(TEE_ObjectHandle key, uint32_t alg, TEE_Attribute* params,
-			 uint32_t paramCount, void *dig, uint32_t dig_len,
-			 void *sig, uint32_t *sig_len)
+static bool warp_RSA_sig(TEE_ObjectHandle key, uint32_t alg, TEE_Attribute *params,
+			 uint32_t paramCount, void *dig, uint32_t dig_len, void *sig,
+			 uint32_t *sig_len)
 {
 	TEE_Result ret = TEE_SUCCESS;
 	TEE_OperationHandle sig_handle = NULL;
@@ -1033,8 +1039,7 @@ static bool warp_RSA_sig(TEE_ObjectHandle key, uint32_t alg, TEE_Attribute* para
 		goto err;
 	}
 
-	ret = TEE_AsymmetricSignDigest(sig_handle, params, paramCount,
-				       dig, dig_len, sig, sig_len);
+	ret = TEE_AsymmetricSignDigest(sig_handle, params, paramCount, dig, dig_len, sig, sig_len);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: sig\n");
 		goto err;
@@ -1048,9 +1053,8 @@ err:
 	return false;
 }
 
-static bool warp_RSA_ver(TEE_ObjectHandle key, uint32_t alg, TEE_Attribute* params,
-			 uint32_t paramCount, void *dig, size_t dig_len,
-			 void *sig, size_t sig_len)
+static bool warp_RSA_ver(TEE_ObjectHandle key, uint32_t alg, TEE_Attribute *params,
+			 uint32_t paramCount, void *dig, size_t dig_len, void *sig, size_t sig_len)
 {
 	TEE_Result ret = TEE_SUCCESS;
 	TEE_OperationHandle ver_handle = NULL;
@@ -1070,8 +1074,8 @@ static bool warp_RSA_ver(TEE_ObjectHandle key, uint32_t alg, TEE_Attribute* para
 		goto err;
 	}
 
-	ret = TEE_AsymmetricVerifyDigest(ver_handle, params, paramCount,
-					 dig, dig_len, sig, sig_len);
+	ret =
+	    TEE_AsymmetricVerifyDigest(ver_handle, params, paramCount, dig, dig_len, sig, sig_len);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: ver\n");
 		goto err;
@@ -1122,12 +1126,10 @@ static void RSA_sig_and_ver()
 		goto err;
 	}
 
-	if (!warp_RSA_sig(rsa_keypair, rsa_alg, NULL, 0,
-			  dig, dig_len, sig, &sig_len))
+	if (!warp_RSA_sig(rsa_keypair, rsa_alg, NULL, 0, dig, dig_len, sig, &sig_len))
 		goto err;
 
-	if (!warp_RSA_ver(rsa_keypair, rsa_alg, NULL, 0,
-			  dig, dig_len, sig, sig_len))
+	if (!warp_RSA_ver(rsa_keypair, rsa_alg, NULL, 0, dig, dig_len, sig, sig_len))
 		goto err;
 
 err:
@@ -1377,7 +1379,7 @@ static void DH_computaion()
 	if (!derived_sec_buf || !derived_sec_buf2)
 		goto err;
 
-	//Pub vals
+	// Pub vals
 	dh_pub.content.ref.buffer = TEE_Malloc(pub_max_size, 0);
 	dh_pub2.content.ref.buffer = TEE_Malloc(pub_max_size, 0);
 	if (!dh_pub.content.ref.buffer || !dh_pub2.content.ref.buffer) {
@@ -1389,7 +1391,7 @@ static void DH_computaion()
 	dh_pub.attributeID = TEE_ATTR_DH_PUBLIC_VALUE;
 	dh_pub2.attributeID = TEE_ATTR_DH_PUBLIC_VALUE;
 
-	//Gen sec
+	// Gen sec
 	gen_sec.attributeID = TEE_ATTR_SECRET_VALUE;
 	gen_sec.content.ref.buffer = TEE_Malloc(shared_sec_len, 0);
 	if (!gen_sec.content.ref.buffer) {
@@ -1406,7 +1408,7 @@ static void DH_computaion()
 	bn_p = BN_new();
 	if (!bn_p)
 		goto err;
-	if (!BN_generate_prime_ex(bn_p, (p_len*8), 1, NULL, NULL, NULL))
+	if (!BN_generate_prime_ex(bn_p, (p_len * 8), 1, NULL, NULL, NULL))
 		goto err;
 	params[0].attributeID = TEE_ATTR_DH_BASE;
 	params[0].content.ref.buffer = TEE_Malloc(p_len, 0);
@@ -1420,7 +1422,7 @@ static void DH_computaion()
 	bn_q = BN_new();
 	if (!bn_q)
 		goto err;
-	if (!BN_generate_prime_ex(bn_q, (q_len*8), 1, NULL, NULL, NULL))
+	if (!BN_generate_prime_ex(bn_q, (q_len * 8), 1, NULL, NULL, NULL))
 		goto err;
 	params[1].attributeID = TEE_ATTR_DH_PRIME;
 	params[1].content.ref.buffer = TEE_Malloc(q_len, 0);
@@ -1519,16 +1521,15 @@ static void DH_computaion()
 	TEE_DeriveKey(dh_han, &dh_pub2, 1, der_sec);
 	TEE_DeriveKey(dh_han2, &dh_pub, 1, der_sec2);
 
-	ret = TEE_GetObjectBufferAttribute(der_sec, TEE_ATTR_SECRET_VALUE,
-					   derived_sec_buf, &derived_sec_len);
+	ret = TEE_GetObjectBufferAttribute(der_sec, TEE_ATTR_SECRET_VALUE, derived_sec_buf,
+					   &derived_sec_len);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: extract sec\n");
 		goto err;
 	}
 
-
-	ret = TEE_GetObjectBufferAttribute(der_sec2, TEE_ATTR_SECRET_VALUE,
-					   derived_sec_buf2, &derived_sec_len2);
+	ret = TEE_GetObjectBufferAttribute(der_sec2, TEE_ATTR_SECRET_VALUE, derived_sec_buf2,
+					   &derived_sec_len2);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: extract sec2\n");
 		goto err;
@@ -1574,8 +1575,8 @@ static void dup_rsa_key()
 
 	char *plain_msg = "TANEL";
 
-	uint32_t plain_len = key_size/8;
-	uint32_t cipher_len = key_size/8;
+	uint32_t plain_len = key_size / 8;
+	uint32_t cipher_len = key_size / 8;
 	uint32_t cpy_cipher_len = cipher_len;
 
 	void *plain = NULL;
@@ -1624,15 +1625,13 @@ static void dup_rsa_key()
 
 	TEE_CopyOperation(dst_op, src_op);
 
-	ret = TEE_AsymmetricEncrypt(dst_op, NULL, 0,
-				    plain, plain_len, cipher, &cipher_len);
+	ret = TEE_AsymmetricEncrypt(dst_op, NULL, 0, plain, plain_len, cipher, &cipher_len);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: enc\n");
 		goto err;
 	}
 
-	ret = TEE_AsymmetricEncrypt(src_op, NULL, 0,
-				    plain, plain_len, cpy_cipher, &cpy_cipher_len);
+	ret = TEE_AsymmetricEncrypt(src_op, NULL, 0, plain, plain_len, cpy_cipher, &cpy_cipher_len);
 	if (ret != TEE_SUCCESS) {
 		printf("Fail: enc cpy\n");
 		goto err;
@@ -1681,4 +1680,3 @@ int main()
 	closelog();
 	return 0;
 }
-
