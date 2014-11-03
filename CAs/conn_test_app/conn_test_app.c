@@ -30,6 +30,7 @@ int main()
 {
 	TEEC_Context context;
 	TEEC_Session session;
+	TEEC_Operation operation;
 	TEEC_Result ret;
 	uint32_t return_origin;
 	uint32_t connection_method = TEEC_LOGIN_PUBLIC;
@@ -59,7 +60,7 @@ int main()
 
 	/* Invoke command */
 	printf("Invoking command: ");
-	ret = TEEC_InvokeCommand(&session, 0, NULL, &return_origin);
+	ret = TEEC_InvokeCommand(&session, 0, &operation, &return_origin);
 	if (ret != TEEC_SUCCESS) {
 		printf("TEEC_InvokeCommand failed: 0x%x\n", ret);
 		goto end_3;
