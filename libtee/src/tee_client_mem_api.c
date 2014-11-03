@@ -33,7 +33,7 @@
  * \return TEEC_SUCCESS on success, other error on failure
  */
 static TEEC_Result create_shared_mem_internal(TEEC_Context *context, TEEC_SharedMemory *shared_mem,
-						  enum mem_type type)
+					      enum mem_type type)
 {
 	int flag = 0;
 	int fd;
@@ -56,7 +56,7 @@ static TEEC_Result create_shared_mem_internal(TEEC_Context *context, TEEC_Shared
 		flag |= O_RDWR;
 
 	fd = shm_open(shared_mem->shm_uuid, (flag | O_CREAT | O_EXCL),
-			  (S_IRUSR | S_IRGRP | S_IWUSR | S_IWGRP));
+		      (S_IRUSR | S_IRGRP | S_IWUSR | S_IWGRP));
 	if (fd == -1) {
 		ret = TEEC_ERROR_GENERIC;
 		goto errorExit;
@@ -71,9 +71,9 @@ static TEEC_Result create_shared_mem_internal(TEEC_Context *context, TEEC_Shared
 	/* mmap does not allow for the size to be zero, however the TEEC API allows it, so map a
 	 * size of 1 byte, though it will probably be mapped to a page
 	 */
-	address = mmap(NULL, shared_mem->size != 0 ? shared_mem->size : 1,
-			   ((flag == O_RDONLY) ? PROT_READ : (PROT_WRITE | PROT_READ)),
-			   MAP_SHARED, fd, 0);
+	address =
+	    mmap(NULL, shared_mem->size != 0 ? shared_mem->size : 1,
+		 ((flag == O_RDONLY) ? PROT_READ : (PROT_WRITE | PROT_READ)), MAP_SHARED, fd, 0);
 	if (address == MAP_FAILED) {
 		ret = TEEC_ERROR_OUT_OF_MEMORY;
 		goto errorTruncate;
@@ -89,7 +89,7 @@ static TEEC_Result create_shared_mem_internal(TEEC_Context *context, TEEC_Shared
 	else if (type == REGISTERED)
 		shared_mem->reg_address = address;
 
-	//TODO we must register the shared memory with the context
+	// TODO we must register the shared memory with the context
 	shared_mem->parent_ctx = context;
 	shared_mem->type = type;
 	shared_mem->init = INITIALIZED;
@@ -138,9 +138,8 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shared_mem)
 	shm_unlink(shared_mem->shm_uuid);
 	free(shared_mem->shm_uuid);
 
-	//TODO we must unregister the shared memory from the Context
+	// TODO we must unregister the shared memory from the Context
 
 	shared_mem->init = 0xFF;
 	return;
 }
-

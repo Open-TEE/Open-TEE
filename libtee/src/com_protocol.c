@@ -35,7 +35,7 @@ struct com_transport_info {
 	uint64_t checksum;
 	uint32_t start;
 	uint32_t data_len; /* data_len: user message length */
-} __attribute__ ((aligned));
+} __attribute__((aligned));
 
 static int read_iov_element(int fd, struct iovec *iov)
 {

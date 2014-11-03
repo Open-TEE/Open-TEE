@@ -70,12 +70,12 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	/* Fill init message */
 	init_msg.msg_hdr.msg_name = COM_MSG_NAME_CA_INIT_CONTEXT;
 	init_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
-	init_msg.msg_hdr.sess_id = 0; /* ignored */
+	init_msg.msg_hdr.sess_id = 0;     /* ignored */
 	init_msg.msg_hdr.sender_type = 0; /* ignored */
 
 	/* Send init message to TEE */
 	if (com_send_msg(sockfd, &init_msg, sizeof(struct com_msg_ca_init_tee_conn)) !=
-			sizeof(struct com_msg_ca_init_tee_conn)) {
+	    sizeof(struct com_msg_ca_init_tee_conn)) {
 		ret = TEEC_ERROR_COMMUNICATION;
 		goto err_2;
 	}
@@ -100,7 +100,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	}
 
 	context->init = INITIALIZED;
-	context->sockfd  = sockfd;
+	context->sockfd = sockfd;
 	ret = recv_msg->ret;
 	free(recv_msg);
 
@@ -114,7 +114,6 @@ err_1:
 	return ret;
 }
 
-
 void TEEC_FinalizeContext(TEEC_Context *context)
 {
 	struct com_msg_ca_finalize_constex fin_con_msg;
@@ -124,7 +123,7 @@ void TEEC_FinalizeContext(TEEC_Context *context)
 
 	fin_con_msg.msg_hdr.msg_name = COM_MSG_NAME_CA_FINALIZ_CONTEXT;
 	fin_con_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
-	fin_con_msg.msg_hdr.sess_id = 0; /* ignored */
+	fin_con_msg.msg_hdr.sess_id = 0;     /* ignored */
 	fin_con_msg.msg_hdr.sender_type = 0; /* ignored */
 
 	/* Message filled. Send message */
@@ -186,7 +185,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	/* Header section */
 	open_msg.msg_hdr.msg_name = COM_MSG_NAME_OPEN_SESSION;
 	open_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
-	open_msg.msg_hdr.sess_id = 0; /* manager filled */
+	open_msg.msg_hdr.sess_id = 0;     /* manager filled */
 	open_msg.msg_hdr.sender_type = 0; /* manger filled */
 
 	/* UUID */
@@ -280,7 +279,7 @@ void TEEC_CloseSession(TEEC_Session *session)
 
 	close_msg.msg_hdr.msg_name = COM_MSG_NAME_CLOSE_SESSION;
 	close_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
-	close_msg.msg_hdr.sess_id = 0; /* manager filled */
+	close_msg.msg_hdr.sess_id = 0;     /* manager filled */
 	close_msg.msg_hdr.sender_type = 0; /* manger filled */
 
 	/* Message filled. Send message */
@@ -330,7 +329,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 	/* Fill message */
 	invoke_msg.msg_hdr.msg_name = COM_MSG_NAME_INVOKE_CMD;
 	invoke_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
-	invoke_msg.msg_hdr.sess_id = 0; /* manager filled */
+	invoke_msg.msg_hdr.sess_id = 0;     /* manager filled */
 	invoke_msg.msg_hdr.sender_type = 0; /* manger filled */
 
 	/* ## TODO/NOTE: Map operation to message! ## */
@@ -345,7 +344,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 
 	/* Message filled. Send message */
 	if (com_send_msg(session->sockfd, &invoke_msg, sizeof(struct com_msg_invoke_cmd)) !=
-			sizeof(struct com_msg_invoke_cmd)) {
+	    sizeof(struct com_msg_invoke_cmd)) {
 		OT_LOG(LOG_ERR, "Failed to send message TEE")
 		goto err_com_1;
 	}

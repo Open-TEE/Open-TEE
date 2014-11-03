@@ -17,24 +17,20 @@
 #ifndef __TEE_LOGGING_H__
 #define __TEE_LOGGING_H__
 
-
 #include <syslog.h>
 
 #define DBG_LOCATION "%s:%s:%d  "
 
-
 /*!
   Print message to syslog with addidional information.
 */
-#define OT_LOG(level, message, ...) syslog(level, DBG_LOCATION message, \
-	__FILE__, __func__, __LINE__, ##__VA_ARGS__);
-
+#define OT_LOG(level, message, ...)                                                                \
+	syslog(level, DBG_LOCATION message, __FILE__, __func__, __LINE__, ##__VA_ARGS__);
 
 /*!
   Print message to syslog without addidional infromation.
 */
 #define OT_LOG1(level, message, ...) syslog(level, message, ##__VA_ARGS__);
-
 
 /*!
   Print LOG_ERR level message to syslog

@@ -33,6 +33,7 @@ typedef struct {
 
 typedef TEE_UUID TEEC_UUID;
 
+/* clang-format off */
 /* Client API return Codes */
 #define TEEC_SUCCESS			0x00000000
 #define TEEC_ERROR_GENERIC		0xFFFF0000
@@ -96,4 +97,5 @@ typedef TEE_UUID TEEC_UUID;
 #define TEE_ERROR_TIME_NOT_SET		0xFFFF5000
 #define TEE_ERROR_TIME_NEEDS_RESET	0xFFFF5001
 
+/* clang-format on */
 #endif /* __TEE_SHARED_DATA_TYPES_H__ */

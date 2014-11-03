@@ -28,6 +28,7 @@
 
 #include "tee_shared_data_types.h"
 
+/* clang-format off */
 /* Shared Memory Control Flags */
 #define TEEC_MEM_INPUT			0x00000001
 #define TEEC_MEM_OUTPUT			0x00000002
@@ -53,6 +54,8 @@
 #define TEEC_LOGIN_USER_APPLICATION	0x00000005
 #define TEEC_LOGIN_GROUP_APPLICATION	0x00000006
 
+/* clang-format on */
+
 /*!
  * \brief TEEC_TempMemoryReference A Temporary memorry Reference as used by \sa TEEC_Operation
  */
@@ -65,17 +68,17 @@ typedef struct {
  * \brief TEEC_RegisteredMemoryReference Uses a pre-registered memory or pre-allocated memory block
  */
 typedef struct {
-	TEEC_SharedMemory *parent;  /*!< Either a whole or partial memory reference */
-	size_t size;                /*!< The size of the referenced memory region, in bytes */
-	size_t offset;              /*!< The offset in bytes of the referenced memory region */
+	TEEC_SharedMemory *parent; /*!< Either a whole or partial memory reference */
+	size_t size;		   /*!< The size of the referenced memory region, in bytes */
+	size_t offset;		   /*!< The offset in bytes of the referenced memory region */
 } TEEC_RegisteredMemoryReference;
 
 /*!
  * \brief TEEC_Value Defines a paramater that is not referencing shared memory
  */
 typedef struct {
-	uint32_t a;  /*!< Paramater meaning is defined by the protocol between TA and Client */
-	uint32_t b;  /*!< Paramater meaning is defined by the protocol between TA and Client */
+	uint32_t a; /*!< Paramater meaning is defined by the protocol between TA and Client */
+	uint32_t b; /*!< Paramater meaning is defined by the protocol between TA and Client */
 } TEEC_Value;
 
 /*!
@@ -202,7 +205,7 @@ void TEEC_RequestCancellation(TEEC_Operation *operation);
  * \param param3Type Type of parameter 3
  * \return a uint32_t value that can be used in the operation to define the param types
  */
-#define TEEC_PARAM_TYPES(param0Type, param1Type, param2Type, param3Type) \
+#define TEEC_PARAM_TYPES(param0Type, param1Type, param2Type, param3Type)                           \
 	((param0Type) | ((param1Type) << 4) | ((param2Type) << 8) | ((param3Type) << 12))
 
 /*!

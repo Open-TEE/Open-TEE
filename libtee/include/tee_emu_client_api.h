@@ -40,22 +40,19 @@ typedef struct {
 	uint8_t init;
 } TEEC_Session;
 
-enum mem_type {
-	REGISTERED = 0,
-	ALLOCATED = 0xa110ca7e
-};
+enum mem_type { REGISTERED = 0, ALLOCATED = 0xa110ca7e };
 
 /*!
   * \brief TEEC_SharedMemory A shared memory block that has been registered or allocated
   */
 typedef struct {
-	void *buffer; /*!< pointer to a memory buffer that is shared with TEE */
-	size_t size;  /*!< The size of the memory buffer in bytes */
+	void *buffer;   /*!< pointer to a memory buffer that is shared with TEE */
+	size_t size;    /*!< The size of the memory buffer in bytes */
 	uint32_t flags; /*!< bit vector that can contain TEEC_MEM_INPUT or TEEC_MEM_OUTPUT */
 	/* TODO what should be done about the opaque type <implementation defined> section */
 	TEEC_Context *parent_ctx; /*!< Pointer to the context that owns this shared memory */
-	char *shm_uuid;           /*!< Pointer to the shared memory object that has been created */
-	void *reg_address;	  /*!< store the mmap address that is used for registered mem */
+	char *shm_uuid;		  /*!< Pointer to the shared memory object that has been created */
+	void *reg_address;	/*!< store the mmap address that is used for registered mem */
 	enum mem_type type;       /*!< The type of the memory, i.e. allocated or registered */
 	uint8_t init;
 } TEEC_SharedMemory;

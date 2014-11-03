@@ -46,6 +46,7 @@
 
 #include "tee_shared_data_types.h"
 
+/* clang-format off */
 /* Communication protocol message names */
 #define COM_MSG_NAME_RESERVED			0x00 /* Zero is reserved */
 #define COM_MSG_NAME_CA_INIT_CONTEXT		0x01
@@ -63,6 +64,7 @@
 #define COM_TYPE_RESPONSE			0
 
 #define TA_MAX_NAME_LEN				255
+/* clang-format on */
 
 /*!
  * \brief The com_sender enum
@@ -87,9 +89,7 @@ struct com_msg_hdr {
 	uint8_t msg_name;
 	uint8_t msg_type;
 
-} __attribute__ ((aligned));
-
-
+} __attribute__((aligned));
 
 /*
  * ## Message section start ##
@@ -102,7 +102,7 @@ struct com_msg_hdr {
 struct com_msg_ca_init_tee_conn {
 	struct com_msg_hdr msg_hdr;
 	TEE_Result ret;
-} __attribute__ ((aligned));
+} __attribute__((aligned));
 
 /*!
  * \brief The com_msg_open_session struct
@@ -119,7 +119,7 @@ struct com_msg_open_session {
 
 	/* TODO: parameters */
 
-} __attribute__ ((aligned));
+} __attribute__((aligned));
 
 /*!
  * \brief The com_msg_invoke_cmd struct
@@ -134,7 +134,7 @@ struct com_msg_invoke_cmd {
 
 	/* TODO: parameters */
 
-} __attribute__ ((aligned));
+} __attribute__((aligned));
 
 /*!
  * \brief The com_msg_ta_created struct
@@ -144,7 +144,7 @@ struct com_msg_invoke_cmd {
 struct com_msg_ta_created {
 	struct com_msg_hdr msg_hdr;
 	pid_t pid;
-} __attribute__ ((aligned));
+} __attribute__((aligned));
 
 /*!
  * \brief The com_msg_close_session struct
@@ -153,7 +153,7 @@ struct com_msg_ta_created {
 struct com_msg_close_session {
 	struct com_msg_hdr msg_hdr;
 	int should_ta_destroy;
-} __attribute__ ((aligned));
+} __attribute__((aligned));
 
 /*!
  * \brief The com_msg_ca_finalize_constex struct
@@ -162,7 +162,7 @@ struct com_msg_close_session {
 struct com_msg_ca_finalize_constex {
 	struct com_msg_hdr msg_hdr;
 	/* Empty */
-} __attribute__ ((aligned));
+} __attribute__((aligned));
 
 /*!
  * \brief The com_msg_proc_status_change struct
@@ -172,7 +172,7 @@ struct com_msg_ca_finalize_constex {
 struct com_msg_proc_status_change {
 	struct com_msg_hdr msg_hdr;
 	/* Empty */
-} __attribute__ ((aligned));
+} __attribute__((aligned));
 
 /*!
  * \brief The com_msg_fd_err struct
@@ -182,7 +182,7 @@ struct com_msg_fd_err {
 	struct com_msg_hdr msg_hdr;
 	void *proc_ptr;
 	int err_no;
-} __attribute__ ((aligned));
+} __attribute__((aligned));
 
 /*!
  * \brief The com_msg_gen_err struct
@@ -197,11 +197,6 @@ struct com_msg_error {
 /*
  *  ## Message section end ##
  */
-
-
-
-
-
 
 /*
  * Function for receiving and  sending messages
@@ -229,9 +224,6 @@ int com_recv_msg(int sockfd, void **msg, int *msg_len);
  */
 int com_send_msg(int sockfd, void *msg, int msg_len);
 
-
-
-
 /*
  * Get-functions for accessing protocol base functionality.
  */
@@ -240,4 +232,3 @@ int com_get_msg_type(void *msg, uint8_t *msg_type);
 int com_get_msg_sess_id(void *msg, uint64_t *sess_id);
 
 #endif /* __COM_PROTOCOL_H__ */
-
