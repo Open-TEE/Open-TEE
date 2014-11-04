@@ -15,10 +15,11 @@
 *****************************************************************************/
 
 #include <errno.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include <stdlib.h>
 
 #include "com_protocol.h"
 #include "socket_help.h"
@@ -28,11 +29,65 @@
 /* TODO fix this to point to the correct location */
 const char *sock_path = "/tmp/open_tee_sock";
 
+static bool get_return_vals_from_err_msg(void *msg, TEE_Result *err_name, uint32_t *err_origin)
+{
+	uint8_t msg_name;
+
+	if (!msg) {
+		OT_LOG(LOG_ERR, "msg NULL");
+		return false;
+	}
+
+	if (com_get_msg_name(msg, &msg_name)) {
+		OT_LOG(LOG_ERR, "Failed to retreave message name");
+		return false;
+	}
+
+	if (msg_name != COM_MSG_NAME_ERROR) {
+		OT_LOG(LOG_ERR, "Not an error message");
+		return false;
+	}
+
+	if (err_name)
+		*err_name = ((struct com_msg_error *) msg)->ret;
+
+	if (err_origin)
+		*err_origin = ((struct com_msg_error *) msg)->ret_origin;
+
+	return true;
+}
+
+static bool verify_msg_name_and_type(void *msg, uint8_t expected_name, uint8_t expected_type)
+{
+	uint8_t msg_name, msg_type;
+
+	if (!msg) {
+		OT_LOG(LOG_ERR, "msg NULL");
+		return false;
+	}
+
+	if (com_get_msg_name(msg, &msg_name) || com_get_msg_type(msg, &msg_type)) {
+		OT_LOG(LOG_ERR, "Failed to retreave message name and type");
+		return false;
+	}
+
+	if (msg_name != expected_name) {
+		OT_LOG(LOG_ERR, "Not expexted name of the message");
+		return false;
+	}
+
+	if (msg_type != expected_type) {
+		OT_LOG(LOG_ERR, "Not expexted type of the message");
+		return false;
+	}
+
+	return true;
+}
+
 TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 {
-	int sockfd, recv_bytes;
+	int com_ret;
 	TEE_Result ret = TEEC_SUCCESS;
-	uint8_t msg_name, msg_type;
 	struct sockaddr_un sock_addr;
 	struct com_msg_ca_init_tee_conn init_msg;
 	struct com_msg_ca_init_tee_conn *recv_msg = NULL;
@@ -51,7 +106,8 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 		return TEEC_ERROR_GENERIC;
 	}
 
-	if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+	context->sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (context->sockfd == -1) {
 		OT_LOG(LOG_ERR, "Socket creation failed")
 		ret = TEEC_ERROR_COMMUNICATION;
 		goto err_1;
@@ -61,7 +117,8 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	strncpy(sock_addr.sun_path, sock_path, sizeof(sock_addr.sun_path) - 1);
 	sock_addr.sun_family = AF_UNIX;
 
-	if (connect(sockfd, (struct sockaddr *)&sock_addr, sizeof(struct sockaddr_un)) == -1) {
+	if (connect(context->sockfd,
+		    (struct sockaddr *)&sock_addr, sizeof(struct sockaddr_un)) == -1) {
 		OT_LOG(LOG_ERR, "Failed to connect to TEE")
 		ret = TEEC_ERROR_COMMUNICATION;
 		goto err_2;
@@ -74,43 +131,46 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	init_msg.msg_hdr.sender_type = 0; /* ignored */
 
 	/* Send init message to TEE */
-	if (com_send_msg(sockfd, &init_msg, sizeof(struct com_msg_ca_init_tee_conn)) !=
+	if (com_send_msg(context->sockfd, &init_msg, sizeof(struct com_msg_ca_init_tee_conn)) !=
 	    sizeof(struct com_msg_ca_init_tee_conn)) {
+		OT_LOG(LOG_ERR, "Failed to send context initialization msg");
 		ret = TEEC_ERROR_COMMUNICATION;
 		goto err_2;
 	}
 
 	/* Wait for answer */
-	if (com_recv_msg(sockfd, (void **)(&recv_msg), &recv_bytes) == -1) {
+	com_ret = com_recv_msg(context->sockfd, (void **)(&recv_msg), NULL);
+
+	/* If else is only for correct log message */
+	if (com_ret == -1) {
+		OT_LOG(LOG_ERR, "Socket error");
+		ret = TEEC_ERROR_COMMUNICATION;
+		goto err_2;
+
+	} else if (com_ret > 0) {
+		OT_LOG(LOG_ERR, "Received bad message, discarding");
 		ret = TEEC_ERROR_COMMUNICATION;
 		goto err_2;
 	}
 
 	/* Check received message */
-	if (com_get_msg_name(recv_msg, &msg_name) || com_get_msg_type(recv_msg, &msg_type)) {
-		OT_LOG(LOG_ERR, "Failed to retreave message name and type");
-		ret = TEEC_ERROR_COMMUNICATION;
-		goto err_2;
-	}
-
-	if (msg_name != COM_MSG_NAME_CA_INIT_CONTEXT || msg_type != COM_TYPE_RESPONSE) {
-		OT_LOG(LOG_ERR, "Received wrong message, discarding");
+	if (!verify_msg_name_and_type(recv_msg, COM_MSG_NAME_CA_INIT_CONTEXT, COM_TYPE_RESPONSE)) {
 		ret = TEEC_ERROR_COMMUNICATION;
 		goto err_2;
 	}
 
 	context->init = INITIALIZED;
-	context->sockfd = sockfd;
 	ret = recv_msg->ret;
 	free(recv_msg);
 
 	return ret;
 
 err_2:
-	close(sockfd);
+	close(context->sockfd);
 err_1:
 	pthread_mutex_destroy(&context->mutex);
 	free(recv_msg);
+	context->init = 0;
 	return ret;
 }
 
@@ -156,8 +216,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 {
 	struct com_msg_open_session open_msg;
 	struct com_msg_open_session *recv_msg = NULL;
-	int recv_bytes, ret = 0;
-	uint8_t msg_name, msg_type;
+	int com_ret = 0;
 	TEEC_Result result = TEEC_SUCCESS;
 
 	/* Not used on purpose. Reminding about implement memory stuff. (only UUID is handeled) */
@@ -209,12 +268,12 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	}
 
 	/* Wait for answer */
-	ret = com_recv_msg(context->sockfd, (void **)(&recv_msg), &recv_bytes);
-	if (ret == -1) {
+	com_ret = com_recv_msg(context->sockfd, (void **)(&recv_msg), NULL);
+	if (com_ret == -1) {
 		OT_LOG(LOG_ERR, "Socket error");
 		goto err_com;
 
-	} else if (ret > 0) {
+	} else if (com_ret > 0) {
 		OT_LOG(LOG_ERR, "Received bad message, discarding");
 		/* TODO: Do what? End session? Problem: We do not know what message was
 		 * incomming. Error or Response to open session message. Worst case situation is
@@ -224,14 +283,11 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	}
 
 	/* Check received message */
-	if (com_get_msg_name(recv_msg, &msg_name) || com_get_msg_type(recv_msg, &msg_type)) {
-		OT_LOG(LOG_ERR, "Failed to retreave message name and type");
-		goto err_com;
-	}
+	if (!verify_msg_name_and_type(recv_msg, COM_MSG_NAME_OPEN_SESSION, COM_TYPE_RESPONSE)) {
+		if (!get_return_vals_from_err_msg(recv, &result, return_origin))
+			goto err_com;
 
-	if (msg_name != COM_MSG_NAME_OPEN_SESSION || msg_type != COM_TYPE_RESPONSE) {
-		OT_LOG(LOG_ERR, "Received wrong message, discarding");
-		goto err_com;
+		goto err_msg;
 	}
 
 	if (recv_msg->return_code_open_session == TEEC_SUCCESS) {
@@ -258,14 +314,18 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	return result;
 
 err_com:
+	if (return_origin)
+		*return_origin = TEE_ORIGIN_COMMS;
+	result = TEEC_ERROR_COMMUNICATION;
+
+err_msg:
 	pthread_mutex_destroy(&session->mutex);
 	if (pthread_mutex_unlock(&context->mutex))
 		OT_LOG(LOG_ERR, "Failed to unlock mutex");
 
-	if (return_origin)
-		*return_origin = TEE_ORIGIN_COMMS;
 	free(recv_msg);
-	return TEEC_ERROR_COMMUNICATION;
+	session->init = 0;
+	return result;
 }
 
 void TEEC_CloseSession(TEEC_Session *session)
@@ -313,9 +373,8 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 {
 	struct com_msg_invoke_cmd invoke_msg;
 	struct com_msg_invoke_cmd *recv_msg = NULL;
-	int ret = 0, recv_bytes;
+	int com_ret = 0;
 	TEEC_Result result = TEEC_SUCCESS;
-	uint8_t msg_name, msg_type;
 
 	command_id = command_id; /* Not used on purpose. Reminding about implement memory stuff */
 
@@ -350,11 +409,11 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 	}
 
 	/* Wait for answer */
-	ret = com_recv_msg(session->sockfd, (void **)(&recv_msg), &recv_bytes);
-	if (ret == -1) {
+	com_ret = com_recv_msg(session->sockfd, (void **)(&recv_msg), NULL);
+	if (com_ret == -1) {
 		OT_LOG(LOG_ERR, "Socket error")
 		goto err_com_1;
-	} else if (ret > 0) {
+	} else if (com_ret > 0) {
 		OT_LOG(LOG_ERR, "Received bad message, discarding")
 		/* TODO: Do what? End session? Problem: We do not know what message was
 		 * incomming. Error or Response to invoke cmd message. Worst case situation is
@@ -364,17 +423,14 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 	}
 
 	if (pthread_mutex_unlock(&session->mutex))
-		OT_LOG(LOG_ERR, "Failed to unlock mutex") /* No action */
+		OT_LOG(LOG_ERR, "Failed to unlock mutex"); /* No action */
 
 	/* Check received message */
-	if (com_get_msg_name(recv_msg, &msg_name) || com_get_msg_type(recv_msg, &msg_type)) {
-		OT_LOG(LOG_ERR, "Failed to retreave message name and type");
-		goto err_com_2;
-	}
+	if (!verify_msg_name_and_type(recv_msg, COM_MSG_NAME_INVOKE_CMD, COM_TYPE_RESPONSE)) {
+		if (!get_return_vals_from_err_msg(recv, &result, return_origin))
+			goto err_com_2;
 
-	if (msg_name != COM_MSG_NAME_INVOKE_CMD || msg_type != COM_TYPE_RESPONSE) {
-		OT_LOG(LOG_ERR, "Received wrong message, discarding");
-		goto err_com_2;
+		goto err_msg;
 	}
 
 	/* Success. Let see result */
@@ -393,14 +449,15 @@ err_com_1:
 err_com_2:
 	if (return_origin)
 		*return_origin = TEE_ORIGIN_COMMS;
+	result = TEEC_ERROR_COMMUNICATION;
+err_msg:
 	free(recv_msg);
-	return TEEC_ERROR_COMMUNICATION;
+	return result;
 }
 
 void TEEC_RequestCancellation(TEEC_Operation *operation)
 {
-	if (!operation)
-		return;
+	/* PLACEHOLDER */
 
-	return;
+	operation = operation;
 }

@@ -41,8 +41,8 @@
  * Payload: actual message
  */
 
-#include <stdint.h>
 #include <limits.h>
+#include <stdint.h>
 
 #include "tee_shared_data_types.h"
 
