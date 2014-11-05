@@ -29,6 +29,38 @@
 /* TODO fix this to point to the correct location */
 const char *sock_path = "/tmp/open_tee_sock";
 
+/*!
+ * \brief wait_socket_close
+ * This function is not interested any data that is comming from socket.
+ * It only breaks it while loop, when error occured.
+ * \param fd
+ */
+static void wait_socket_close(int fd)
+{
+	const int tmp_len = 8;
+	char tmp[tmp_len];
+	int read_bytes;
+
+	while (1) {
+		read_bytes = read(fd, &tmp, tmp_len);
+		if (read_bytes == -1) {
+
+			if (errno == EINTR)
+				continue;
+
+			break;
+
+		} else if (read_bytes == 0) {
+			/* If socket other end is closed before this function read is called,
+			 * read returns zero */
+			break;
+
+		} else {
+			continue;
+		}
+	}
+}
+
 static bool get_return_vals_from_err_msg(void *msg, TEE_Result *err_name, uint32_t *err_origin)
 {
 	uint8_t msg_name;
@@ -192,8 +224,21 @@ void TEEC_FinalizeContext(TEEC_Context *context)
 		goto err;
 	}
 
-	com_send_msg(context->sockfd, &fin_con_msg, sizeof(struct com_msg_ca_finalize_constex));
+	/* Message filled. Send message */
+	if (com_send_msg(context->sockfd, &fin_con_msg,
+			 sizeof(struct com_msg_ca_finalize_constex)) !=
+	    sizeof(struct com_msg_ca_finalize_constex)) {
+		OT_LOG(LOG_ERR, "Failed to send message TEE");
+		goto unlock;
+	}
 
+	/* We are not actually receiving any data from TEE. This call is here for blocking
+	 * purpose. It is preventing closing this side socket before TEE closes connection. With
+	 * this it is easier segregate expected disconnection and not expected disconnection.
+	 * This blocking will end when TEE closes its side socket. */
+	wait_socket_close(context->sockfd);
+
+unlock:
 	if (pthread_mutex_unlock(&context->mutex))
 		OT_LOG(LOG_ERR, "Failed to unlock mutex")
 
@@ -350,9 +395,15 @@ void TEEC_CloseSession(TEEC_Session *session)
 
 	/* Message filled. Send message */
 	if (com_send_msg(session->sockfd, &close_msg, sizeof(struct com_msg_close_session)) !=
-	    sizeof(struct com_msg_close_session))
+	    sizeof(struct com_msg_close_session)) {
 		OT_LOG(LOG_ERR, "Failed to send message TEE");
+		goto unlock;
+	}
 
+	/* See explanation in TEEC_FinalizeContext() */
+	wait_socket_close(session->sockfd);
+
+unlock:
 	if (pthread_mutex_unlock(&session->mutex))
 		OT_LOG(LOG_ERR, "Failed to unlock mutex")
 
