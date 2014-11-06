@@ -51,6 +51,11 @@ static int read_iov_element(int fd, struct iovec *iov)
 
 			OT_LOG(LOG_ERR, "read error");
 			return -1;
+
+		} else if (read_bytes == 0) {
+			OT_LOG(LOG_ERR, "read error");
+			errno = EPIPE;
+			return -1;
 		}
 
 		break;
