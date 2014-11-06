@@ -36,6 +36,7 @@ typedef struct {
  */
 typedef struct {
 	pthread_mutex_t mutex;
+	uint64_t sess_id;
 	int sockfd;
 	uint8_t init;
 } TEEC_Session;

@@ -67,28 +67,13 @@
 /* clang-format on */
 
 /*!
- * \brief The com_sender enum
- * Identify message sender.
- */
-enum com_sender {
-	com_sender_CA,
-	com_sender_TA,
-	com_sender_launcher,
-	com_sender_manager,
-
-	com_sender_force_enum_size = INT_MAX
-};
-
-/*!
  * \brief The com_msg_hdr struct
  * Message header is containing generic information, which is common for all messages
  */
 struct com_msg_hdr {
 	uint64_t sess_id;
-	enum com_sender sender_type; /* Not used by client nor TA */
 	uint8_t msg_name;
 	uint8_t msg_type;
-
 } __attribute__((aligned));
 
 /*
@@ -115,7 +100,6 @@ struct com_msg_open_session {
 	TEE_Result return_code_create_entry;
 	TEE_Result return_code_open_session;
 	uint32_t return_origin;
-	uint32_t sess_fd_to_caller;
 
 	/* TODO: parameters */
 
@@ -127,7 +111,6 @@ struct com_msg_open_session {
  */
 struct com_msg_invoke_cmd {
 	struct com_msg_hdr msg_hdr;
-	uint64_t session_id;
 	TEE_Result return_code;
 	uint32_t cmd_id;
 	uint32_t return_origin;
@@ -192,7 +175,7 @@ struct com_msg_error {
 	struct com_msg_hdr msg_hdr;
 	TEE_Result ret;
 	uint32_t ret_origin;
-};
+} __attribute__((aligned));
 
 /*
  *  ## Message section end ##
