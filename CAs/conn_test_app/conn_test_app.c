@@ -82,5 +82,5 @@ end_2:
 
 end_1:
 	printf("END: conn test app\n");
-	exit(EXIT_FAILURE);
+	exit(ret);
 }
