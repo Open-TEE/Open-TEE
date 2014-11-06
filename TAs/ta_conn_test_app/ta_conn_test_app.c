@@ -32,10 +32,13 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 	return TEE_SUCCESS;
 }
 
-void TA_EXPORT TA_DestroyEntryPoint(void) { OT_LOG(LOG_ERR, "Calling the Destroy entry point"); }
+void TA_EXPORT TA_DestroyEntryPoint(void)
+{
+	OT_LOG(LOG_ERR, "Calling the Destroy entry point");
+}
 
-TEE_Result TA_EXPORT
-TA_OpenSessionEntryPoint(uint32_t paramTypes, TEE_Param params[4], void **sessionContext)
+TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
+					      TEE_Param params[4], void **sessionContext)
 {
 	paramTypes = paramTypes;
 	params = params;
