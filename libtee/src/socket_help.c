@@ -47,7 +47,7 @@ int send_fd(int sockfd, int fd_to_send)
 
 int recv_fd(int sockfd, int *recvd_fd)
 {
-	struct msghdr msg_head;
+	struct msghdr msg_head = {0};
 	struct iovec iov;
 	struct control_fd anc_load;
 	char dummy;

@@ -76,10 +76,14 @@ static int wind_fd_next_start(int fd)
 
 	while (1) {
 		read_bytes = read(fd, &tmp, BUF_LEN);
-		if (read_bytes == -1 && errno == EINTR) {
-			continue;
-		} else {
-			OT_LOG(LOG_ERR, "read error")
+		if (read_bytes == -1) {
+			if (errno == EINTR)
+				continue;
+			OT_LOG(LOG_ERR, "read error");
+			return -1;
+		} else if (read_bytes == 0) {
+			OT_LOG(LOG_ERR, "read error");
+			errno = EPIPE;
 			return -1;
 		}
 

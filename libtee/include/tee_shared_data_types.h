@@ -20,6 +20,8 @@
 #ifndef __TEE_SHARED_DATA_TYPES_H__
 #define __TEE_SHARED_DATA_TYPES_H__
 
+#include <stdint.h>
+
 typedef uint32_t TEE_Result;
 
 typedef TEE_Result TEEC_Result;
