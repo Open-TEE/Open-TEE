@@ -1355,7 +1355,7 @@ static void DH_computaion()
 	TEE_OperationHandle dh_han2 = NULL;
 	TEE_ObjectHandle der_sec = NULL;
 	TEE_ObjectHandle der_sec2 = NULL;
-	TEE_Attribute *params;
+	TEE_Attribute *params = NULL;
 	TEE_Attribute dh_pub;
 	TEE_Attribute dh_pub2;
 	TEE_Attribute gen_sec;

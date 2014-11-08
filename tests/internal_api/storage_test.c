@@ -171,8 +171,8 @@ static void gen_rsa_key_pair_and_save_read()
 	printf("  ####   gen_rsa_key_pair_and_save_read   ####\n");
 
 	TEE_Result ret;
-	TEE_ObjectHandle handler;
-	TEE_ObjectHandle handler2;
+	TEE_ObjectHandle handler = NULL;
+	TEE_ObjectHandle handler2 = NULL;
 	size_t key_size = 512;
 	char objID[] = "56c5d1b260704de30fe7af67e5b9327613abebe6172a2b4e949d84b8e561e2fb";
 	size_t objID_len = 64;
@@ -231,8 +231,8 @@ static void gen_rsa_key_pair_and_copy_public()
 	printf("  ####   gen_rsa_key_pair_and_copy_public   ####\n");
 
 	TEE_Result ret;
-	TEE_ObjectHandle rsa_keypair;
-	TEE_ObjectHandle rsa_pubkey;
+	TEE_ObjectHandle rsa_keypair = NULL;
+	TEE_ObjectHandle rsa_pubkey = NULL;
 	size_t key_size = 512;
 
 	ret = TEE_AllocateTransientObject(TEE_TYPE_RSA_KEYPAIR, key_size, &rsa_keypair);
@@ -289,9 +289,9 @@ static void popu_rsa_pub_key()
 	printf("  ####   popu_rsa_pub_key   ####\n");
 
 	TEE_Result ret;
-	TEE_ObjectHandle rsa_pubkey;
+	TEE_ObjectHandle rsa_pubkey = NULL;
 	size_t key_size = 512;
-	TEE_Attribute *params;
+	TEE_Attribute *params = NULL;
 	size_t param_count = 2;
 
 	ret = TEE_AllocateTransientObject(TEE_TYPE_RSA_PUBLIC_KEY, key_size, &rsa_pubkey);
@@ -344,8 +344,8 @@ static void data_stream_write_read()
 	printf("  ####   data_stream_write_read   ####\n");
 
 	TEE_Result ret;
-	TEE_ObjectHandle handler;
-	TEE_ObjectHandle per_han;
+	TEE_ObjectHandle handler = NULL;
+	TEE_ObjectHandle per_han = NULL;
 	size_t key_size = 512;
 	char objID[] = "56c5d1b260704de30fe7af67e5b9327613abebe6172a2b4e949d84b8e561e2fb";
 	size_t objID_len = 64;
@@ -422,11 +422,11 @@ static void pure_data_obj_and_truncate_and_write()
 	printf("  ####   pure_data_obj_and_truncate_and_write   ####\n");
 
 	TEE_Result ret;
-	TEE_ObjectHandle handler;
+	TEE_ObjectHandle handler = NULL;
 	char objID[] = "56c5d1b260704de30fe7af67e5b9327613abebe6172a2b4e949d84b8e561e2fb";
 	size_t objID_len = 64;
 	uint32_t flags = 0xffffffff ^ TEE_DATA_FLAG_EXCLUSIVE;
-	void *init_data;
+	void *init_data = NULL;
 	size_t init_data_len = 10;
 	void *write_data = NULL;
 	size_t write_data_size = 10;
@@ -505,12 +505,12 @@ err:
 static void gen_RSA_per_obj_with_data(TEE_ObjectHandle *gen_obj, size_t data_len)
 {
 	TEE_Result ret;
-	TEE_ObjectHandle handler;
+	TEE_ObjectHandle handler = NULL;
 	size_t key_size = 512;
 	void *ID = NULL;
 	size_t ID_len = 30;
 	uint32_t flags = 0xffffffff ^ TEE_DATA_FLAG_EXCLUSIVE;
-	void *init_data;
+	void *init_data = NULL;
 
 	init_data = malloc(data_len);
 	if (init_data == NULL) {
@@ -744,9 +744,9 @@ static void gen_des_key_56_112_168()
 	printf("  ####   gen_des_key_56_112_168   ####\n");
 
 	TEE_Result ret;
-	TEE_ObjectHandle des;
-	TEE_ObjectHandle des3_112;
-	TEE_ObjectHandle des3_168;
+	TEE_ObjectHandle des = NULL;
+	TEE_ObjectHandle des3_112 = NULL;
+	TEE_ObjectHandle des3_168 = NULL;
 
 	/* des */
 	ret = TEE_AllocateTransientObject(TEE_TYPE_DES, 56, &des);
