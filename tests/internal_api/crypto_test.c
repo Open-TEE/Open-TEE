@@ -231,12 +231,12 @@ static void __attribute__((unused))
 gen_RSA_per_obj_with_data(TEE_ObjectHandle *gen_obj, size_t data_len)
 {
 	TEE_Result ret;
-	TEE_ObjectHandle handler;
+	TEE_ObjectHandle handler = NULL;
 	uint32_t key_size = 512;
 	void *ID = NULL;
 	uint32_t ID_len = 30;
 	uint32_t flags = 0xffffffff ^ TEE_DATA_FLAG_EXCLUSIVE;
-	void *init_data;
+	void *init_data = NULL;
 
 	init_data = malloc(data_len);
 	if (init_data == NULL) {
