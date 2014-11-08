@@ -42,7 +42,7 @@ int main()
 	}
 
 	printf("Session entering while loop\n");
-	fflush(stdout);
+	(void)fflush(stdout);
 	TEEC_ReleaseSharedMemory(&shared_mem);
 
 	while (1) {
