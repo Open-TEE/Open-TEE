@@ -20,12 +20,6 @@
 #include <inttypes.h>
 #include <stddef.h>
 
-#define EMULATOR
-
-#ifdef EMULATOR
-#include "tee_emu_client_api.h"
-#endif
-
 #include "tee_shared_data_types.h"
 
 /* clang-format off */
@@ -55,6 +49,30 @@
 #define TEEC_LOGIN_GROUP_APPLICATION	0x00000006
 
 /* clang-format on */
+
+/*!
+ * \brief TEEC_Context Logical container linking the Client Application to a particular TEE
+ */
+typedef struct {
+	void *imp;
+} TEEC_Context;
+
+/*!
+ * \brief TEEC_Session Container linking a Client Application to a particular Trusted Application
+ */
+typedef struct {
+	void *imp;
+} TEEC_Session;
+
+/*!
+  * \brief TEEC_SharedMemory A shared memory block that has been registered or allocated
+  */
+typedef struct {
+	void *buffer;   /*!< pointer to a memory buffer that is shared with TEE */
+	size_t size;    /*!< The size of the memory buffer in bytes */
+	uint32_t flags; /*!< bit vector that can contain TEEC_MEM_INPUT or TEEC_MEM_OUTPUT */
+	void *imp;
+} TEEC_SharedMemory;
 
 /*!
  * \brief TEEC_TempMemoryReference A Temporary memorry Reference as used by \sa TEEC_Operation

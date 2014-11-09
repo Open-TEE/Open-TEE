@@ -89,21 +89,46 @@ struct com_msg_ca_init_tee_conn {
 	TEE_Result ret;
 } __attribute__((aligned));
 
+/* The length of the name of the shm area */
+#define SHM_MEM_NAME_LEN 44
+
+/*!
+ * \brief The com_msg_param union
+ * The mesage paramaters that are being shared between the client and the TA.
+ */
+union com_msg_param {
+	struct {
+		char shm_area[SHM_MEM_NAME_LEN];
+		size_t size;
+	} memref;
+	struct {
+		uint32_t a;
+		uint32_t b;
+	} value;
+};
+
+/*!
+ * \brief The com_msg_operation struct
+ * The operation that is shared between the client and TA
+ */
+struct com_msg_operation {
+	uint32_t paramTypes;
+	union com_msg_param params[4];
+};
+
 /*!
  * \brief The com_msg_open_session struct
  * CA is opening new connection to TA (TEEC_OpenSession).
  */
 struct com_msg_open_session {
 	struct com_msg_hdr msg_hdr;
+	struct com_msg_operation operation;
 	char ta_so_name[TA_MAX_NAME_LEN];
 	TEE_UUID uuid;
 	uintptr_t sess_ctx;
 	TEE_Result return_code_create_entry;
 	TEE_Result return_code_open_session;
 	uint32_t return_origin;
-
-	/* TODO: parameters */
-
 } __attribute__((aligned));
 
 /*!
@@ -112,13 +137,11 @@ struct com_msg_open_session {
  */
 struct com_msg_invoke_cmd {
 	struct com_msg_hdr msg_hdr;
+	struct com_msg_operation operation;
 	uintptr_t sess_ctx;
 	TEE_Result return_code;
 	uint32_t cmd_id;
 	uint32_t return_origin;
-
-	/* TODO: parameters */
-
 } __attribute__((aligned));
 
 /*!
