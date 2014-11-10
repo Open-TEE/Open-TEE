@@ -97,6 +97,7 @@ struct com_msg_open_session {
 	struct com_msg_hdr msg_hdr;
 	char ta_so_name[TA_MAX_NAME_LEN];
 	TEE_UUID uuid;
+	uintptr_t sess_ctx;
 	TEE_Result return_code_create_entry;
 	TEE_Result return_code_open_session;
 	uint32_t return_origin;
@@ -111,6 +112,7 @@ struct com_msg_open_session {
  */
 struct com_msg_invoke_cmd {
 	struct com_msg_hdr msg_hdr;
+	uintptr_t sess_ctx;
 	TEE_Result return_code;
 	uint32_t cmd_id;
 	uint32_t return_origin;
@@ -135,6 +137,7 @@ struct com_msg_ta_created {
  */
 struct com_msg_close_session {
 	struct com_msg_hdr msg_hdr;
+	uintptr_t sess_ctx;
 	int should_ta_destroy;
 } __attribute__((aligned));
 
