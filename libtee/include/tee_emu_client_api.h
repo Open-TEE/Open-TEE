@@ -28,7 +28,6 @@
 typedef struct {
 	pthread_mutex_t mutex;
 	int sockfd;
-	uint8_t init;
 } TEEC_Context;
 
 /*!

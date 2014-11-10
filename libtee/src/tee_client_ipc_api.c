@@ -31,6 +31,11 @@ const char *sock_path = "/tmp/open_tee_sock";
 /* Mutex is used when write function occur to FD which is connected to TEE */
 pthread_mutex_t fd_write_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/* tee_conn_ctx_state -variable is used for limiting one connection to TEE */
+static int tee_conn_ctx_state;
+#define TEE_CONN_CTX_INIT	1
+#define TEE_CONN_CTX_NOT_INIT	0
+
 static int send_msg(int fd, void *msg, int msg_len, pthread_mutex_t mutex)
 {
 	int ret;
@@ -146,7 +151,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	/* We ignore the name as we are only communicating with a single instance of the emulator */
 	(void)name;
 
-	if (!context || context->init == INITIALIZED) {
+	if (!context || tee_conn_ctx_state == TEE_CONN_CTX_INIT) {
 		OT_LOG(LOG_ERR, "Contex NULL or initialized")
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
@@ -209,7 +214,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 		goto err_2;
 	}
 
-	context->init = INITIALIZED;
+	tee_conn_ctx_state = TEE_CONN_CTX_INIT;
 	ret = recv_msg->ret;
 	free(recv_msg);
 
@@ -220,7 +225,7 @@ err_2:
 err_1:
 	pthread_mutex_destroy(&context->mutex);
 	free(recv_msg);
-	context->init = 0;
+	tee_conn_ctx_state = TEE_CONN_CTX_NOT_INIT;
 	return ret;
 }
 
@@ -228,7 +233,7 @@ void TEEC_FinalizeContext(TEEC_Context *context)
 {
 	struct com_msg_ca_finalize_constex fin_con_msg;
 
-	if (!context || context->init != INITIALIZED)
+	if (!context || tee_conn_ctx_state != TEE_CONN_CTX_INIT)
 		return;
 
 	fin_con_msg.msg_hdr.msg_name = COM_MSG_NAME_CA_FINALIZ_CONTEXT;
@@ -259,7 +264,7 @@ unlock:
 		OT_LOG(LOG_ERR, "Failed to unlock mutex")
 
 err:
-	context->init = 0;
+	tee_conn_ctx_state = TEE_CONN_CTX_NOT_INIT;
 	close(context->sockfd);
 	while (pthread_mutex_destroy(&context->mutex)) {
 		if (errno != EBUSY) {
@@ -285,7 +290,8 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	connection_data = connection_data;
 	operation = operation;
 
-	if (!context || context->init != INITIALIZED || !session || session->init == INITIALIZED) {
+	if (!context || tee_conn_ctx_state != TEE_CONN_CTX_INIT ||
+	    !session || session->init == INITIALIZED) {
 		OT_LOG(LOG_ERR, "Context or session NULL or in improper state");
 		if (return_origin)
 			*return_origin = TEE_ORIGIN_API;
