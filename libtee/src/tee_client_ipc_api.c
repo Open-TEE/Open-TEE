@@ -22,7 +22,6 @@
 #include <unistd.h>
 
 #include "com_protocol.h"
-#include "socket_help.h"
 #include "tee_client_api.h"
 #include "tee_logging.h"
 
