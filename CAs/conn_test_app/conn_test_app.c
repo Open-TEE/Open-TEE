@@ -40,6 +40,7 @@ int main()
 	uint32_t connection_method = TEEC_LOGIN_PUBLIC;
 	uint8_t dummy_data_arr[DUMMY_DATA_SIZE];
 	int32_t dummy_value = 55;
+	int i;
 
 	memset((void *)&inout_mem, 0, sizeof(inout_mem));
 	memset((void *)&operation, 0, sizeof(operation));
@@ -82,6 +83,13 @@ int main()
 		goto end_2;
 	} else {
 		printf("opened\n");
+
+		/* ensure that the first 20 bytes of the data have been over written by the TA
+		 * adding an extra 5 bytes here as an indication that the orig data is still intact
+		 */
+		for (i = 0; i < 25; i++)
+			printf("%c", dummy_data_arr[i]);
+		printf("\n");
 	}
 
 	/* Invoke command */
