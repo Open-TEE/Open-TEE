@@ -534,20 +534,19 @@ void TEEC_FinalizeContext(TEEC_Context *context)
 
 unlock:
 	if (pthread_mutex_unlock(&inter_imp->mutex))
-		OT_LOG(LOG_ERR, "Failed to unlock mutex")
+		OT_LOG(LOG_ERR, "Failed to unlock mutex");
 
 err:
-	tee_conn_ctx_state = TEE_CONN_CTX_NOT_INIT;
-	close(inter_imp->sockfd);
-
 	while (pthread_mutex_destroy(&inter_imp->mutex)) {
 		if (errno != EBUSY) {
-			OT_LOG(LOG_ERR, "Failed to destroy mutex")
+			OT_LOG(LOG_ERR, "Failed to destroy mutex");
 			break;
 		}
 		/* Busy loop */
 	}
 
+	tee_conn_ctx_state = TEE_CONN_CTX_NOT_INIT;
+	close(inter_imp->sockfd);
 	free(inter_imp);
 	context->imp = NULL;
 }
@@ -654,14 +653,14 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	if (send_msg(context_internal->sockfd, &open_msg, sizeof(struct com_msg_open_session),
 		     fd_write_mutex) != sizeof(struct com_msg_open_session)) {
 		OT_LOG(LOG_ERR, "Failed to send message TEE");
-		goto err_com;
+		goto err_com_1;
 	}
 
 	/* Wait for answer */
 	com_ret = com_recv_msg(context_internal->sockfd, (void **)(&recv_msg), NULL);
 	if (com_ret == -1) {
 		OT_LOG(LOG_ERR, "Socket error");
-		goto err_com;
+		goto err_com_1;
 
 	} else if (com_ret > 0) {
 		OT_LOG(LOG_ERR, "Received bad message, discarding");
@@ -669,7 +668,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 		 * incomming. Error or Response to open session message. Worst case situation is
 		 * that task is complited, but message delivery only failed. Just report
 		 * communication error and dump problem "upper layer". */
-		goto err_com;
+		goto err_com_1;
 	}
 
 	if (pthread_mutex_unlock(&context_internal->mutex))
@@ -679,7 +678,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	if (!verify_msg_name_and_type(recv_msg, COM_MSG_NAME_OPEN_SESSION, COM_TYPE_RESPONSE)) {
 		if (!get_return_vals_from_err_msg(recv_msg, &result, return_origin)) {
 			OT_LOG(LOG_ERR, "Received unknow message")
-			goto err_com;
+			goto err_com_2;
 		}
 
 		goto err_msg;
@@ -701,15 +700,17 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	free(recv_msg);
 	return result;
 
-err_com:
+
+err_com_1:
+	if (pthread_mutex_unlock(&context_internal->mutex))
+		OT_LOG(LOG_ERR, "Failed to unlock mutex");
+
+err_com_2:
 	if (return_origin)
 		*return_origin = TEE_ORIGIN_COMMS;
 	result = TEEC_ERROR_COMMUNICATION;
 
 err_msg:
-	if (pthread_mutex_unlock(&context_internal->mutex))
-		OT_LOG(LOG_ERR, "Failed to unlock mutex");
-
 mutex_fail:
 	free(recv_msg);
 	free(session_internal);
