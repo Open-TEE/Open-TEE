@@ -384,15 +384,11 @@ static bool verify_msg_name_and_type(void *msg, uint8_t expected_name, uint8_t e
 		return false;
 	}
 
-	if (msg_name != expected_name) {
-		OT_LOG(LOG_ERR, "Not expexted name of the message");
+	if (msg_name != expected_name)
 		return false;
-	}
 
-	if (msg_type != expected_type) {
-		OT_LOG(LOG_ERR, "Not expexted type of the message");
+	if (msg_type != expected_type)
 		return false;
-	}
 
 	return true;
 }
@@ -681,8 +677,10 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 
 	/* Check received message */
 	if (!verify_msg_name_and_type(recv_msg, COM_MSG_NAME_OPEN_SESSION, COM_TYPE_RESPONSE)) {
-		if (!get_return_vals_from_err_msg(recv, &result, return_origin))
+		if (!get_return_vals_from_err_msg(recv_msg, &result, return_origin)) {
+			OT_LOG(LOG_ERR, "Received unknow message")
 			goto err_com;
+		}
 
 		goto err_msg;
 	}
@@ -824,8 +822,10 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 
 	/* Check received message */
 	if (!verify_msg_name_and_type(recv_msg, COM_MSG_NAME_INVOKE_CMD, COM_TYPE_RESPONSE)) {
-		if (!get_return_vals_from_err_msg(recv, &result, return_origin))
+		if (!get_return_vals_from_err_msg(recv_msg, &result, return_origin)) {
+			OT_LOG(LOG_ERR, "Received unknow message")
 			goto err_com_2;
+		}
 
 		goto err_msg;
 	}
