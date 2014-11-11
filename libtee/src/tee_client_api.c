@@ -237,6 +237,62 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 	}
 }
 
+/*!
+ * \brief copy_internal_to_tee_operation
+ * When the response message comes from the TA we must copy the data back into the user defined
+ * operation
+ * \param operation The users operation
+ * \param internal_op The internal transport format
+ */
+static void copy_internal_to_tee_operation(TEEC_Operation *operation,
+					   struct com_msg_operation *internal_op)
+{
+	int i;
+	uint32_t param_types = operation->paramTypes;
+	TEEC_SharedMemory *mem_source;
+	struct shared_mem_internal *internal_imp;
+
+	for (i = 0; i < 4; i++) {
+		if (TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_NONE) {
+			continue;
+		} else if (TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_VALUE_OUTPUT ||
+			   TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_VALUE_INOUT) {
+
+			memcpy(&operation->params[i].value,
+			       &internal_op->params[i].value, sizeof(TEEC_Value));
+
+		} else if (TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_TEMP_INOUT ||
+			   TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_TEMP_OUTPUT) {
+			/* TODO: this needs to be registered as shared memory and
+			 * the data copied there*/
+		} else if (TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_WHOLE ||
+			   TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_PARTIAL_OUTPUT ||
+			   TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_PARTIAL_INOUT) {
+
+			mem_source = operation->params[i].memref.parent;
+			if (mem_source) {
+
+				/* We have some shared memory area */
+				internal_imp = (struct shared_mem_internal *)mem_source->imp;
+				if (internal_imp->type == REGISTERED) {
+
+					/* Copy the data from the shared memory region back into
+					 * the buffer registered by the user
+					 */
+					if (!mem_source->buffer || !(internal_imp->reg_address)) {
+						OT_LOG(LOG_ERR, "Invalid Buffer ??");
+						continue;
+					}
+
+					memcpy(mem_source->buffer,
+					       internal_imp->reg_address,
+					       mem_source->size);
+				}
+			}
+		}
+	}
+}
+
 static int send_msg(int fd, void *msg, int msg_len, pthread_mutex_t mutex)
 {
 	int ret;
@@ -633,7 +689,8 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	if (return_origin)
 		*return_origin = recv_msg->return_origin;
 
-	/* ## TODO/NOTE: Take operation parameter from message! ## */
+	/* copy back the response data contained in the operation */
+	copy_internal_to_tee_operation(operation, &open_msg.operation);
 
 	session_internal->sockfd = context_internal->sockfd;
 	session_internal->mutex = context_internal->mutex;
@@ -770,7 +827,8 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 	if (return_origin)
 		*return_origin = recv_msg->return_origin;
 
-	/* ## TODO/NOTE: Take operation parameter from message! ## */
+	/* copy back the response data contained in the operation */
+	copy_internal_to_tee_operation(operation, &invoke_msg.operation);
 
 	free(recv_msg);
 	return result;
