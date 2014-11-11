@@ -767,17 +767,20 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 
 	command_id = command_id; /* Not used on purpose. Reminding about implement memory stuff */
 
-	if (!session || !operation) {
-		OT_LOG(LOG_ERR, "session or operation NULL or session not initialized")
+	if (!session) {
+		OT_LOG(LOG_ERR, "session NULL")
 		if (return_origin)
 			*return_origin = TEE_ORIGIN_API;
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
 	session_internal = (struct session_internal *)session->imp;
-	if (!session_internal)
+	if (!session_internal) {
+		OT_LOG(LOG_ERR, "session not initialized")
+		if (return_origin)
+			*return_origin = TEE_ORIGIN_API;
 		return TEEC_ERROR_BAD_PARAMETERS;
-
+	}
 	/* Fill message */
 	invoke_msg.msg_hdr.msg_name = COM_MSG_NAME_INVOKE_CMD;
 	invoke_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
