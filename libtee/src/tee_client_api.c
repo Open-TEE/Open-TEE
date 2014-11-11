@@ -424,14 +424,15 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	/* Init context mutex */
 	if (pthread_mutex_init(&inter_imp->mutex, NULL)) {
 		OT_LOG(LOG_ERR, "Failed to init mutex")
-		return TEEC_ERROR_GENERIC;
+		ret = TEEC_ERROR_GENERIC;
+		goto err_1;
 	}
 
 	inter_imp->sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (inter_imp->sockfd == -1) {
 		OT_LOG(LOG_ERR, "Socket creation failed")
 		ret = TEEC_ERROR_COMMUNICATION;
-		goto err_1;
+		goto err_2;
 	}
 
 	memset(&sock_addr, 0, sizeof(struct sockaddr_un));
@@ -442,7 +443,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 		    (struct sockaddr *)&sock_addr, sizeof(struct sockaddr_un)) == -1) {
 		OT_LOG(LOG_ERR, "Failed to connect to TEE")
 		ret = TEEC_ERROR_COMMUNICATION;
-		goto err_2;
+		goto err_3;
 	}
 
 	/* Fill init message */
@@ -455,7 +456,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 		     fd_write_mutex) != sizeof(struct com_msg_ca_init_tee_conn)) {
 		OT_LOG(LOG_ERR, "Failed to send context initialization msg");
 		ret = TEEC_ERROR_COMMUNICATION;
-		goto err_2;
+		goto err_3;
 	}
 
 	/* Wait for answer */
@@ -465,18 +466,18 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	if (com_ret == -1) {
 		OT_LOG(LOG_ERR, "Socket error");
 		ret = TEEC_ERROR_COMMUNICATION;
-		goto err_2;
+		goto err_3;
 
 	} else if (com_ret > 0) {
 		OT_LOG(LOG_ERR, "Received bad message, discarding");
 		ret = TEEC_ERROR_COMMUNICATION;
-		goto err_2;
+		goto err_3;
 	}
 
 	/* Check received message */
 	if (!verify_msg_name_and_type(recv_msg, COM_MSG_NAME_CA_INIT_CONTEXT, COM_TYPE_RESPONSE)) {
 		ret = TEEC_ERROR_COMMUNICATION;
-		goto err_2;
+		goto err_3;
 	}
 
 	tee_conn_ctx_state = TEE_CONN_CTX_INIT;
@@ -487,10 +488,11 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 
 	return ret;
 
-err_2:
+err_3:
 	close(inter_imp->sockfd);
-err_1:
+err_2:
 	pthread_mutex_destroy(&inter_imp->mutex);
+err_1:
 	free(recv_msg);
 	free(inter_imp);
 
@@ -648,7 +650,8 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 		OT_LOG(LOG_ERR, "Failed to lock mutex");
 		if (return_origin)
 			*return_origin = TEE_ORIGIN_API;
-		return TEEC_ERROR_GENERIC;
+		result = TEEC_ERROR_GENERIC;
+		goto mutex_fail;
 	}
 
 	/* Message filled. Send message */
@@ -690,7 +693,8 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 		*return_origin = recv_msg->return_origin;
 
 	/* copy back the response data contained in the operation */
-	copy_internal_to_tee_operation(operation, &open_msg.operation);
+	if (operation)
+		copy_internal_to_tee_operation(operation, &open_msg.operation);
 
 	session_internal->sockfd = context_internal->sockfd;
 	session_internal->mutex = context_internal->mutex;
@@ -708,6 +712,7 @@ err_msg:
 	if (pthread_mutex_unlock(&context_internal->mutex))
 		OT_LOG(LOG_ERR, "Failed to unlock mutex");
 
+mutex_fail:
 	free(recv_msg);
 	free(session_internal);
 	session->imp = NULL;
@@ -828,7 +833,8 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 		*return_origin = recv_msg->return_origin;
 
 	/* copy back the response data contained in the operation */
-	copy_internal_to_tee_operation(operation, &invoke_msg.operation);
+	if (operation)
+		copy_internal_to_tee_operation(operation, &invoke_msg.operation);
 
 	free(recv_msg);
 	return result;
