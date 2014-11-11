@@ -21,19 +21,29 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 static const TEEC_UUID uuid = {
 	0x3E93632E, 0xA710, 0x469E, { 0xAC, 0xC8, 0x5E, 0xDF, 0x8C, 0x85, 0x90, 0xE1 }
 };
 
+#define DUMMY_DATA_SIZE 1024
+
 int main()
 {
 	TEEC_Context context;
 	TEEC_Session session;
+	TEEC_SharedMemory inout_mem;
 	TEEC_Operation operation;
 	TEEC_Result ret;
 	uint32_t return_origin;
 	uint32_t connection_method = TEEC_LOGIN_PUBLIC;
+	uint8_t dummy_data_arr[DUMMY_DATA_SIZE];
+	int32_t dummy_value = 55;
+
+	memset((void *)&inout_mem, 0, sizeof(inout_mem));
+	memset((void *)&operation, 0, sizeof(operation));
+	memset(dummy_data_arr, 'x', sizeof(dummy_data_arr));
 
 	printf("START: conn test app\n");
 
@@ -47,9 +57,25 @@ int main()
 		printf("initiliazed\n");
 	}
 
+	inout_mem.buffer = dummy_data_arr;
+	inout_mem.size = DUMMY_DATA_SIZE;
+	inout_mem.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
+
+	ret = TEEC_RegisterSharedMemory(&context, &inout_mem);
+	if (ret != TEE_SUCCESS) {
+		printf("Failed to register shared memory");
+		goto end_1;
+	}
+
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INOUT, TEEC_MEMREF_WHOLE,
+						TEEC_NONE, TEEC_NONE);
+
+	operation.params[0].value.a = dummy_value;
+	operation.params[1].memref.parent = &inout_mem;
+
 	/* Open session */
 	printf("Openning session: ");
-	ret = TEEC_OpenSession(&context, &session, &uuid, connection_method, NULL, NULL,
+	ret = TEEC_OpenSession(&context, &session, &uuid, connection_method, NULL, &operation,
 			       &return_origin);
 	if (ret != TEEC_SUCCESS) {
 		printf("TEEC_OpenSession failed: 0x%x\n", ret);
@@ -76,6 +102,7 @@ end_3:
 	printf("Closed\n");
 
 end_2:
+	TEEC_ReleaseSharedMemory(&inout_mem);
 	printf("Finalizing ctx: ");
 	TEEC_FinalizeContext(&context);
 	printf("Finalized\n");
