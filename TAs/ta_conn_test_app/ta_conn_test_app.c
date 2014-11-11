@@ -56,6 +56,8 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 
 	for (i = 0; i < 20; i++) {
 		OT_LOG(LOG_ERR, "Mem value : %c", mem_data[i]);
+		/* return some data to the user */
+		mem_data[i] = 'y';
 	}
 
 	return TEE_SUCCESS;
