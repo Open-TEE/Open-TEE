@@ -49,7 +49,7 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 
 	OT_LOG(LOG_ERR, "param value is %d", params[0].value.a);
 
-	OT_LOG(LOG_ERR, "param mem data size is %d", params[1].memref.size);
+	OT_LOG(LOG_ERR, "param mem data size is %zu", params[1].memref.size);
 
 	if (params[1].memref.buffer == NULL)
 		OT_LOG(LOG_ERR, "NULL ???????????????");
