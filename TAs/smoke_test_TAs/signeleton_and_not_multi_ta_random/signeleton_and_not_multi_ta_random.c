@@ -41,14 +41,17 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
 	//OT_LOG(LOG_ERR, "Calling the create entry point");
 
-	return naive_return_value_generator();
+	if (!naive_return_value_generator())
+		return TEE_ERROR_GENERIC;
+	else
+		return TEE_SUCCESS;
 }
 
 void TA_EXPORT TA_DestroyEntryPoint(void)
 {
 	//OT_LOG(LOG_ERR, "Calling the Destroy entry point");
 
-	if (naive_return_value_generator() != TEE_SUCCESS)
+	if (!naive_return_value_generator() != TEE_SUCCESS)
 		exit(4); /* TA_STATE_PANICKED */
 }
 
@@ -61,7 +64,10 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 
 	//OT_LOG(LOG_ERR, "Calling the Open session entry point");
 
-	return naive_return_value_generator();
+	if (!naive_return_value_generator())
+		return TEE_ERROR_GENERIC;
+	else
+		return TEE_SUCCESS;
 }
 
 void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
@@ -70,7 +76,7 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 
 	//OT_LOG(LOG_ERR, "Calling the Close session entry point");
 
-	if (naive_return_value_generator() != TEE_SUCCESS)
+	if (!naive_return_value_generator() != TEE_SUCCESS)
 		exit(4); /* TA_STATE_PANICKED */
 }
 
@@ -84,5 +90,8 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t c
 
 	//OT_LOG(LOG_ERR, "Calling the Invoke command entry point");
 
-	return naive_return_value_generator();
+	if (!naive_return_value_generator())
+		return TEE_ERROR_GENERIC;
+	else
+		return TEE_SUCCESS;
 }
