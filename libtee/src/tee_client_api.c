@@ -640,6 +640,9 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 
 	if (operation)
 		copy_tee_operation_to_internal(operation, &open_msg.operation);
+	else
+		open_msg.operation.paramTypes = TEEC_PARAM_TYPES(TEEC_NONE, TEEC_NONE,
+								 TEEC_NONE, TEEC_NONE);
 
 	if (pthread_mutex_lock(&context_internal->mutex)) {
 		OT_LOG(LOG_ERR, "Failed to lock mutex");
@@ -787,6 +790,9 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 
 	if (operation)
 		copy_tee_operation_to_internal(operation, &invoke_msg.operation);
+	else
+		invoke_msg.operation.paramTypes = TEEC_PARAM_TYPES(TEEC_NONE, TEEC_NONE,
+								   TEEC_NONE, TEEC_NONE);
 
 	/* Message filled. Send message */
 	if (pthread_mutex_lock(&session_internal->mutex)) {
