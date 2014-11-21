@@ -84,7 +84,6 @@ struct session_internal {
 static TEEC_Result create_shared_mem_internal(TEEC_Context *context, TEEC_SharedMemory *shared_mem,
 					      enum mem_type type)
 {
-	int flag = 0;
 	int fd;
 	void *address = NULL;
 	TEEC_Result ret = TEEC_SUCCESS;
@@ -108,12 +107,7 @@ static TEEC_Result create_shared_mem_internal(TEEC_Context *context, TEEC_Shared
 		goto errorExit;
 	}
 
-	if ((shared_mem->flags & TEEC_MEM_OUTPUT) && !(shared_mem->flags & TEEC_MEM_INPUT))
-		flag |= O_RDONLY; /* It is an outbuffer only so we just need read access */
-	else
-		flag |= O_RDWR;
-
-	fd = shm_open(internal_imp->shm_uuid, (flag | O_CREAT | O_EXCL),
+	fd = shm_open(internal_imp->shm_uuid, (O_RDWR | O_CREAT | O_EXCL),
 		      (S_IRUSR | S_IRGRP | S_IWUSR | S_IWGRP));
 	if (fd == -1) {
 		OT_LOG(LOG_ERR, "Failed to open the shared memory");
@@ -124,7 +118,7 @@ static TEEC_Result create_shared_mem_internal(TEEC_Context *context, TEEC_Shared
 	/* if ftruncate 0 is used this will result in no file being created, mmap will fail below */
 	if (ftruncate(fd, shared_mem->size != 0 ? shared_mem->size : 1) == -1) {
 		ret = TEEC_ERROR_GENERIC;
-		OT_LOG(LOG_ERR, "Failed to truncate");
+		OT_LOG(LOG_ERR, "Failed to truncate: %d", errno);
 		goto errorTruncate;
 	}
 
@@ -133,7 +127,7 @@ static TEEC_Result create_shared_mem_internal(TEEC_Context *context, TEEC_Shared
 	 */
 	address =
 	    mmap(NULL, shared_mem->size != 0 ? shared_mem->size : 1,
-		 ((flag == O_RDONLY) ? PROT_READ : (PROT_WRITE | PROT_READ)), MAP_SHARED, fd, 0);
+		 (PROT_WRITE | PROT_READ), MAP_SHARED, fd, 0);
 	if (address == MAP_FAILED) {
 		OT_LOG(LOG_ERR, "Failed to MMAP");
 		ret = TEEC_ERROR_OUT_OF_MEMORY;
@@ -767,8 +761,6 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 	TEEC_Result result = TEEC_SUCCESS;
 	struct session_internal *session_internal;
 
-	command_id = command_id; /* Not used on purpose. Reminding about implement memory stuff */
-
 	if (!session) {
 		OT_LOG(LOG_ERR, "session NULL")
 		if (return_origin)
@@ -787,6 +779,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 	invoke_msg.msg_hdr.msg_name = COM_MSG_NAME_INVOKE_CMD;
 	invoke_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
 	invoke_msg.msg_hdr.sess_id = session_internal->sess_id;
+	invoke_msg.cmd_id = command_id;
 
 	if (operation)
 		copy_tee_operation_to_internal(operation, &invoke_msg.operation);
