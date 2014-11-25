@@ -24,16 +24,24 @@
 #include <string.h>
 
 static const TEEC_UUID uuid = {
-	0x12345678, 0x8765, 0x4321, { 'S', 'H', 'A', '1', '0', '0', '0', '0'}
+	0x12345678, 0x8765, 0x4321, { 'D', 'I', 'G', 'E', 'S', 'T', '0', '0'}
 };
 
 /* Data buffer sizes */
 #define DATA_SIZE	256
 #define SHA1_SIZE	20
 
-/* SHA1 TA command IDs */
-#define SHA1_UPDATE	0x00000001
-#define SHA1_DO_FINAL	0x00000002
+/* Hash TA command IDs for this applet */
+#define HASH_UPDATE	0x00000001
+#define HASH_DO_FINAL	0x00000002
+
+/* Hash algoithm */
+#define HASH_MD5	0x00000001
+#define HASH_SHA1	0x00000002
+#define HASH_SHA224	0x00000003
+#define HASH_SHA256	0x00000004
+#define HASH_SHA384	0x00000005
+#define HASH_SHA512	0x00000006
 
 int main()
 {
@@ -67,10 +75,14 @@ int main()
 		printf("initiliazed\n");
 	}
 
+	/* Open session is expecting HASH algorithm */
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_NONE, TEEC_NONE, TEEC_NONE);
+	operation.params[0].value.a = HASH_SHA1;
+
 	/* Open session */
 	printf("Openning session: ");
 	ret = TEEC_OpenSession(&context, &session, &uuid, connection_method,
-			       NULL, NULL, &return_origin);
+			       NULL, &operation, &return_origin);
 	if (ret != TEEC_SUCCESS) {
 		printf("TEEC_OpenSession failed: 0x%x\n", ret);
 		goto end_2;
@@ -98,7 +110,7 @@ int main()
 
 	/* Invoke command */
 	printf("Invoking command: Update sha1: ");
-	ret = TEEC_InvokeCommand(&session, SHA1_UPDATE, &operation, &return_origin);
+	ret = TEEC_InvokeCommand(&session, HASH_UPDATE, &operation, &return_origin);
 	if (ret != TEEC_SUCCESS) {
 		printf("TEEC_InvokeCommand failed: 0x%x\n", ret);
 		goto end_3;
@@ -137,7 +149,7 @@ int main()
 
 	/* Invoke command */
 	printf("Invoking command: Do final sha1: ");
-	ret = TEEC_InvokeCommand(&session, SHA1_DO_FINAL, &operation, &return_origin);
+	ret = TEEC_InvokeCommand(&session, HASH_DO_FINAL, &operation, &return_origin);
 	if (ret != TEEC_SUCCESS) {
 		printf("TEEC_InvokeCommand failed: 0x%x\n", ret);
 		goto end_4;
