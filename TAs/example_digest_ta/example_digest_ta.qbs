@@ -1,7 +1,7 @@
 import qbs
 
 DynamicLibrary {
-    name: "example_sha1_ta"
+    name: "example_digest_ta"
     Depends { name: "cpp" }
     Depends { name: "InternalApi" }
 
@@ -10,5 +10,5 @@ DynamicLibrary {
     destinationDirectory: './TAs'
     cpp.defines: ["TA_PLUGIN"]
 
-    files: ["example_sha1_ta.c", "../include/tee_ta_properties.h"]
+    files: ["example_digest_ta.c", "../include/tee_ta_properties.h"]
 }

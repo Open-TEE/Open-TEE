@@ -17,7 +17,7 @@
 /* NOTE!!
  *
  * This is an example. It might not have the most perfect design choices and implementation.
- * It is servinc purpose of showing how you could do the most simplest SHA hash
+ * It is servinc purpose of showing how you could do the most simplest SHA/MD5 hash
  *
  * NOTE!!
  */
@@ -30,7 +30,7 @@
 
 /* UUID must be unique */
 SET_TA_PROPERTIES(
-    { 0x12345678, 0x8765, 0x4321, { 'S', 'H', 'A', '1', '0', '0', '0', '0'} }, /* UUID */
+	{ 0x12345678, 0x8765, 0x4321, { 'D', 'I', 'G', 'E', 'S', 'T', '0', '0'} }, /* UUID */
 		512, /* dataSize */
 		255, /* stackSize */
 		1, /* singletonInstance */
@@ -38,9 +38,17 @@ SET_TA_PROPERTIES(
 		1) /* instanceKeepAlive */
 #endif
 
-/* SHA1 TA command IDs for this applet */
-#define SHA1_UPDATE	0x00000001
-#define SHA1_DO_FINAL	0x00000002
+/* Hash TA command IDs for this applet */
+#define HASH_UPDATE	0x00000001
+#define HASH_DO_FINAL	0x00000002
+
+/* Hash algorithm identifier */
+#define HASH_MD5	0x00000001
+#define HASH_SHA1	0x00000002
+#define HASH_SHA224	0x00000003
+#define HASH_SHA256	0x00000004
+#define HASH_SHA384	0x00000005
+#define HASH_SHA512	0x00000006
 
 TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
@@ -61,14 +69,45 @@ void TA_EXPORT TA_DestroyEntryPoint(void)
 TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 					      TEE_Param params[4], void **sessionContext)
 {
-	/* Only session ctx is needed */
+	algorithm_Identifier hash;
+
+	/* Parameter type is not needed */
 	paramTypes = paramTypes;
-	params = params;
 
 	OT_LOG(LOG_ERR, "Calling the Open session entry point");
 
+	switch (params[0].value.a) {
+	case HASH_MD5:
+		hash = TEE_ALG_MD5;
+		break;
+
+	case HASH_SHA1:
+		hash = TEE_ALG_SHA1;
+		break;
+
+	case HASH_SHA224:
+		hash = TEE_ALG_SHA224;
+		break;
+
+	case HASH_SHA256:
+		hash = TEE_ALG_SHA256;
+		break;
+
+	case HASH_SHA384:
+		hash = TEE_ALG_SHA384;
+		break;
+
+	case HASH_SHA512:
+		hash = TEE_ALG_SHA512;
+		break;
+
+	default:
+		OT_LOG(LOG_ERR, "Unknow hash algorithm")
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
 	return TEE_AllocateOperation((TEE_OperationHandle *)sessionContext,
-				     TEE_ALG_SHA1, TEE_MODE_DIGEST, 0);
+				     hash, TEE_MODE_DIGEST, 0);
 }
 
 void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
@@ -85,11 +124,11 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t c
 
 	OT_LOG(LOG_ERR, "Calling the Invoke command entry point");
 
-	if (commandID == SHA1_UPDATE) {
+	if (commandID == HASH_UPDATE) {
 
 		TEE_DigestUpdate(sessionContext, params[0].memref.buffer, params[0].memref.size);
 
-	} else if (commandID == SHA1_DO_FINAL) {
+	} else if (commandID == HASH_DO_FINAL) {
 
 		return TEE_DigestDoFinal(sessionContext, params[0].memref.buffer,
 				params[0].memref.size, params[1].memref.buffer,
