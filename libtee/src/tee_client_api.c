@@ -682,13 +682,16 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	}
 
 	/* Message received succesfully */
-	result = recv_msg->return_code_open_session;
 	if (return_origin)
 		*return_origin = recv_msg->return_origin;
+	result = recv_msg->return_code_open_session;
 
 	/* copy back the response data contained in the operation */
 	if (operation)
 		copy_internal_to_tee_operation(operation, &open_msg.operation);
+
+	if (result != TEE_SUCCESS)
+		goto err_ret;
 
 	session_internal->sockfd = context_internal->sockfd;
 	session_internal->mutex = context_internal->mutex;
@@ -707,6 +710,7 @@ err_com_2:
 		*return_origin = TEE_ORIGIN_COMMS;
 	result = TEEC_ERROR_COMMUNICATION;
 
+err_ret:
 err_msg:
 mutex_fail:
 	free(recv_msg);
