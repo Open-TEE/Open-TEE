@@ -58,6 +58,7 @@
 #define COM_MSG_NAME_PROC_STATUS_CHANGE		0x07
 #define COM_MSG_NAME_FD_ERR			0x08
 #define COM_MSG_NAME_ERROR			0x09
+#define COM_MSG_NAME_TA_REM_FROM_DIR		0x0A
 
 /* Request is used internally */
 #define COM_TYPE_QUERY				1
@@ -201,6 +202,15 @@ struct com_msg_error {
 	struct com_msg_hdr msg_hdr;
 	TEE_Result ret;
 	uint32_t ret_origin;
+} __attribute__((aligned));
+
+/*!
+ * \brief The com_msg_ta_rem_from_dir struct
+ * File removed from TA folder
+ */
+struct com_msg_ta_rem_from_dir {
+	struct com_msg_hdr msg_hdr;
+	TEE_UUID uuid;
 } __attribute__((aligned));
 
 /*
