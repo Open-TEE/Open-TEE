@@ -1,0 +1,40 @@
+# crypto_test executable
+
+check_PROGRAMS += crypto_test
+
+crypto_test_includes = \
+	../emulator/include/tee_internal_api.h \
+	../emulator/include/tee_logging.h \
+	../emulator/internal_api/tee_object_handle.h
+
+crypto_test_SOURCES = ${crypto_test_include} \
+	internal_api/crypto_test.c
+
+crypto_test_CFLAGS = ${AM_CFLAGS} \
+	-iquote $(top_srcdir)/../emulator/include
+
+crypto_test_LDFLAGS = ${AM_LDFLAGS} \
+	-lcrypto
+
+crypto_test_LDADD = ../emulator/libInternalApi.la
+
+# storage_test executable
+
+check_PROGRAMS += storage_test
+
+storage_test_includes = \
+	../emulator/include/tee_internal_api.h \
+	../emulator/include/tee_logging.h \
+	../emulator/internal_api/tee_object_handle.h
+
+storage_test_SOURCES = ${storage_test_include} \
+	internal_api/storage_test.c
+
+storage_test_CFLAGS = ${AM_CFLAGS} \
+	-iquote $(top_srcdir)/../emulator/include
+
+storage_test_LDFLAGS = ${AM_LDFLAGS} \
+	 -lcrypto
+
+storage_test_LDADD = ../emulator/libInternalApi.la
+
