@@ -59,6 +59,7 @@
 #define COM_MSG_NAME_FD_ERR			0x08
 #define COM_MSG_NAME_ERROR			0x09
 #define COM_MSG_NAME_TA_REM_FROM_DIR		0x0A
+#define COM_MSG_NAME_REQUEST_CANCEL		0x0B
 
 /* Request is used internally */
 #define COM_TYPE_QUERY				1
@@ -87,6 +88,7 @@ struct com_msg_hdr {
  */
 struct com_msg_ca_init_tee_conn {
 	struct com_msg_hdr msg_hdr;
+	uint64_t operation_id;
 	TEE_Result ret;
 } __attribute__((aligned));
 
@@ -113,9 +115,10 @@ union com_msg_param {
  * The operation that is shared between the client and TA
  */
 struct com_msg_operation {
+	uint64_t operation_id;
 	uint32_t paramTypes;
 	union com_msg_param params[4];
-};
+} __attribute__((aligned));
 
 /*!
  * \brief The com_msg_open_session struct
@@ -212,6 +215,16 @@ struct com_msg_ta_rem_from_dir {
 	struct com_msg_hdr msg_hdr;
 	TEE_UUID uuid;
 } __attribute__((aligned));
+
+/*!
+ * \brief The com_msg_request_cancellation struct
+ * Requestion operation cancellation. Message is send by CA
+ */
+struct com_msg_request_cancellation  {
+	struct com_msg_hdr msg_hdr;
+	uint64_t operation_id;
+} __attribute__((aligned));
+
 
 /*
  *  ## Message section end ##

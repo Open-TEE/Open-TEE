@@ -116,6 +116,7 @@ typedef struct {
 	uint32_t paramTypes; /*!< Encodes the type of each paramater that is being transfered */
 	TEEC_Parameter params[4]; /*!< an array of 4 possible paramaters to share with TA */
 	/* TODO what should be done about the opaque type <implementation defined> section */
+	void *imp;
 } TEEC_Operation;
 
 /*

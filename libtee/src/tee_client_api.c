@@ -38,8 +38,19 @@ pthread_mutex_t fd_write_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* tee_conn_ctx_state -variable is used for limiting one connection to TEE */
 static int tee_conn_ctx_state;
-#define TEE_CONN_CTX_INIT	1
-#define TEE_CONN_CTX_NOT_INIT	0
+#define TEE_CONN_CTX_INIT		1
+#define TEE_CONN_CTX_NOT_INIT		0
+
+#define TEE_OPERATION_STARTED		0x38fa84fb
+
+struct operation_info {
+	uint64_t operation_id; /*!< Unique indefier between difrent CAs */
+	int sockfd; /*!< Which socked is used for TEE communication */
+};
+
+/* Before Invoke and open session executing, this struct is filled. It is used in request
+ * cancel function, if CA is using that */
+static struct operation_info pending_operation;
 
 enum mem_type {
 	REGISTERED = 0,
@@ -470,6 +481,11 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 		goto err_3;
 	}
 
+	/* Fill operation info structure. This is used for requesting cancelation */
+	pending_operation.operation_id =
+			((struct com_msg_ca_init_tee_conn *)recv_msg)->operation_id;
+	pending_operation.sockfd = inter_imp->sockfd;
+
 	tee_conn_ctx_state = TEE_CONN_CTX_INIT;
 	ret = recv_msg->ret;
 	free(recv_msg);
@@ -608,6 +624,16 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
+	if (operation && operation->started) {
+		OT_LOG(LOG_ERR, "Invalid operation state. Operation started. It should be zero")
+		if (return_origin)
+			*return_origin = TEE_ORIGIN_API;
+		return TEEC_ERROR_BAD_PARAMETERS;
+	}
+
+	if (operation)
+		operation->imp = operation;
+
 	if (connection_method != TEEC_LOGIN_PUBLIC) {
 		OT_LOG(LOG_ERR, "Only public login method supported");
 		connection_data = connection_data; /* Not used */
@@ -650,6 +676,10 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 		goto mutex_fail;
 	}
 
+	/* Check can if operation may be canceled */
+	if (operation && !operation->imp)
+		goto op_cancel;
+
 	/* Message filled. Send message */
 	if (send_msg(context_internal->sockfd, &open_msg, sizeof(struct com_msg_open_session),
 		     fd_write_mutex) != sizeof(struct com_msg_open_session)) {
@@ -657,8 +687,17 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 		goto err_com_1;
 	}
 
+	/* Operation send to TA -> operation started */
+	if (operation)
+		operation->started = TEE_OPERATION_STARTED;
+
 	/* Wait for answer */
 	com_ret = com_recv_msg(context_internal->sockfd, (void **)(&recv_msg), NULL);
+
+	/* Received message -> operation returned from TEE */
+	if (operation)
+		operation->started = 0;
+
 	if (com_ret == -1) {
 		OT_LOG(LOG_ERR, "Socket error");
 		goto err_com_1;
@@ -671,6 +710,9 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 		 * communication error and dump problem "upper layer". */
 		goto err_com_1;
 	}
+
+	if (operation)
+		operation->started = 0;
 
 	if (pthread_mutex_unlock(&context_internal->mutex))
 		OT_LOG(LOG_ERR, "Failed to unlock mutex"); /* No action */
@@ -714,6 +756,9 @@ err_com_2:
 		*return_origin = TEE_ORIGIN_COMMS;
 	result = TEEC_ERROR_COMMUNICATION;
 
+	if (operation)
+		operation->started = 0;
+
 err_ret:
 err_msg:
 mutex_fail:
@@ -721,6 +766,16 @@ mutex_fail:
 	free(session_internal);
 	session->imp = NULL;
 	return result;
+
+op_cancel:
+	if (pthread_mutex_unlock(&context_internal->mutex))
+		OT_LOG(LOG_ERR, "Failed to unlock mutex");
+
+	if (return_origin)
+		*return_origin = TEE_ORIGIN_API;
+	free(session_internal);
+	session->imp = NULL;
+	return TEEC_ERROR_CANCEL;
 }
 
 void TEEC_CloseSession(TEEC_Session *session)
@@ -776,6 +831,16 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
+	if (operation && operation->started) {
+		OT_LOG(LOG_ERR, "Invalid operation state. Operation started. It should be zero")
+		if (return_origin)
+			*return_origin = TEE_ORIGIN_API;
+		return TEEC_ERROR_BAD_PARAMETERS;
+	}
+
+	if (operation)
+		operation->imp = operation;
+
 	session_internal = (struct session_internal *)session->imp;
 	if (!session_internal) {
 		OT_LOG(LOG_ERR, "session not initialized")
@@ -803,6 +868,10 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 		return TEEC_ERROR_GENERIC;
 	}
 
+	/* Check can if operation may be canceled */
+	if (operation && !operation->imp)
+		goto op_cancel;
+
 	/* Message filled. Send message */
 	if (send_msg(session_internal->sockfd, &invoke_msg,
 		     sizeof(struct com_msg_invoke_cmd), fd_write_mutex) !=
@@ -811,8 +880,18 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 		goto err_com_1;
 	}
 
+	/* Operation send to TA -> operation started */
+	if (operation)
+		operation->started = TEE_OPERATION_STARTED;
+
 	/* Wait for answer */
 	com_ret = com_recv_msg(session_internal->sockfd, (void **)(&recv_msg), NULL);
+
+	/* Received message -> operation returned from TEE */
+	if (operation)
+		operation->started = 0;
+
+	/* Check received message */
 	if (com_ret == -1) {
 		OT_LOG(LOG_ERR, "Socket error")
 		goto err_com_1;
@@ -857,14 +936,46 @@ err_com_2:
 	if (return_origin)
 		*return_origin = TEE_ORIGIN_COMMS;
 	result = TEEC_ERROR_COMMUNICATION;
+
+	if (operation)
+		operation->started = 0;
 err_msg:
 	free(recv_msg);
 	return result;
+
+op_cancel:
+	if (pthread_mutex_unlock(&session_internal->mutex))
+		OT_LOG(LOG_ERR, "Failed to unlock mutex");
+
+	if (return_origin)
+		*return_origin = TEE_ORIGIN_API;
+	return TEEC_ERROR_CANCEL;
 }
 
 void TEEC_RequestCancellation(TEEC_Operation *operation)
 {
-	/* PLACEHOLDER */
+	struct com_msg_request_cancellation cancel_msg;
 
-	operation = operation;
+	if (!operation) {
+		OT_LOG(LOG_ERR, "Cancel not send, because opearion NULL")
+		return;
+	}
+
+	/* Set operation to be canceled. What is signaling operation cancelation is opeartion
+	 * imp-member. If imp NULL, operation is cancelled. */
+	operation->imp = NULL;
+
+	/* Operation may have send already to TEE. If started member NULL, operation is not send
+	 * to TEE and is queued in CA */
+	if (!operation->started) {
+		OT_LOG(LOG_ERR, "Cancel not send, because operation not yet started")
+		return;
+	}
+
+	cancel_msg.msg_hdr.msg_name = COM_MSG_NAME_REQUEST_CANCEL;
+	cancel_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
+	cancel_msg.operation_id = pending_operation.operation_id;
+
+	send_msg(pending_operation.sockfd, &cancel_msg,
+		 sizeof(struct com_msg_request_cancellation), fd_write_mutex);
 }
