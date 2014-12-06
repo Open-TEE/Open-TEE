@@ -1,0 +1,24 @@
+# libtee shared library
+
+lib_LTLIBRARIES += libtee.la
+
+libtee_la_includes = \
+	include/com_protocol.h \
+	include/tee_client_api.h \
+	include/tee_logging.h \
+	include/tee_shared_data_types.h
+	src/utils.h
+
+# Target specific variables
+libtee_la_SOURCES = \
+	src/com_protocol.c \
+	src/tee_client_api.c \
+	src/utils.c
+
+libtee_la_CFLAGS = ${AM_CFLAGS} \
+	-iquote $(top_srcdir)/include \
+	-iquote $(top_srcdir)/src
+
+libtee_la_LDFLAGS = ${AM_LDFLAGS} \
+	-version-info 0:0:0
+
