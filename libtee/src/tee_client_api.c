@@ -601,15 +601,19 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	struct context_internal *context_internal = NULL;
 	struct session_internal *session_internal = NULL;
 
-	/* Not used on purpose. Reminding about implement memory stuff. (only UUID is handeled) */
-	connection_method = connection_method;
-	connection_data = connection_data;
-
 	if (!context || !session || tee_conn_ctx_state != TEE_CONN_CTX_INIT) {
 		OT_LOG(LOG_ERR, "Context or session NULL or in improper state");
 		if (return_origin)
 			*return_origin = TEE_ORIGIN_API;
 		return TEEC_ERROR_BAD_PARAMETERS;
+	}
+
+	if (connection_method != TEEC_LOGIN_PUBLIC) {
+		OT_LOG(LOG_ERR, "Only public login method supported");
+		connection_data = connection_data; /* Not used */
+		if (return_origin)
+			*return_origin = TEE_ORIGIN_API;
+		return TEEC_ERROR_NOT_SUPPORTED;
 	}
 
 	context_internal = (struct context_internal *)context->imp;
