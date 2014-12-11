@@ -7,13 +7,11 @@ libtee_la_includes = \
 	include/tee_client_api.h \
 	include/tee_logging.h \
 	include/tee_shared_data_types.h
-	src/utils.h
 
 # Target specific variables
 libtee_la_SOURCES = \
 	src/com_protocol.c \
-	src/tee_client_api.c \
-	src/utils.c
+	src/tee_client_api.c
 
 libtee_la_CFLAGS = ${AM_CFLAGS} \
 	-iquote $(top_srcdir)/include \

@@ -5,7 +5,7 @@ AC_PREREQ([2.69])
 AC_INIT([libtee], [0.0.0], [https://github.com/Open-TEE/libtee/issues],
 	[libtee], [https://github.com/Open-TEE])
 AM_INIT_AUTOMAKE([dist-bzip2 foreign subdir-objects])
-AC_CONFIG_SRCDIR([src/utils.h])
+AC_CONFIG_SRCDIR([src/tee_client_api.c])
 AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.

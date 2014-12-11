@@ -4,7 +4,7 @@ DynamicLibrary {
     name: "tee"
     Depends { name: "cpp" }
     cpp.includePaths: ["include"]
-    cpp.dynamicLibraries: ["uuid", "rt", "crypt", "z"]
+    cpp.dynamicLibraries: ["rt", "z"]
 
     destinationDirectory: '.'
 
@@ -20,7 +20,5 @@ DynamicLibrary {
         "include/tee_shared_data_types.h",
         "src/com_protocol.c",
         "src/tee_client_api.c",
-        "src/utils.h",
-        "src/utils.c",
     ]
 }

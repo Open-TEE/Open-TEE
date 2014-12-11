@@ -43,6 +43,7 @@
 
 #include <limits.h>
 #include <stdint.h>
+#include <sys/types.h>
 
 #include "tee_shared_data_types.h"
 
@@ -60,6 +61,8 @@
 #define COM_MSG_NAME_ERROR			0x09
 #define COM_MSG_NAME_TA_REM_FROM_DIR		0x0A
 #define COM_MSG_NAME_REQUEST_CANCEL		0x0B
+#define COM_MSG_NAME_OPEN_SHM_REGION		0x0C
+#define COM_MSG_NAME_UNLINK_SHM_REGION		0x0D
 
 /* Request is used internally */
 #define COM_TYPE_QUERY				1
@@ -93,7 +96,7 @@ struct com_msg_ca_init_tee_conn {
 } __attribute__((aligned));
 
 /* The length of the name of the shm area */
-#define SHM_MEM_NAME_LEN 44
+#define SHM_MEM_NAME_LEN 45
 
 /*!
  * \brief The com_msg_param union
@@ -225,6 +228,25 @@ struct com_msg_request_cancellation  {
 	uint64_t operation_id;
 } __attribute__((aligned));
 
+/*!
+ * \brief The com_msg_get_shm_mem struct
+ * Requestion shared memory region
+ */
+struct com_msg_open_shm_region {
+	struct com_msg_hdr msg_hdr;
+	char name[SHM_MEM_NAME_LEN];
+	TEE_Result return_code;
+	int size;
+} __attribute__((aligned));
+
+/*!
+ * \brief The com_msg_unlink_shm_mem struct
+ * Unlink shared memory region
+ */
+struct com_msg_unlink_shm_region {
+	struct com_msg_hdr msg_hdr;
+	char name[SHM_MEM_NAME_LEN];
+} __attribute__((aligned));
 
 /*
  *  ## Message section end ##
