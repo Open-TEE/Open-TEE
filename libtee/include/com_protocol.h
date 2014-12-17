@@ -63,6 +63,7 @@
 #define COM_MSG_NAME_REQUEST_CANCEL		0x0B
 #define COM_MSG_NAME_OPEN_SHM_REGION		0x0C
 #define COM_MSG_NAME_UNLINK_SHM_REGION		0x0D
+#define COM_MSG_NAME_MANAGER_TERMINATION	0x0E
 
 /* Request is used internally */
 #define COM_TYPE_QUERY				1
@@ -246,6 +247,15 @@ struct com_msg_open_shm_region {
 struct com_msg_unlink_shm_region {
 	struct com_msg_hdr msg_hdr;
 	char name[SHM_MEM_NAME_LEN];
+} __attribute__((aligned));
+
+/*!
+ * \brief The com_msg_manager_termination struct
+ * Manager has received SIGTERM and it should gracefully shutdown
+ */
+struct com_msg_manager_termination {
+	struct com_msg_hdr msg_hdr;
+	/* Empty */
 } __attribute__((aligned));
 
 /*
