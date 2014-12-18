@@ -154,8 +154,7 @@ static int send_msg(int fd, void *msg, int msg_len, pthread_mutex_t mutex)
  * \param type The type of memory allocation \sa enum mem_type
  * \return TEEC_SUCCESS on success, other error on failure
  */
-static TEEC_Result create_shared_mem_internal(TEEC_Context *context, TEEC_SharedMemory *shared_mem,
-					      enum mem_type type)
+static TEEC_Result create_shared_mem_internal(TEEC_SharedMemory *shared_mem, enum mem_type type)
 {
 	int fd, com_ret;
 	void *address = NULL;
@@ -163,16 +162,6 @@ static TEEC_Result create_shared_mem_internal(TEEC_Context *context, TEEC_Shared
 	struct shared_mem_internal *internal_imp;
 	struct com_msg_open_shm_region open_shm;
 	struct com_msg_open_shm_region *recv_msg = NULL;
-
-	if (!context || !shared_mem) {
-		OT_LOG(LOG_ERR, "Context or shared memory pointer is NULL")
-		return TEEC_ERROR_BAD_PARAMETERS;
-	}
-
-	if (ctx_internal.ctx_status != CTX_INTERNAL_INIT) {
-		OT_LOG(LOG_ERR, "Initialize context before reg/alloc memory");
-		return TEEC_ERROR_BAD_PARAMETERS;
-	}
 
 	internal_imp = (struct shared_mem_internal *)calloc(1, sizeof(struct shared_mem_internal));
 	if (!internal_imp) {
@@ -594,17 +583,32 @@ err:
 
 TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context, TEEC_SharedMemory *shared_mem)
 {
-	if (!context || !shared_mem) {
-		OT_LOG(LOG_ERR, "Context NULL or shared mem NULL")
+	if (!context || ctx_internal.ctx_status != CTX_INTERNAL_INIT) {
+		OT_LOG(LOG_ERR, "Context NULL or Initialize context before reg/alloc memory")
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
-	return create_shared_mem_internal(context, shared_mem, REGISTERED);
+	if (!shared_mem || shared_mem->imp) {
+		OT_LOG(LOG_ERR, "Shared memory NULL or struct is already initialized")
+		return TEEC_ERROR_BAD_PARAMETERS;
+	}
+
+	return create_shared_mem_internal(shared_mem, REGISTERED);
 }
 
 TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context, TEEC_SharedMemory *shared_mem)
 {
-	return create_shared_mem_internal(context, shared_mem, ALLOCATED);
+	if (!context || ctx_internal.ctx_status != CTX_INTERNAL_INIT) {
+		OT_LOG(LOG_ERR, "Context NULL or Initialize context before reg/alloc memory")
+		return TEEC_ERROR_BAD_PARAMETERS;
+	}
+
+	if (!shared_mem || shared_mem->imp) {
+		OT_LOG(LOG_ERR, "Shared memory NULL or struct is already initialized")
+		return TEEC_ERROR_BAD_PARAMETERS;
+	}
+
+	return create_shared_mem_internal(shared_mem, ALLOCATED);
 }
 
 void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shared_mem)
@@ -622,6 +626,7 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shared_mem)
 
 	if (internal_imp->org_size == 0) {
 		free(internal_imp);
+		shared_mem->imp = NULL;
 		return;
 	}
 
