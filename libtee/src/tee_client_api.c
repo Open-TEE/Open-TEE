@@ -144,41 +144,53 @@ static int send_msg(int fd, void *msg, int msg_len, pthread_mutex_t mutex)
 	return ret;
 }
 
+static void free_shm_and_from_manager(struct shared_mem_internal *shm_internal)
+{
+	struct com_msg_unlink_shm_region unlink_msg;
+
+	if (shm_internal->org_size == 0)
+		return;
+
+	unlink_msg.msg_hdr.msg_name = COM_MSG_NAME_UNLINK_SHM_REGION;
+	unlink_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
+	unlink_msg.msg_hdr.sess_id = 0;
+	memcpy(unlink_msg.name, shm_internal->shm_uuid, SHM_MEM_NAME_LEN);
+
+	/* Message filled. Send message */
+	if (send_msg(ctx_internal.sockfd,
+		     &unlink_msg, sizeof(struct com_msg_unlink_shm_region),
+		     fd_write_mutex) != sizeof(struct com_msg_unlink_shm_region))
+		OT_LOG(LOG_ERR, "Failed to send message TEE");
+
+	/* Remove the memory mapped region and the shared memory */
+	munmap(shm_internal->reg_address, shm_internal->org_size);
+	shm_unlink(shm_internal->shm_uuid);
+}
 
 /*!
- * \brief create_shared_mem_internal
+ * \brief get_shm_from_manager_and_map_region
  * Create a memory mapped shared memory object that can be used to transfer data between the TEE
  * and the Client application
- * \param context The context to which we are registering the memory
- * \param shared_mem Shared memory object that contains the definition of the region we are creating
- * \param type The type of memory allocation \sa enum mem_type
+ * \param shm_internal Shared memory object that contains the
+ * definition of the region we are creating
  * \return TEEC_SUCCESS on success, other error on failure
  */
-static TEEC_Result create_shared_mem_internal(TEEC_SharedMemory *shared_mem, enum mem_type type)
+static TEEC_Result get_shm_from_manager_and_map_region(struct shared_mem_internal *shm_internal)
 {
-	int fd, com_ret;
-	void *address = NULL;
-	TEEC_Result result = TEEC_SUCCESS;
-	struct shared_mem_internal *internal_imp;
-	struct com_msg_open_shm_region open_shm;
 	struct com_msg_open_shm_region *recv_msg = NULL;
+	struct com_msg_open_shm_region open_shm;
+	TEEC_Result result = TEEC_SUCCESS;
+	int fd, com_ret;
 
-	internal_imp = (struct shared_mem_internal *)calloc(1, sizeof(struct shared_mem_internal));
-	if (!internal_imp) {
-		OT_LOG(LOG_ERR, "Failed to allocate memory for Shared memory");
-		return TEEC_ERROR_OUT_OF_MEMORY;
-	}
-
-	if (shared_mem->size == 0)
-		goto out;
-	else
-		internal_imp->org_size = shared_mem->size;
+	/* Zero size is special case */
+	if (!shm_internal->org_size)
+		return TEE_SUCCESS;
 
 	/* Fill message */
 	open_shm.msg_hdr.msg_name = COM_MSG_NAME_OPEN_SHM_REGION;
 	open_shm.msg_hdr.msg_type = COM_TYPE_QUERY;
 	open_shm.msg_hdr.sess_id = 0; /* Not used here */
-	open_shm.size = shared_mem->size;
+	open_shm.size = shm_internal->org_size;
 
 	/* Message filled. Send message */
 	if (pthread_mutex_lock(&ctx_internal.mutex)) {
@@ -213,23 +225,21 @@ static TEEC_Result create_shared_mem_internal(TEEC_SharedMemory *shared_mem, enu
 	if (!verify_msg_name_and_type(recv_msg, COM_MSG_NAME_OPEN_SHM_REGION, COM_TYPE_RESPONSE)) {
 		if (!get_return_vals_from_err_msg(recv_msg, &result, NULL)) {
 			OT_LOG(LOG_ERR, "Received unknow message")
-			return TEEC_ERROR_COMMUNICATION;
+			result = TEEC_ERROR_COMMUNICATION;
+			goto err_ret;
 		}
 
 		/* Received error message */
-		return result;
+		goto err_ret;
 	}
 
 	result = recv_msg->return_code;
-	if (result != TEE_SUCCESS) {
-		free(internal_imp);
-		free(recv_msg);
-		return result;
-	}
+	if (result != TEE_SUCCESS)
+		goto err_ret;
 
-	memcpy(internal_imp->shm_uuid, recv_msg->name, SHM_MEM_NAME_LEN);
+	memcpy(shm_internal->shm_uuid, recv_msg->name, SHM_MEM_NAME_LEN);
 
-	fd = shm_open(internal_imp->shm_uuid, (O_RDWR | O_RDONLY), 0);
+	fd = shm_open(shm_internal->shm_uuid, (O_RDWR | O_RDONLY), 0);
 	if (fd == -1) {
 		OT_LOG(LOG_ERR, "Failed to open the shared memory area");
 		result = TEEC_ERROR_GENERIC;
@@ -238,8 +248,9 @@ static TEEC_Result create_shared_mem_internal(TEEC_SharedMemory *shared_mem, enu
 
 	/* mmap does not allow for the size to be zero, however the TEEC API allows it, so map a
 	 * size of 1 byte, though it will probably be mapped to a page */
-	address = mmap(NULL, internal_imp->org_size, (PROT_WRITE | PROT_READ), MAP_SHARED, fd, 0);
-	if (address == MAP_FAILED) {
+	shm_internal->reg_address = mmap(NULL, shm_internal->org_size,
+					 (PROT_WRITE | PROT_READ), MAP_SHARED, fd, 0);
+	if (shm_internal->reg_address == MAP_FAILED) {
 		OT_LOG(LOG_ERR, "Failed to MMAP");
 		result = TEEC_ERROR_OUT_OF_MEMORY;
 		goto release_shm_2;
@@ -248,28 +259,61 @@ static TEEC_Result create_shared_mem_internal(TEEC_SharedMemory *shared_mem, enu
 	/* We have finished with the file handle as it has been mapped so don't leak it */
 	close(fd);
 
-out:
-	/* If we are allocating memory the buffer is the new mmap'd region, where as if we are
-	 * only registering memory the buffer has already been alocated locally, so the mmap'd
-	 * region is where we will copy the data just before we call a command in the TEE, so it
-	 * must be stored seperatly in the "implementation deined section" */
-	if (type == ALLOCATED)
-		shared_mem->buffer = address;
-	else if (type == REGISTERED)
-		internal_imp->reg_address = address;
-
-	internal_imp->type = type;
-	shared_mem->imp = internal_imp;
 	return result;
 
 release_shm_2:
 	close(fd);
 
 release_shm_1:
-	TEEC_ReleaseSharedMemory(shared_mem);
-	free(internal_imp);
+	free_shm_and_from_manager(shm_internal);
+
+err_ret:
 	free(recv_msg);
 	return result;
+}
+
+static TEEC_Result create_shared_mem(TEEC_Context *context, TEEC_SharedMemory *shared_mem,
+				     enum mem_type type)
+{
+	struct shared_mem_internal *shm_internal = NULL;
+	TEEC_Result ret;
+
+	if (!context || ctx_internal.ctx_status != CTX_INTERNAL_INIT) {
+		OT_LOG(LOG_ERR, "Context NULL or Initialize context before reg/alloc memory")
+		return TEEC_ERROR_BAD_PARAMETERS;
+	}
+
+	if (!shared_mem || shared_mem->imp) {
+		OT_LOG(LOG_ERR, "Shared memory NULL or struct is already initialized")
+		return TEEC_ERROR_BAD_PARAMETERS;
+	}
+
+	shm_internal = (struct shared_mem_internal *)calloc(1, sizeof(struct shared_mem_internal));
+	if (!shm_internal) {
+		OT_LOG(LOG_ERR, "Failed to allocate memory for Shared memory");
+		return TEEC_ERROR_OUT_OF_MEMORY;
+	}
+
+	/* Get_shm_from_manager_and_map_refion() is needing shm size! */
+	shm_internal->org_size = shared_mem->size;
+	shm_internal->type = type;
+
+	ret = get_shm_from_manager_and_map_region(shm_internal);
+	if (ret != TEEC_SUCCESS) {
+		free(shm_internal);
+		shared_mem->imp = NULL;
+		return ret;
+	}
+
+	/* If we are allocating memory the buffer is the new mmap'd region, where as if we are
+	 * only registering memory the buffer has already been alocated locally, so the mmap'd
+	 * region is where we will copy the data just before we call a command in the TEE, so it
+	 * must be stored seperatly in the "implementation deined section" */
+	if (type == ALLOCATED)
+		shared_mem->buffer = shm_internal->reg_address;
+
+	shared_mem->imp = shm_internal;
+	return ret;
 }
 
 /*!
@@ -583,76 +627,22 @@ err:
 
 TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context, TEEC_SharedMemory *shared_mem)
 {
-	if (!context || ctx_internal.ctx_status != CTX_INTERNAL_INIT) {
-		OT_LOG(LOG_ERR, "Context NULL or Initialize context before reg/alloc memory")
-		return TEEC_ERROR_BAD_PARAMETERS;
-	}
-
-	if (!shared_mem || shared_mem->imp) {
-		OT_LOG(LOG_ERR, "Shared memory NULL or struct is already initialized")
-		return TEEC_ERROR_BAD_PARAMETERS;
-	}
-
-	return create_shared_mem_internal(shared_mem, REGISTERED);
+	return create_shared_mem(context, shared_mem, REGISTERED);
 }
 
 TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context, TEEC_SharedMemory *shared_mem)
 {
-	if (!context || ctx_internal.ctx_status != CTX_INTERNAL_INIT) {
-		OT_LOG(LOG_ERR, "Context NULL or Initialize context before reg/alloc memory")
-		return TEEC_ERROR_BAD_PARAMETERS;
-	}
-
-	if (!shared_mem || shared_mem->imp) {
-		OT_LOG(LOG_ERR, "Shared memory NULL or struct is already initialized")
-		return TEEC_ERROR_BAD_PARAMETERS;
-	}
-
-	return create_shared_mem_internal(shared_mem, ALLOCATED);
+	return create_shared_mem(context, shared_mem, ALLOCATED);
 }
 
 void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shared_mem)
 {
-	void *address;
-	struct shared_mem_internal *internal_imp = NULL;
-	struct com_msg_unlink_shm_region unlink_msg;
-
-	if (!shared_mem)
+	if (!shared_mem || !shared_mem->imp)
 		return;
 
-	internal_imp = (struct shared_mem_internal *)shared_mem->imp;
-	if (!internal_imp)
-		return;
+	free_shm_and_from_manager(shared_mem->imp);
 
-	if (internal_imp->org_size == 0) {
-		free(internal_imp);
-		shared_mem->imp = NULL;
-		return;
-	}
-
-	unlink_msg.msg_hdr.msg_name = COM_MSG_NAME_UNLINK_SHM_REGION;
-	unlink_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
-	unlink_msg.msg_hdr.sess_id = 0;
-	memcpy(unlink_msg.name, internal_imp->shm_uuid, SHM_MEM_NAME_LEN);
-
-	/* Message filled. Send message */
-	if (send_msg(ctx_internal.sockfd,
-		     &unlink_msg, sizeof(struct com_msg_unlink_shm_region),
-		     fd_write_mutex) != sizeof(struct com_msg_unlink_shm_region))
-		OT_LOG(LOG_ERR, "Failed to send message TEE");
-
-	/* If we allocated the memory free the buffer, other wise if it is just registered
-	 * the buffer belongs to the Client Application, so we should not free it, instead
-	 * we should free the mmap'd region that was mapped to support it */
-	if (internal_imp->type == ALLOCATED)
-		address = shared_mem->buffer;
-	else
-		address = internal_imp->reg_address;
-
-	/* Remove the memory mapped region and the shared memory */
-	munmap(address, internal_imp->org_size);
-	shm_unlink(internal_imp->shm_uuid);
-	free(internal_imp);
+	free(shared_mem->imp);
 	shared_mem->imp = NULL;
 }
 
