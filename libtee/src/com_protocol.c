@@ -195,7 +195,7 @@ int com_send_msg(int sockfd, void *msg, int msg_len)
 			if (errno == EINTR)
 				continue;
 
-			OT_LOG(LOG_ERR, "send error");
+			OT_LOG(LOG_ERR, "send error: %s", strerror(errno));
 			return -1;
 		}
 
