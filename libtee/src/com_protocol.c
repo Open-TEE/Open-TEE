@@ -34,7 +34,6 @@ struct control_fd {
 #include "com_protocol.h"
 #include "tee_logging.h"
 
-static const uint32_t COM_MSG_START = 0xABCDEF12;
 #define TRY_READ_FD_COUNT 5
 #define ELEMENTS_IN_MESSAGE 2
 
