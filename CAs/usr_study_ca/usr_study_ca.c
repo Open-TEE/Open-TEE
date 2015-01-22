@@ -54,6 +54,94 @@ static const TEEC_UUID uuid = {
 #define BALANCE			500
 #define	TRANSACTION_COUNT	7
 
+#define P_STR(str) printf("failed: %s\n", str);
+
+static void p_failed(TEE_Result ret)
+{
+	switch (ret) {
+	case TEE_ERROR_GENERIC:
+		P_STR("TEE_ERROR_GENERIC")
+		return;
+	case TEE_ERROR_ACCESS_DENIED:
+		P_STR("TEE_ERROR_ACCESS_DENIED")
+		return;
+	case TEE_ERROR_CANCEL:
+		P_STR("TEE_ERROR_CANCEL")
+		return;
+	case TEE_ERROR_ACCESS_CONFLICT:
+		P_STR("TEE_ERROR_ACCESS_CONFLICT")
+		return;
+	case TEE_ERROR_EXCESS_DATA:
+		P_STR("TEE_ERROR_EXCESS_DATA")
+		return;
+	case TEE_ERROR_BAD_FORMAT:
+		P_STR("TEE_ERROR_BAD_FORMAT")
+		return;
+	case TEE_ERROR_BAD_PARAMETERS:
+		P_STR("TEE_ERROR_BAD_PARAMETERS")
+		return;
+	case TEE_ERROR_BAD_STATE:
+		P_STR("TEE_ERROR_BAD_STATE")
+		return;
+	case TEE_ERROR_ITEM_NOT_FOUND:
+		P_STR("TEE_ERROR_ITEM_NOT_FOUND")
+		return;
+	case TEE_ERROR_NOT_IMPLEMENTED:
+		P_STR("TEE_ERROR_NOT_IMPLEMENTED")
+		return;
+	case TEE_ERROR_NOT_SUPPORTED:
+		P_STR("TEE_ERROR_NOT_SUPPORTED")
+		return;
+	case TEE_ERROR_NO_DATA:
+		P_STR("TEE_ERROR_NO_DATA")
+		return;
+	case TEE_ERROR_OUT_OF_MEMORY:
+		P_STR("TEE_ERROR_OUT_OF_MEMORY")
+		return;
+	case TEE_ERROR_BUSY:
+		P_STR("TEE_ERROR_BUSY")
+		return;
+	case TEE_ERROR_COMMUNICATION:
+		P_STR("TEE_ERROR_COMMUNICATION")
+		return;
+	case TEE_ERROR_SECURITY:
+		P_STR("TEE_ERROR_SECURITY")
+		return;
+	case TEE_ERROR_SHORT_BUFFER:
+		P_STR("TEE_ERROR_SHORT_BUFFER")
+		return;
+	case TEE_PENDING:
+		P_STR("TEE_PENDING")
+		return;
+	case TEE_ERROR_TIMEOUT:
+		P_STR("TEE_ERROR_TIMEOUT")
+		return;
+	case TEE_ERROR_OVERFLOW:
+		P_STR("TEE_ERROR_OVERFLOW")
+		return;
+	case TEE_ERROR_TARGET_DEAD:
+		P_STR("TEE_ERROR_TARGET_DEAD")
+		return;
+	case TEE_ERROR_STORAGE_NO_SPACE:
+		P_STR("TEE_ERROR_STORAGE_NO_SPACE")
+		return;
+	case TEE_ERROR_MAC_INVALID:
+		P_STR("TEE_ERROR_MAC_INVALID")
+		return;
+	case TEE_ERROR_SIGNATURE_INVALID:
+		P_STR("TEE_ERROR_SIGNATURE_INVALID")
+		return;
+	case TEE_ERROR_TIME_NOT_SET:
+		P_STR("TEE_ERROR_TIME_NOT_SET")
+		return;
+	case TEE_ERROR_TIME_NEEDS_RESET:
+		P_STR("TEE_ERROR_TIME_NEEDS_RESET")
+		return;
+	default:
+		break;
+	}
+}
+
 static TEEC_Result open_session(TEEC_Context *context, TEEC_Session *session,
 				uint32_t account_interest)
 {
@@ -151,7 +239,7 @@ static TEEC_Result do_dummy_transactions(TEEC_Session *session, TEEC_SharedMemor
 
 end:
 	if (ret != TEEC_SUCCESS)
-		printf("failed: 0x%x\n", ret);
+		p_failed(ret);
 	else
 		printf("Ok\n");
 
@@ -178,7 +266,7 @@ static TEE_Result get_account(TEEC_Session *session, TEEC_SharedMemory *shm_inou
 	ret = TEEC_InvokeCommand(session, USR_AC_CMD_GET_ACCOUNT, &operation, NULL);
 
 	if (ret != TEE_SUCCESS) {
-		printf("failed: 0x%x\n", ret);
+		p_failed(ret);
 		return ret;
 	}
 
@@ -220,14 +308,14 @@ static TEE_Result get_transactions(TEEC_Session *session, TEEC_SharedMemory *shm
 	ret = TEEC_InvokeCommand(session, USR_AC_CMD_GET_TRANSACTION, &operation, NULL);
 
 	if (ret != TEE_SUCCESS) {
-		printf("failed: 0x%x\n", ret);
+		p_failed(ret);
 		return ret;
 	}
 
 	trans = shm_inout->buffer;
 
 	if (trans->amount != DEPOSIT_AMOUNT_3) {
-		printf("Something is wrong: 0x%x\n", ret);
+		printf("Something is wrong");
 		return TEE_ERROR_GENERIC;
 	}
 
@@ -244,7 +332,7 @@ static TEE_Result exec_ta_self_check(TEEC_Session *session)
 	ret = TEEC_InvokeCommand(session, USR_AC_CMD_SELF_CHECK, NULL, NULL);
 
 	if (ret != TEE_SUCCESS) {
-		printf("failed: 0x%x\n", ret);
+		p_failed(ret);
 		return ret;
 	}
 
@@ -261,7 +349,7 @@ static TEE_Result reset_account(TEEC_Session *session)
 	ret = TEEC_InvokeCommand(session, USR_AC_CMD_RESET, NULL, NULL);
 
 	if (ret != TEE_SUCCESS) {
-		printf("failed: 0x%x\n", ret);
+		p_failed(ret);
 		return ret;
 	}
 
@@ -278,7 +366,7 @@ static TEE_Result unknow_cmd(TEEC_Session *session)
 	ret = TEEC_InvokeCommand(session, USR_AC_CMD_RESERVED, NULL, NULL);
 
 	if (ret != TEE_SUCCESS) {
-		printf("failed: 0x%x\n", ret);
+		p_failed(ret);
 		return ret;
 	}
 
