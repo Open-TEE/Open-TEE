@@ -15,4 +15,4 @@ usr_study_LDFLAGS = ${AM_LDFLAGS} \
 	-rdynamic
 
 usr_study_LDADD = \
-	$(top_srcdir)/../libtee/libtee.la
+	../libtee/libtee.la

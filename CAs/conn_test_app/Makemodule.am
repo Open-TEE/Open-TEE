@@ -12,4 +12,4 @@ conn_test_LDFLAGS = ${AM_LDFLAGS} \
 	-rdynamic
 
 conn_test_LDADD = \
-	$(top_srcdir)/../libtee/libtee.la
+	../libtee/libtee.la
