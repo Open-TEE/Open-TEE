@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.69])
+AC_PREREQ([2.68])
 AC_INIT([CAs], [0.0.0], [https://github.com/Open-TEE/CAs/issues],
 	[CAs], [https://github.com/Open-TEE])
 AM_INIT_AUTOMAKE([dist-bzip2 foreign subdir-objects])
