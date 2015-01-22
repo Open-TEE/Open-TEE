@@ -11,5 +11,5 @@ libta_conn_test_la_CFLAGS = ${AM_CFLAGS} \
 
 libta_conn_test_la_LDFLAGS = ${AM_LDFLAGS}
 
-libta_conn_test_ta_la_LIBADD =\
-        $(top_srcdir)/../libtee/libtee.la
+libta_conn_test_la_LIBADD =\
+        ../libtee/libtee.la

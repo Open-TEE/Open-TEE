@@ -15,4 +15,4 @@ libuser_study_la_CFLAGS = ${AM_CFLAGS} \
 libuser_study_la_LDFLAGS = ${AM_LDFLAGS}
 
 libuser_study_la_LIBADD =\
-        $(top_srcdir)/../libtee/libtee.la
+        ../libtee/libtee.la

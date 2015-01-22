@@ -12,4 +12,4 @@ libexample_ta_la_CFLAGS = ${AM_CFLAGS} \
 libexample_ta_la_LDFLAGS = ${AM_LDFLAGS}
 
 libexample_ta_la_LIBADD =\
-        $(top_srcdir)/../libtee/libtee.la
+        ../libtee/libtee.la
