@@ -1,0 +1,15 @@
+# conn_test_app executable
+
+bin_PROGRAMS += test_session_ta
+
+test_session_ta_SOURCES = \
+	test_session/test_session.c
+
+test_session_ta_CFLAGS = ${AM_CFLAGS} \
+	-iquote $(top_srcdir)/../libtee/include
+
+test_session_ta_LDFLAGS = ${AM_LDFLAGS} \
+	-rdynamic
+
+test_session_ta_LDADD = \
+	$(top_srcdir)/../libtee/libtee.la

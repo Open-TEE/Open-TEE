@@ -1,0 +1,18 @@
+# user study executable
+
+bin_PROGRAMS += usr_study
+
+usr_study_includes = \
+	usr_study_ca/usr_study_ta_ctrl.h
+
+usr_study_SOURCES = ${usr_study_includes}\
+	usr_study_ca/usr_study_ca.c
+
+usr_study_CFLAGS = ${AM_CFLAGS} \
+	-iquote $(top_srcdir)/../libtee/include
+
+usr_study_LDFLAGS = ${AM_LDFLAGS} \
+	-rdynamic
+
+usr_study_LDADD = \
+	$(top_srcdir)/../libtee/libtee.la
