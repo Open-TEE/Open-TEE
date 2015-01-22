@@ -17,6 +17,7 @@ AC_CHECK_LIB([uuid], [uuid_generate])
 AC_CHECK_LIB([crypt], [crypt])
 AC_CHECK_LIB([pthread], [pthread_mutex_init])
 AC_CHECK_LIB([z], [crc32])
+AC_CHECK_LIB([rt], [shm_open])
 
 # Created configuration files
 AC_CONFIG_FILES([Makefile])
