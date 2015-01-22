@@ -1,0 +1,15 @@
+# example TA
+
+lib_LTLIBRARIES += libexample_ta.la
+
+libexample_ta_la_SOURCES = \
+	example_ta/example_ta.c
+
+libexample_ta_la_CFLAGS = ${AM_CFLAGS} \
+        -iquote $(top_srcdir)/include \
+        -iquote $(top_srcdir)/../emulator/include
+
+libexample_ta_la_LDFLAGS = ${AM_LDFLAGS}
+
+libexample_ta_la_LIBADD =\
+        $(top_srcdir)/../libtee/libtee.la
