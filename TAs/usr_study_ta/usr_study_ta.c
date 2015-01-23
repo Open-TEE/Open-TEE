@@ -307,7 +307,7 @@ static TEE_Result get_transaction(uint32_t paramTypes, TEE_Param *params)
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	if (params[0].memref.size < sizeof(struct transaction)) {
+	if (params[1].memref.size < sizeof(struct transaction)) {
 		OT_LOG(LOG_ERR, "Short buffer")
 		return TEE_ERROR_SHORT_BUFFER;
 	}
