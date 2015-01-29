@@ -10,10 +10,12 @@ DynamicLibrary {
 
     Export {
         Depends { name: "cpp" }
+        Depends { name: "tee" }
         cpp.includePaths: "include"
     }
 
     files: [
+        "include/cryptoki.h",
         "include/pkcs11.h",
         "include/pkcs11t.h",
         "include/pkcs11f.h",
