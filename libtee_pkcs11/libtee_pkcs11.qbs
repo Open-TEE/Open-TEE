@@ -19,6 +19,12 @@ DynamicLibrary {
         "include/pkcs11.h",
         "include/pkcs11t.h",
         "include/pkcs11f.h",
+        "src/commands.h",
+        "src/hal.h",
+        "src/hal_gp.c",
+        "src/pkcs11_crypto.c",
+        "src/pkcs11_general.c",
         "src/pkcs11_object.c",
+        "src/pkcs11_session_slot.c",
     ]
 }

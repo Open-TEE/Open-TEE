@@ -14,4 +14,8 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include "cryptoki.h"
+#ifndef HAL_H
+#define HAL_H
+
+#endif // HAL_H
+

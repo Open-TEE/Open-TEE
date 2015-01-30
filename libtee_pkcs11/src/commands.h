@@ -14,4 +14,8 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include "cryptoki.h"
+#ifndef COMMANDS_H
+#define COMMANDS_H
+
+#endif // COMMANDS_H
+
