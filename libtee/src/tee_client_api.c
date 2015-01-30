@@ -283,8 +283,8 @@ static TEEC_Result create_shared_mem(TEEC_Context *context, TEEC_SharedMemory *s
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
-	if (!shared_mem || shared_mem->imp) {
-		OT_LOG(LOG_ERR, "Shared memory NULL or struct is already initialized")
+	if (!shared_mem) {
+		OT_LOG(LOG_ERR, "Shared memory NULL")
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
