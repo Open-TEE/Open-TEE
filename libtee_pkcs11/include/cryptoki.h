@@ -17,7 +17,7 @@
  */
 
 /*
- * Modified to support the TEE interface from *nix systems 2015
+ * Modified to support the TEE interface from *nix systems
  */
 
 #ifndef ___CRYPTOKI_H_INC___

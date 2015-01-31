@@ -15,3 +15,41 @@
 *****************************************************************************/
 
 #include "cryptoki.h"
+
+/*
+ * 11.4 GENERAL-PURPOSE FUNCTIONS
+ */
+
+CK_RV C_Initialize(CK_VOID_PTR pInitArgs)
+{
+	return CKR_FUNCTION_NOT_SUPPORTED;
+}
+
+CK_RV C_Finalize(CK_VOID_PTR pReserved)
+{
+	return CKR_FUNCTION_NOT_SUPPORTED;
+}
+
+CK_RV C_GetInfo(CK_INFO_PTR pInfo)
+{
+	return CKR_FUNCTION_NOT_SUPPORTED;
+}
+
+CK_RV C_GetFunctionList(CK_FUNCTION_LIST_PTR_PTR ppFunctionList)
+{
+	return CKR_FUNCTION_NOT_SUPPORTED;
+}
+
+/*
+ * 11.16 PARALLEL FUNCTION MANAGEMENT
+ */
+
+CK_RV C_GetFunctionStatus(CK_SESSION_HANDLE hSession)
+{
+	return CKR_FUNCTION_NOT_SUPPORTED;
+}
+
+CK_RV C_CancelFunction(CK_SESSION_HANDLE hSession)
+{
+	return CKR_FUNCTION_NOT_SUPPORTED;
+}
