@@ -14,26 +14,54 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#ifndef __HAL_H_
-#define __HAL_H_
+#ifndef __MUTEX_MANAGER_H_
+#define __MUTEX_MANAGER_H_
 
 #include "cryptoki.h"
 
 /*!
- * \brief hal_initialize_context
- * Create a context towards the TEE, this is generally achieved by opening the TEE device
- * \param tee_context [OUT] The location to store the new context
- * \return 0 on success
+ * \brief init_mutex_callbacks
+ * If the calling application wishes to register it's own callbacks we must register and store them
+ * \param create [IN] The callback to create a mutex
+ * \param destroy [IN] The callback to destroy a mutex
+ * \param lock [IN] The callback to aquire the mutex
+ * \param unlock [IN] The callback to release the mutex
  */
-CK_RV hal_initialize_context(void **tee_context);
+void init_mutex_callbacks(CK_CREATEMUTEX create,
+			  CK_DESTROYMUTEX destroy,
+			  CK_LOCKMUTEX lock,
+			  CK_UNLOCKMUTEX unlock);
 
 /*!
- * \brief hal_finalize_context
- * Close the connection to the TEE and free the context.
- * \param tee_context [IN] The context of the connection to close
+ * \brief create_mutex
+ * Create a mutex and return the handle to the caller
+ * \param mutex [OUT] The mutex to be populated
  * \return 0 on success
  */
-CK_RV hal_finalize_context(void *tee_context);
+int create_mutex(void **mutex);
 
-#endif // HAL_H
+/*!
+ * \brief destroy_mutex
+ * Free up a mutex that is no longer required
+ * \param mutex [IN] The mutex to free
+ * \return 0 on success
+ */
+int destroy_mutex(void *mutex);
 
+/*!
+ * \brief lock_mutex
+ * Aquire the mutex, or block until the mutex can be aquired
+ * \param mutex [IN] The mutex to aquire
+ * \return 0 on success
+ */
+int lock_mutex(void *mutex);
+
+/*!
+ * \brief unlock_mutex
+ * Release a mutex that is no longer required
+ * \param mutex [IN] The mutex to release
+ * \return 0 on success
+ */
+int unlock_mutex(void *mutex);
+
+#endif /* __MUTEX_MANAGER_H_ */

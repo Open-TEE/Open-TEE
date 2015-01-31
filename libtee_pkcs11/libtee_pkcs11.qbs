@@ -2,9 +2,12 @@ import qbs
 
 DynamicLibrary {
     name: "tee_pkcs11"
+
     Depends { name: "cpp" }
     Depends { name: "tee" }
+
     cpp.includePaths: ["include"]
+    cpp.dynamicLibraries: ["dl", "pthread"]
 
     destinationDirectory: '.'
 
@@ -22,6 +25,8 @@ DynamicLibrary {
         "src/commands.h",
         "src/hal.h",
         "src/hal_gp.c",
+        "src/mutex_manager.c",
+        "src/mutex_manager.h",
         "src/pkcs11_crypto.c",
         "src/pkcs11_general.c",
         "src/pkcs11_object.c",
