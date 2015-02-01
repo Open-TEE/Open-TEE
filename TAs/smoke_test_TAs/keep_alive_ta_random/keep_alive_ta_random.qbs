@@ -3,8 +3,9 @@ import qbs
 DynamicLibrary {
     name: "keep_alive_ta_random"
     Group {
+        name: "project-install"
         fileTagsFilter: "dynamiclibrary"
-        qbs.install: true
+        qbs.install: false
         qbs.installDir: "TAs"
     }
 

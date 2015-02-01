@@ -3,8 +3,9 @@ import qbs
 DynamicLibrary {
     name: "ta_conn_test_app"
     Group {
+        name: "project-install"
         fileTagsFilter: "dynamiclibrary"
-        qbs.install: true
+        qbs.install: false
         qbs.installDir: "TAs"
     }
 
