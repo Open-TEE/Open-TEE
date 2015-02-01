@@ -2,6 +2,11 @@ import qbs
 
 DynamicLibrary {
     name: "tee_pkcs11"
+    Group {
+        fileTagsFilter: "dynamiclibrary"
+        qbs.install: true
+        qbs.installDir: "lib"
+    }
 
     Depends { name: "cpp" }
     Depends { name: "tee" }
