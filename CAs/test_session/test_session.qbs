@@ -3,6 +3,12 @@ import qbs
 CppApplication {
     type: "application"
     name: "test_session"
+    Group {
+        fileTagsFilter: "application"
+        qbs.install: true
+        qbs.installDir: "bin"
+    }
+
     Depends { name: "tee" }
     consoleApplication: true
     destinationDirectory: '.'
