@@ -107,6 +107,9 @@ CK_RV C_GetInfo(CK_INFO_PTR pInfo)
 
 CK_RV C_GetFunctionList(CK_FUNCTION_LIST_PTR_PTR ppFunctionList)
 {
+	if (ppFunctionList == NULL)
+		return CKR_ARGUMENTS_BAD;
+
 	*ppFunctionList = &g_function_list;
 	return CKR_OK;
 }
