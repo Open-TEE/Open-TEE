@@ -16,6 +16,10 @@
 *.exe
 *.out
 *.app
+conn_test
+example_sha1
+test_session_ta
+usr_study
 
 # Autotools generated files
 Makefile
@@ -27,6 +31,7 @@ confdefs.h
 config.guess
 config.h
 config.h.in
+config.log
 config.status
 config.sub
 configure
