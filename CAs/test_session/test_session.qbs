@@ -4,8 +4,9 @@ CppApplication {
     type: "application"
     name: "test_session"
     Group {
+        name: "project-install"
         fileTagsFilter: "application"
-        qbs.install: true
+        qbs.install: false
         qbs.installDir: "bin"
     }
 
