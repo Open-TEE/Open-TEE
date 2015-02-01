@@ -4,7 +4,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 # Additional C compiler flags
-AM_CFLAGS = -Wall -Wextra -D _GNU_SOURCE
+AM_CFLAGS = -Wall -Wextra -D _GNU_SOURCE -DTA_PLUGIN
 
 # Executables
 bin_PROGRAMS =
