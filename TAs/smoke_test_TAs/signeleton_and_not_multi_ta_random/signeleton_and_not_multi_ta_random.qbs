@@ -2,6 +2,12 @@ import qbs
 
 DynamicLibrary {
     name: "signeleton_and_not_multi_ta_random"
+    Group {
+        fileTagsFilter: "dynamiclibrary"
+        qbs.install: true
+        qbs.installDir: "TAs"
+    }
+
     Depends { name: "cpp" }
     Depends { name: "InternalApi" }
 

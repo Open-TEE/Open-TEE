@@ -2,6 +2,12 @@ import qbs
 
 DynamicLibrary {
     name: "ta_conn_test_app"
+    Group {
+        fileTagsFilter: "dynamiclibrary"
+        qbs.install: true
+        qbs.installDir: "TAs"
+    }
+
     Depends { name: "cpp" }
     Depends { name: "InternalApi" }
 
