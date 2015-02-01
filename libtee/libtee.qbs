@@ -2,6 +2,12 @@ import qbs
 
 DynamicLibrary {
     name: "tee"
+    Group {
+        fileTagsFilter: "dynamiclibrary"
+        qbs.install: true
+        qbs.installDir: "lib"
+    }
+
     Depends { name: "cpp" }
     cpp.includePaths: ["include"]
     cpp.dynamicLibraries: ["rt", "z"]
