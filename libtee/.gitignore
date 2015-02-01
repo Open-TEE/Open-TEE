@@ -1,10 +1,12 @@
 # Object files
 *.o
 *.ko
+*.lo
 
 # Libraries
 *.lib
 *.a
+*.la
 
 # Shared objects (inc. Windows DLLs)
 *.dll
@@ -27,6 +29,7 @@ confdefs.h
 config.guess
 config.h
 config.h.in
+config.log
 config.status
 config.sub
 configure
