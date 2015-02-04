@@ -15,6 +15,7 @@ lib_LTLIBRARIES  =
 # Include module-specific Makefiles
 include example_digest_ta/Makemodule.am
 include example_ta/Makemodule.am
+include storage_test_ta/Makemodule.am
 #include smoke_test_TAs/Makemodule.am
 include ta_conn_test_app/Makemodule.am
 include usr_study_ta/Makemodule.am
