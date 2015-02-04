@@ -14,7 +14,90 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
+#include <stdint.h>
+
 #include "cryptoki.h"
+#include "commands.h"
+#include "hal.h"
+
+/*!
+ * \brief crypto_init
+ * Function is collecting following crypto-init functions: C_EncryptInit, C_DecryptInit,
+ * C_DigestInit, C_SignInit and C_VerifyInit.
+ * \param command_id invoked command from TEE
+ * \param hSession see PKCS11
+ * \param pMechanism see PKCS11
+ * \param hKey see PKCS11.
+ * \return
+ */
+static CK_RV crypto_init(uint32_t command_id,
+			 CK_SESSION_HANDLE hSession,
+			 CK_MECHANISM_PTR pMechanism,
+			 CK_OBJECT_HANDLE hKey)
+{
+	return hal_crypto_init(command_id, hSession, pMechanism, hKey);
+}
+
+/*!
+ * \brief crypto
+ * Function is collecting following crypto functions: C_Encryp, C_Decrypt, C_Digest, C_Sign and
+ * C_Verify.
+ * \param command_id invoked command from TEE
+ * \param hSession see PKCS11
+ * \param src is operation target buffer
+ * \param src_len is src buffer lenghtn in bytes
+ * \param dst operation output is placed into dst buffer
+ * \param dst_len is dst buffer length in bytes
+ * \return
+ */
+static CK_RV crypto(uint32_t command_id,
+		    CK_SESSION_HANDLE hSession,
+		    CK_BYTE_PTR src,
+		    CK_ULONG src_len,
+		    CK_BYTE_PTR dst,
+		    CK_ULONG_PTR dst_len)
+{
+	return hal_crypto(command_id, hSession, src, src_len, dst, dst_len);
+}
+
+/*!
+ * \brief crypto_update
+ * Function is collecting following crypto functions: C_EncrypUpdate, C_DecryptUpdate,
+ * C_DigestUpdate, C_SignUpdate and C_VerifyUpdate.
+ * \param command_id invoked command from TEE
+ * \param hSession see PKCS11
+ * \param src is operation target buffer
+ * \param src_len is src buffer lenghtn in bytes
+ * \param dst operation output is placed into dst buffer
+ * \param dst_len is dst buffer length in bytes
+ * \return
+ */
+static CK_RV crypto_update(uint32_t command_id,
+			   CK_SESSION_HANDLE hSession,
+			   CK_BYTE_PTR src,
+			   CK_ULONG src_len,
+			   CK_BYTE_PTR dst,
+			   CK_ULONG_PTR dst_len)
+{
+	return hal_crypto_update(command_id, hSession, src, src_len, dst, dst_len);
+}
+/*!
+ * \brief crypto_final
+ * Function is collecting following crypto functions: C_EncrypFinal, C_DecryptFinal,
+ * C_DigestFinal, C_SignFinal and C_VerifyFinal.
+ * \param command_id invoked command from TEE
+ * \param hSession see PKCS11
+ * \param dst operation output is placed into dst buffer
+ * \param dst_len is dst buffer length in bytes
+ * \return
+ */
+static CK_RV crypto_final(uint32_t command_id,
+			  CK_SESSION_HANDLE hSession,
+			  CK_BYTE_PTR dst,
+			  CK_ULONG_PTR dst_len)
+{
+	return hal_crypto_final(command_id, hSession, dst, dst_len);
+}
 
 /*
  * 11.8 ENCRYPTION FUNCTIONS
@@ -23,7 +106,7 @@
 
 CK_RV C_EncryptInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLE hKey)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_init(TEE_ENCRYPT_INIT, hSession, pMechanism, hKey);
 }
 
 CK_RV C_Encrypt(CK_SESSION_HANDLE hSession,
@@ -32,7 +115,8 @@ CK_RV C_Encrypt(CK_SESSION_HANDLE hSession,
 		CK_BYTE_PTR pEncryptedData,
 		CK_ULONG_PTR pulEncryptedDataLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto(TEE_ENCRYPT, hSession, pData,
+		      ulDataLen, pEncryptedData, pulEncryptedDataLen);
 }
 
 CK_RV C_EncryptUpdate(CK_SESSION_HANDLE hSession,
@@ -41,14 +125,16 @@ CK_RV C_EncryptUpdate(CK_SESSION_HANDLE hSession,
 		      CK_BYTE_PTR pEncryptedPart,
 		      CK_ULONG_PTR pulEncryptedPartLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_update(TEE_ENCRYPT_UPDATE, hSession, pPart,
+			     ulPartLen, pEncryptedPart, pulEncryptedPartLen);
 }
 
 CK_RV C_EncryptFinal(CK_SESSION_HANDLE hSession,
 		     CK_BYTE_PTR pLastEncryptedPart,
 		     CK_ULONG_PTR pulLastEncryptedPartLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_final(TEE_ENCRYPT_FINAL, hSession,
+			    pLastEncryptedPart, pulLastEncryptedPartLen);
 }
 
 
@@ -59,7 +145,7 @@ CK_RV C_EncryptFinal(CK_SESSION_HANDLE hSession,
 
 CK_RV C_DecryptInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLE hKey)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_init(TEE_DECRYPT_INIT, hSession, pMechanism, hKey);
 }
 
 CK_RV C_Decrypt(CK_SESSION_HANDLE hSession,
@@ -68,7 +154,8 @@ CK_RV C_Decrypt(CK_SESSION_HANDLE hSession,
 		CK_BYTE_PTR pData,
 		CK_ULONG_PTR pulDataLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto(TEE_DECRYPT, hSession, pEncryptedData,
+		      ulEncryptedDataLen, pData, pulDataLen);
 }
 
 CK_RV C_DecryptUpdate(CK_SESSION_HANDLE hSession,
@@ -77,14 +164,15 @@ CK_RV C_DecryptUpdate(CK_SESSION_HANDLE hSession,
 		      CK_BYTE_PTR pPart,
 		      CK_ULONG_PTR pulPartLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_update(TEE_DECRYPT_UPDATE, hSession, pEncryptedPart,
+			     ulEncryptedPartLen, pPart, pulPartLen);
 }
 
 CK_RV C_DecryptFinal(CK_SESSION_HANDLE hSession,
 		     CK_BYTE_PTR pLastPart,
 		     CK_ULONG_PTR pulLastPartLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_final(TEE_DECRYPT_FINAL, hSession, pLastPart, pulLastPartLen);
 }
 
 
@@ -95,7 +183,7 @@ CK_RV C_DecryptFinal(CK_SESSION_HANDLE hSession,
 
 CK_RV C_DigestInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_init(TEE_DIGEST_INIT, hSession, pMechanism, NULL_PTR);
 }
 
 CK_RV C_Digest(CK_SESSION_HANDLE hSession,
@@ -104,16 +192,19 @@ CK_RV C_Digest(CK_SESSION_HANDLE hSession,
 	       CK_BYTE_PTR pDigest,
 	       CK_ULONG_PTR pulDigestLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto(TEE_DIGEST, hSession, pData, ulDataLen, pDigest, pulDigestLen);
 }
 
 CK_RV C_DigestUpdate(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONG ulPartLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto(TEE_DIGEST_UPDATE, hSession, pPart, ulPartLen, NULL_PTR, NULL_PTR);
 }
 
 CK_RV C_DigestKey(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hKey)
 {
+	hSession = hSession;
+	hKey = hKey;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -121,7 +212,7 @@ CK_RV C_DigestFinal(CK_SESSION_HANDLE hSession,
 		    CK_BYTE_PTR pDigest,
 		    CK_ULONG_PTR pulDigestLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_final(TEE_DIGEST_FINAL, hSession, pDigest, pulDigestLen);
 }
 
 
@@ -132,7 +223,7 @@ CK_RV C_DigestFinal(CK_SESSION_HANDLE hSession,
 
 CK_RV C_SignInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLE hKey)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_init(TEE_SIGN_INIT, hSession, pMechanism, hKey);
 }
 
 CK_RV C_Sign(CK_SESSION_HANDLE hSession,
@@ -141,23 +232,27 @@ CK_RV C_Sign(CK_SESSION_HANDLE hSession,
 	     CK_BYTE_PTR pSignature,
 	     CK_ULONG_PTR pulSignatureLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto(TEE_SIGN, hSession, pData, ulDataLen, pSignature, pulSignatureLen);
 }
 
 CK_RV C_SignUpdate(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONG ulPartLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_update(TEE_SIGN_UPDATE, hSession, pPart, ulPartLen, NULL_PTR, NULL_PTR);
 }
 
 CK_RV C_SignFinal(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pSignature, CK_ULONG_PTR pulSignatureLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_final(TEE_SIGN_FINAL, hSession, pSignature, pulSignatureLen);
 }
 
 CK_RV C_SignRecoverInit(CK_SESSION_HANDLE hSession,
 			CK_MECHANISM_PTR pMechanism,
 			CK_OBJECT_HANDLE hKey)
 {
+	hSession = hSession;
+	pMechanism = pMechanism;
+	hKey = hKey;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -167,6 +262,12 @@ CK_RV C_SignRecover(CK_SESSION_HANDLE hSession,
 		    CK_BYTE_PTR pSignature,
 		    CK_ULONG_PTR pulSignatureLen)
 {
+	hSession = hSession;
+	pData = pData;
+	ulDataLen = ulDataLen;
+	pSignature = pSignature;
+	pulSignatureLen = pulSignatureLen;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -180,7 +281,7 @@ CK_RV C_VerifyInit(CK_SESSION_HANDLE hSession,
 		   CK_MECHANISM_PTR pMechanism,
 		   CK_OBJECT_HANDLE hKey)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_init(TEE_VERIFY_INIT, hSession, pMechanism, hKey);
 }
 
 CK_RV C_Verify(CK_SESSION_HANDLE hSession,
@@ -189,23 +290,27 @@ CK_RV C_Verify(CK_SESSION_HANDLE hSession,
 	       CK_BYTE_PTR pSignature,
 	       CK_ULONG ulSignatureLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto(TEE_VERIFY, hSession, pData, ulDataLen, pSignature, &ulSignatureLen);
 }
 
 CK_RV C_VerifyUpdate(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONG ulPartLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_update(TEE_VERIFY_UPDATE, hSession, pPart, ulPartLen, NULL_PTR, NULL_PTR);
 }
 
 CK_RV C_VerifyFinal(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pSignature, CK_ULONG ulSignatureLen)
 {
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return crypto_final(TEE_VERIFY_FINAL, hSession, pSignature, &ulSignatureLen);
 }
 
 CK_RV C_VerifyRecoverInit(CK_SESSION_HANDLE hSession,
 			  CK_MECHANISM_PTR pMechanism,
 			  CK_OBJECT_HANDLE hKey)
 {
+	hSession = hSession;
+	pMechanism = pMechanism;
+	hKey = hKey;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -215,6 +320,12 @@ CK_RV C_VerifyRecover(CK_SESSION_HANDLE hSession,
 		      CK_BYTE_PTR pData,
 		      CK_ULONG_PTR pulDataLen)
 {
+	hSession = hSession;
+	pSignature = pSignature;
+	ulSignatureLen = ulSignatureLen;
+	pData = pData;
+	pulDataLen = pulDataLen;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 

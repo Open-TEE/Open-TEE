@@ -52,3 +52,71 @@ CK_RV hal_finalize_context(void *tee_context)
 
 	return CKR_OK;
 }
+
+CK_RV hal_crypto_init(uint32_t command_id,
+		      CK_SESSION_HANDLE hSession,
+		      CK_MECHANISM_PTR pMechanism,
+		      CK_OBJECT_HANDLE hKey)
+{
+	command_id = command_id;
+	hSession = hSession;
+	pMechanism = pMechanism;
+	hKey = hKey;
+
+	/* Not yet implemented */
+
+	return CKR_FUNCTION_NOT_SUPPORTED;
+}
+
+CK_RV hal_crypto(uint32_t command_id,
+		 CK_SESSION_HANDLE hSession,
+		 CK_BYTE_PTR src,
+		 CK_ULONG src_len,
+		 CK_BYTE_PTR dst,
+		 CK_ULONG_PTR dst_len)
+{
+	command_id = command_id;
+	hSession = hSession;
+	src = src;
+	src_len = src_len;
+	dst = dst;
+	dst_len = dst_len;
+
+	/* Not yet implemented */
+
+	return CKR_FUNCTION_NOT_SUPPORTED;
+}
+
+CK_RV hal_crypto_update(uint32_t command_id,
+			CK_SESSION_HANDLE hSession,
+			CK_BYTE_PTR src,
+			CK_ULONG src_len,
+			CK_BYTE_PTR dst,
+			CK_ULONG_PTR dst_len)
+{
+	command_id = command_id;
+	hSession = hSession;
+	src = src;
+	src_len = src_len;
+	dst = dst;
+	dst_len = dst_len;
+
+	/* Not yet implemented */
+
+	return CKR_FUNCTION_NOT_SUPPORTED;
+}
+
+CK_RV hal_crypto_final(uint32_t command_id,
+			CK_SESSION_HANDLE hSession,
+			CK_BYTE_PTR dst,
+			CK_ULONG_PTR dst_len)
+{
+	command_id = command_id;
+	hSession = hSession;
+	dst = dst;
+	dst_len = dst_len;
+
+	/* Not yet implemented */
+
+	return CKR_FUNCTION_NOT_SUPPORTED;
+}

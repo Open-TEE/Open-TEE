@@ -17,6 +17,7 @@
 #ifndef __HAL_H_
 #define __HAL_H_
 
+#include <stdint.h>
 #include "cryptoki.h"
 
 /*!
@@ -34,6 +35,69 @@ CK_RV hal_initialize_context(void **tee_context);
  * \return 0 on success
  */
 CK_RV hal_finalize_context(void *tee_context);
+
+/*!
+ * \brief hal_crypto_init
+ * Initializes crypto operation at TEE
+ * \param hSession
+ * \param pMechanism
+ * \param hKey
+ * \return
+ */
+CK_RV hal_crypto_init(uint32_t command_id,
+		      CK_SESSION_HANDLE hSession,
+		      CK_MECHANISM_PTR pMechanism,
+		      CK_OBJECT_HANDLE hKey);
+
+/*!
+ * \brief hal_crypto
+ * One stage crypto operation
+ * \param command_id invoked command from TEE
+ * \param hSession see PKCS11
+ * \param src is operation target buffer
+ * \param src_len is src buffer lenghtn in bytes
+ * \param dst operation output is placed into dst buffer
+ * \param dst_len is dst buffer length in bytes
+ * \return
+ */
+CK_RV hal_crypto(uint32_t command_id,
+		 CK_SESSION_HANDLE hSession,
+		 CK_BYTE_PTR src,
+		 CK_ULONG src_len,
+		 CK_BYTE_PTR dst,
+		 CK_ULONG_PTR dst_len);
+
+/*!
+ * \brief hal_crypto_update
+ * Update one going crypto operation
+ * \param command_id invoked command from TEE
+ * \param hSession see PKCS11
+ * \param src is operation target buffer
+ * \param src_len is src buffer lenghtn in bytes
+ * \param dst operation output is placed into dst buffer
+ * \param dst_len is dst buffer length in bytes
+ * \return
+ */
+CK_RV hal_crypto_update(uint32_t command_id,
+			CK_SESSION_HANDLE hSession,
+			CK_BYTE_PTR src,
+			CK_ULONG src_len,
+			CK_BYTE_PTR dst,
+			CK_ULONG_PTR dst_len);
+
+/*!
+ * \brief hal_crypto_final
+ * Finalizes crypto operation
+ * \param command_id invoked command from TEE
+ * \param hSession see PKCS11
+ * \param dst operation output is placed into dst buffer
+ * \param dst_len is dst buffer length in bytes
+ * \return
+ */
+CK_RV hal_crypto_final(uint32_t command_id,
+			CK_SESSION_HANDLE hSession,
+			CK_BYTE_PTR dst,
+			CK_ULONG_PTR dst_len);
 
 #endif // HAL_H
 
