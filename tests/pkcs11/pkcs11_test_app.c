@@ -27,19 +27,19 @@ int main()
 
 	ret = C_GetFunctionList(&func_list);
 	if (ret != CKR_OK || func_list == NULL) {
-		printf("Failed to get function list: %lu\n", ret);
+		printf("Failed to get function list: %d\n", ret);
 		exit(1);
 	}
 
 	ret = func_list->C_Initialize(NULL);
 	if (ret != CKR_OK) {
-		printf("Failed to initialize the library: %lu\n", ret);
+		printf("Failed to initialize the library: %d\n", ret);
 		exit(2);
 	}
 
 	ret = C_GetInfo(&info);
 	if (ret != CKR_OK) {
-		printf("Failed to get the library info: %lu\n", ret);
+		printf("Failed to get the library info: %d\n", ret);
 		exit(3);
 	}
 
@@ -48,7 +48,7 @@ int main()
 
 	ret = func_list->C_Finalize(NULL);
 	if (ret != CKR_OK) {
-		printf("Failed to Finalize the library: %lu\n", ret);
+		printf("Failed to Finalize the library: %d\n", ret);
 		exit(4);
 	}
 
