@@ -14,6 +14,7 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
+#include "common.h"
 #include "hal.h"
 #include "tee_client_api.h"
 

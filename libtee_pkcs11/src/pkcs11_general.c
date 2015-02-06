@@ -14,9 +14,10 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
+#include "common.h"
 #include "cryptoki.h"
-#include "mutex_manager.h"
 #include "hal.h"
+#include "mutex_manager.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -25,7 +26,7 @@
  * \brief g_tee_context
  * A context that is created towards the TEE
  */
-static void *g_tee_context;
+void *g_tee_context;
 
 /*!
  * \brief g_info

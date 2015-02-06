@@ -29,6 +29,8 @@ DynamicLibrary {
         "include/pkcs11t.h",
         "include/pkcs11f.h",
         "src/commands.h",
+        "src/common.c",
+        "src/common.h",
         "src/hal.h",
         "src/hal_gp.c",
         "src/mutex_manager.c",
