@@ -14,8 +14,19 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#ifndef COMMANDS_H
-#define COMMANDS_H
+#ifndef __COMMANDS_H
+#define __COMMANDS_H
+
+#include "cryptoki.h"
+
+/*!
+ * \brief The mechanisms struct
+ * This contains all the information about an algorith that an end user is interested in
+ */
+struct mechanisms {
+	CK_MECHANISM_TYPE algo; /*!< The name of the algorithm */
+	CK_MECHANISM_INFO info; /*!< Information about the keysizes and flags */
+};
 
 /* Message digesting functions */
 #define TEE_DIGEST_INIT		0x00000001
@@ -46,6 +57,15 @@
 #define TEE_VERIFY		0x00000012
 #define TEE_VERIFY_UPDATE	0x00000013
 #define	TEE_VERIFY_FINAL	0x00000014
+
+/* Functions for Slot and token control */
+#define TEE_GET_SLOT_INFO	0x00000015
+#define TEE_GET_TOKEN_INFO	0x00000016
+#define TEE_INIT_TOKEN          0x00000017
+#define TEE_GET_MECHANISM_LIST  0x00000018
+
+/* Defines control sessions that are used to pass control commands, NOT create pkcs#11 sessions */
+#define TEE_CONTROL_SESSION 0x000000FF
 
 #endif // COMMANDS_H
 

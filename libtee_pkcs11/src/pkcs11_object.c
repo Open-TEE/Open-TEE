@@ -25,6 +25,10 @@ CK_RV C_CreateObject(CK_SESSION_HANDLE hSession,
 		     CK_ULONG ulCount,
 		     CK_OBJECT_HANDLE_PTR phObject)
 {
+	hSession = hSession;
+	pTemplate = pTemplate;
+	ulCount = ulCount;
+	phObject = phObject;
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -34,16 +38,27 @@ CK_RV C_CopyObject(CK_SESSION_HANDLE hSession,
 		   CK_ULONG ulCount,
 		   CK_OBJECT_HANDLE_PTR phNewObject)
 {
+	hSession = hSession;
+	hObject = hObject;
+	pTemplate = pTemplate;
+	ulCount = ulCount;
+	phNewObject = phNewObject;
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
 CK_RV C_DestroyObject(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject)
 {
+	hSession = hSession;
+	hObject = hObject;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
 CK_RV C_GetObjectSize(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject, CK_ULONG_PTR pulSize)
 {
+	hSession = hSession;
+	hObject = hObject;
+	pulSize = pulSize;
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -52,6 +67,10 @@ CK_RV C_GetAttributeValue(CK_SESSION_HANDLE hSession,
 			  CK_ATTRIBUTE_PTR pTemplate,
 			  CK_ULONG ulCount)
 {
+	hSession = hSession;
+	hObject = hObject;
+	pTemplate = pTemplate;
+	ulCount = ulCount;
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -60,11 +79,19 @@ CK_RV C_SetAttributeValue(CK_SESSION_HANDLE hSession,
 			  CK_ATTRIBUTE_PTR pTemplate,
 			  CK_ULONG ulCount)
 {
+	hSession = hSession;
+	hObject = hObject;
+	pTemplate = pTemplate;
+	ulCount = ulCount;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
 CK_RV C_FindObjectsInit(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount)
 {
+	hSession = hSession;
+	pTemplate = pTemplate;
+	ulCount = ulCount;
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -73,10 +100,16 @@ CK_RV C_FindObjects(CK_SESSION_HANDLE hSession,
 		    CK_ULONG ulMaxObjectCount,
 		    CK_ULONG_PTR pulObjectCount)
 {
+	hSession = hSession;
+	phObject = phObject;
+	ulMaxObjectCount = ulMaxObjectCount;
+	pulObjectCount = pulObjectCount;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
 CK_RV C_FindObjectsFinal(CK_SESSION_HANDLE hSession)
 {
+	hSession = hSession;
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }

@@ -14,19 +14,12 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include "common.h"
 #include "cryptoki.h"
 #include "hal.h"
 #include "mutex_manager.h"
 
 #include <stdlib.h>
 #include <string.h>
-
-/*!
- * \brief g_tee_context
- * A context that is created towards the TEE
- */
-void *g_tee_context;
 
 /*!
  * \brief g_info
@@ -128,8 +121,6 @@ CK_RV C_Initialize(CK_VOID_PTR pInitArgs)
 	 * mutex support, especially because we are receiving the threading instructions
 	 * as arguments
 	 */
-	if (g_tee_context)
-		return CKR_CRYPTOKI_ALREADY_INITIALIZED;
 
 	/* TODO we are not currently planning to use locally created threads
 	 * so we are not parsing the args->flags value for the state of
@@ -149,7 +140,7 @@ CK_RV C_Initialize(CK_VOID_PTR pInitArgs)
 					     args->LockMutex, args->UnlockMutex);
 	}
 
-	return hal_initialize_context(&g_tee_context);
+	return hal_initialize_context();
 }
 
 CK_RV C_Finalize(CK_VOID_PTR pReserved)
@@ -157,11 +148,10 @@ CK_RV C_Finalize(CK_VOID_PTR pReserved)
 	if (pReserved)
 		return CKR_ARGUMENTS_BAD;
 
-	if (g_tee_context == NULL)
+	if (!is_lib_initialized())
 		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	hal_finalize_context(g_tee_context);
-	g_tee_context = NULL;
+	hal_finalize_context();
 	return CKR_OK;
 }
 
@@ -169,6 +159,9 @@ CK_RV C_GetInfo(CK_INFO_PTR pInfo)
 {
 	if (pInfo == NULL)
 		return CKR_ARGUMENTS_BAD;
+
+	if (!is_lib_initialized())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	memcpy(pInfo, &g_info, sizeof(CK_INFO));
 

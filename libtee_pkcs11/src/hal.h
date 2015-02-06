@@ -18,23 +18,33 @@
 #define __HAL_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "cryptoki.h"
+#include "commands.h"
 
 /*!
  * \brief hal_initialize_context
  * Create a context towards the TEE, this is generally achieved by opening the TEE device
- * \param tee_context [OUT] The location to store the new context
  * \return 0 on success
  */
-CK_RV hal_initialize_context(void **tee_context);
+CK_RV hal_initialize_context();
 
 /*!
  * \brief hal_finalize_context
  * Close the connection to the TEE and free the context.
- * \param tee_context [IN] The context of the connection to close
  * \return 0 on success
  */
-CK_RV hal_finalize_context(void *tee_context);
+CK_RV hal_finalize_context();
+
+/*!
+ * \brief hal_init_token
+ * Initialize (or reinitialize the token)
+ * \param pPin The SO pin code to use
+ * \param ulPinLen The length of hte pin code
+ * \param pLabel the 32 byte label to assign to the token
+ * \return 0 on success
+ */
+CK_RV hal_init_token(CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen, CK_UTF8CHAR_PTR pLabel);
 
 /*!
  * \brief hal_crypto_init
@@ -98,6 +108,23 @@ CK_RV hal_crypto_final(uint32_t command_id,
 			CK_SESSION_HANDLE hSession,
 			CK_BYTE_PTR dst,
 			CK_ULONG_PTR dst_len);
+
+/*!
+ * \brief hal_get_info
+ * A generic function to populate an info structure (CK_SLOT_INFO, CK_TOKEN_INFO)
+ * \param command_id The command to invoke
+ * \param data The data structure that is to be populated
+ * \param data_size The size of the structure that is to be populated
+ * \return 0 on success
+ */
+CK_RV hal_get_info(uint32_t command_id, void *data, uint32_t *data_size);
+
+/*!
+ * \brief is_lib_initialized
+ * Determine if the library has been properly initialized
+ * \return true on success
+ */
+bool is_lib_initialized();
 
 #endif // HAL_H
 
