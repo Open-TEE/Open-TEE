@@ -103,15 +103,18 @@ struct com_msg_ca_init_tee_conn {
  * \brief The com_msg_param union
  * The mesage paramaters that are being shared between the client and the TA.
  */
-union com_msg_param {
-	struct {
-		char shm_area[SHM_MEM_NAME_LEN];
-		size_t size;
-	} memref;
-	struct {
-		uint32_t a;
-		uint32_t b;
-	} value;
+struct com_msg_param {
+	uint32_t flags;
+	union {
+		struct {
+			char shm_area[SHM_MEM_NAME_LEN];
+			size_t size;
+		} memref;
+		struct {
+			uint32_t a;
+			uint32_t b;
+		} value;
+	} param;
 };
 
 /*!
@@ -121,7 +124,7 @@ union com_msg_param {
 struct com_msg_operation {
 	uint64_t operation_id;
 	uint32_t paramTypes;
-	union com_msg_param params[4];
+	struct com_msg_param params[4];
 } __attribute__((aligned));
 
 /*!

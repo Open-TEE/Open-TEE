@@ -76,6 +76,14 @@ struct session_internal {
 	uint8_t init;
 };
 
+#define FOR_EACH_TEMP_SHM(i) for (i = 0; i < 4; ++i)
+
+/*!
+ *  \brief Iterate over parameters
+ *  \param i interger
+ */
+#define FOR_EACH_PARAM(i) for (i = 0; i < 4; ++i)
+
 static bool get_return_vals_from_err_msg(void *msg, TEE_Result *err_name, uint32_t *err_origin)
 {
 	uint8_t msg_name;
@@ -326,62 +334,68 @@ static TEEC_Result create_shared_mem(TEEC_Context *context, TEEC_SharedMemory *s
 static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 					   struct com_msg_operation *internal_op)
 {
-	int i;
-	uint32_t param_types = operation->paramTypes;
-	TEEC_SharedMemory *mem_source;
 	struct shared_mem_internal *internal_imp;
+	TEEC_SharedMemory *mem_source;
+	int i;
 
 	memset(internal_op, 0, sizeof(struct com_msg_operation));
 
 	internal_op->paramTypes = operation->paramTypes;
 
-	for (i = 0; i < 4; i++) {
-		if (TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_NONE) {
+	FOR_EACH_PARAM(i) {
+
+		if (TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_NONE) {
 			continue;
-		} else if (TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_VALUE_INPUT ||
-			   TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_VALUE_INOUT) {
 
-			memcpy(&internal_op->params[i].value,
+		} else if (TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_VALUE_INPUT ||
+			   TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_VALUE_INOUT) {
+
+			memcpy(&internal_op->params[i].param.value,
 			       &operation->params[i].value, sizeof(TEEC_Value));
+			continue;
 
-		} else if (TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_TEMP_INPUT ||
-			   TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_TEMP_INOUT ||
-			   TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_TEMP_OUTPUT) {
-			/* TODO: this needs to be registered as shared memory and
-			 * the data copied there*/
-		} else if (TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_WHOLE ||
-			   TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_PARTIAL_INPUT ||
-			   TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_PARTIAL_INOUT) {
+		} else if (TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_INPUT ||
+			   TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_INOUT ||
+			   TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_OUTPUT) {
+			OT_LOG(LOG_ERR, "WARNING: MEMREF partial is not implemented")
+			continue;
+		}
 
-			if ((mem_source = operation->params[i].memref.parent)) {
+		/* TEEC_MEMREF_WHOLE, TEEC_MEMREF_TEMP_INPUT,
+		 * TEEC_MEMREF_TEMP_INOUT and TEEC_MEMREF_TEMP_OUTPUT */
 
-				/* We have some shared memory area */
-				internal_imp = (struct shared_mem_internal *)mem_source->imp;
-				if (internal_imp->type == REGISTERED) {
+		if (!(mem_source = operation->params[i].memref.parent))
+			continue; /* Buffer is NULL == user error? */
 
-					/* Copy the data from the buffer registered by the user
-					 * to the address of the shared memory region
-					 */
-					if (!mem_source->buffer || !(internal_imp->reg_address)) {
-						OT_LOG(LOG_ERR, "Invalid Buffer ??");
-						continue;
-					}
+		/* Flags is used for separating MEMREF_WHOLE type (read or write) */
+		internal_op->params[i].flags = mem_source->flags;
 
-					memcpy(internal_imp->reg_address,
-					       mem_source->buffer,
-					       mem_source->size);
-				}
+		/* We have some shared memory area */
+		internal_imp = (struct shared_mem_internal *)mem_source->imp;
 
-				/* assign the name of the shared memory and its size area to
+		if (internal_imp->org_size == 0)
+			continue;
+
+		if (internal_imp->type == REGISTERED) {
+
+			/* Copy the data from the buffer registered by the user
+			 * to the address of the shared memory region */
+			if (!mem_source->buffer || !(internal_imp->reg_address)) {
+				OT_LOG(LOG_ERR, "Invalid Buffer ??");
+				continue;
+			}
+
+			memcpy(internal_imp->reg_address, mem_source->buffer, mem_source->size);
+		}
+
+		/* assign the name of the shared memory and its size area to
 				 * the operation that is being passed.  This will allow us
 				 * to open the same segment in the TA side
 				 */
-				strncpy(internal_op->params[i].memref.shm_area,
-					internal_imp->shm_uuid, SHM_MEM_NAME_LEN);
+		strncpy(internal_op->params[i].param.memref.shm_area,
+			internal_imp->shm_uuid, SHM_MEM_NAME_LEN);
 
-				internal_op->params[i].memref.size = mem_source->size;
-			}
-		}
+		internal_op->params[i].param.memref.size = mem_source->size;
 	}
 }
 
@@ -395,48 +409,54 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 					   struct com_msg_operation *internal_op)
 {
-	int i;
-	uint32_t param_types = operation->paramTypes;
-	TEEC_SharedMemory *mem_source;
 	struct shared_mem_internal *internal_imp;
+	TEEC_SharedMemory *mem_source;
+	int i;
 
-	for (i = 0; i < 4; i++) {
-		if (TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_NONE) {
+	FOR_EACH_PARAM(i) {
+
+		if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_NONE) {
 			continue;
-		} else if (TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_VALUE_OUTPUT ||
-			   TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_VALUE_INOUT) {
+
+		} else if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_VALUE_OUTPUT ||
+			   TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_VALUE_INOUT) {
 
 			memcpy(&operation->params[i].value,
-			       &internal_op->params[i].value, sizeof(TEEC_Value));
+			       &internal_op->params[i].param.value, sizeof(TEEC_Value));
+			continue;
 
-		} else if (TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_TEMP_INOUT ||
-			   TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_TEMP_OUTPUT) {
-			/* TODO: this needs to be registered as shared memory and
-			 * the data copied there*/
-		} else if (TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_WHOLE ||
-			   TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_PARTIAL_OUTPUT ||
-			   TEEC_PARAM_TYPE_GET(param_types, i) == TEEC_MEMREF_PARTIAL_INOUT) {
+		} else if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_PARTIAL_INPUT ||
+			   TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_PARTIAL_INOUT ||
+			   TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_PARTIAL_OUTPUT) {
+			OT_LOG(LOG_ERR, "WARNING: MEMREF partial is not implemented")
+			continue;
+		}
 
-			mem_source = operation->params[i].memref.parent;
-			if (mem_source) {
+		/* TEEC_MEMREF_WHOLE, TEEC_MEMREF_TEMP_INPUT,
+		 * TEEC_MEMREF_TEMP_INOUT and TEEC_MEMREF_TEMP_OUTPUT */
 
-				/* We have some shared memory area */
-				internal_imp = (struct shared_mem_internal *)mem_source->imp;
-				if (internal_imp->type == REGISTERED) {
+		if (!(mem_source = operation->params[i].memref.parent))
+			continue;
 
-					/* Copy the data from the shared memory region back into
-					 * the buffer registered by the user
-					 */
-					if (!mem_source->buffer || !(internal_imp->reg_address)) {
-						OT_LOG(LOG_ERR, "Invalid Buffer ??");
-						continue;
-					}
+		/* Update size to operation */
+		mem_source->size = internal_op->params[i].param.memref.size;
 
-					memcpy(mem_source->buffer,
-					       internal_imp->reg_address,
-					       mem_source->size);
-				}
+		/* We have some shared memory area */
+		internal_imp = (struct shared_mem_internal *)mem_source->imp;
+
+		if (internal_imp->org_size == 0)
+			continue;
+
+		if (internal_imp->type == REGISTERED) {
+
+			/* Copy the data from the shared memory region back into
+			 * the buffer registered by the user */
+			if (!mem_source->buffer || !(internal_imp->reg_address)) {
+				OT_LOG(LOG_ERR, "Invalid Buffer ??");
+				continue;
 			}
+
+			memcpy(mem_source->buffer, internal_imp->reg_address, mem_source->size);
 		}
 	}
 }
@@ -471,6 +491,65 @@ static void wait_socket_close(int fd)
 			continue;
 		}
 	}
+}
+
+static void unregister_temp_refs(TEEC_Operation *operation, TEEC_SharedMemory *temp_shm)
+{
+	int i;
+
+	if (!operation)
+		return;
+
+	FOR_EACH_TEMP_SHM(i) {
+
+		if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_INPUT ||
+		    TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_OUTPUT ||
+		    TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_INOUT) {
+
+			operation->params[i].tmpref.buffer = temp_shm[i].buffer;
+			operation->params[i].tmpref.size = temp_shm[i].size;
+			TEEC_ReleaseSharedMemory(&temp_shm[i]);
+		}
+	}
+}
+
+static TEEC_Result register_temp_refs(TEEC_Operation *operation, TEEC_SharedMemory *temp_shm)
+{
+	TEEC_Result ret = TEEC_SUCCESS;
+	TEEC_Context *ctx;
+	int i;
+
+	if (!operation)
+		return TEEC_SUCCESS; /* It is not an error if operation NULL */
+
+	/* Context is not used. We have only on context, which is initialized during the
+	 * TEEC_InitializeContext() function. Therefore we can have a context here
+	 *
+	 * Note: This need to be changed, if we are allowing to have more than one opentee-process*/
+	ctx = (TEEC_Context *)&ctx_internal;
+
+	FOR_EACH_TEMP_SHM(i) {
+
+		if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_INPUT ||
+		    TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_OUTPUT ||
+		    TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_INOUT) {
+
+			temp_shm[i].buffer = operation->params[i].tmpref.buffer;
+			temp_shm[i].size = operation->params[i].tmpref.size;
+			operation->params[i].memref.parent = &temp_shm[i];
+
+			ret = create_shared_mem(ctx, &temp_shm[i], REGISTERED);
+			if (ret != TEEC_SUCCESS)
+				goto err;
+
+		}
+	}
+
+	return ret;
+
+err:
+	unregister_temp_refs(operation, temp_shm);
+	return ret;
 }
 
 TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
@@ -651,23 +730,23 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 			     void *connection_data, TEEC_Operation *operation,
 			     uint32_t *return_origin)
 {
-	struct com_msg_open_session open_msg;
-	struct com_msg_open_session *recv_msg = NULL;
-	int com_ret = 0;
-	TEEC_Result result = TEEC_SUCCESS;
 	struct session_internal *session_internal = NULL;
+	struct com_msg_open_session *recv_msg = NULL;
+	struct com_msg_open_session open_msg;
+	TEEC_Result result = TEEC_SUCCESS;
+	TEEC_SharedMemory temp_shm[4];
+	int com_ret = 0;
+
+	if (return_origin)
+		*return_origin = TEE_ORIGIN_API;
 
 	if (!context || !session || ctx_internal.ctx_status != CTX_INTERNAL_INIT) {
 		OT_LOG(LOG_ERR, "Context or session NULL or in improper state");
-		if (return_origin)
-			*return_origin = TEE_ORIGIN_API;
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
 	if (operation && operation->started) {
 		OT_LOG(LOG_ERR, "Invalid operation state. Operation started. It should be zero")
-		if (return_origin)
-			*return_origin = TEE_ORIGIN_API;
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
@@ -677,16 +756,12 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	if (connection_method != TEEC_LOGIN_PUBLIC) {
 		OT_LOG(LOG_ERR, "Only public login method supported");
 		connection_data = connection_data; /* Not used */
-		if (return_origin)
-			*return_origin = TEE_ORIGIN_API;
 		return TEEC_ERROR_NOT_SUPPORTED;
 	}
 
 	session_internal = (struct session_internal *)calloc(1, sizeof(struct session_internal));
 	if (!session_internal) {
 		OT_LOG(LOG_ERR, "Failed to create memory for session");
-		if (return_origin)
-			*return_origin = TEE_ORIGIN_API;
 		return TEEC_ERROR_OUT_OF_MEMORY;
 	}
 
@@ -700,6 +775,12 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	/* UUID */
 	memcpy(&open_msg.uuid, destination, sizeof(TEEC_UUID));
 
+	com_ret = register_temp_refs(operation, temp_shm);
+	if (com_ret != TEEC_SUCCESS) {
+		free(session_internal);
+		return com_ret;
+	}
+
 	if (operation)
 		copy_tee_operation_to_internal(operation, &open_msg.operation);
 	else
@@ -710,8 +791,6 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 
 	if (pthread_mutex_lock(&ctx_internal.mutex)) {
 		OT_LOG(LOG_ERR, "Failed to lock mutex");
-		if (return_origin)
-			*return_origin = TEE_ORIGIN_API;
 		result = TEEC_ERROR_GENERIC;
 		goto mutex_fail;
 	}
@@ -771,7 +850,9 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 
 	/* copy back the response data contained in the operation */
 	if (operation)
-		copy_internal_to_tee_operation(operation, &open_msg.operation);
+		copy_internal_to_tee_operation(operation, &recv_msg->operation);
+
+	unregister_temp_refs(operation, temp_shm);
 
 	if (result != TEE_SUCCESS)
 		goto err_ret;
@@ -799,17 +880,17 @@ err_com_2:
 err_ret:
 err_msg:
 mutex_fail:
+	unregister_temp_refs(operation, temp_shm);
 	free(recv_msg);
 	free(session_internal);
 	session->imp = NULL;
 	return result;
 
 op_cancel:
+	unregister_temp_refs(operation, temp_shm);
 	if (pthread_mutex_unlock(&ctx_internal.mutex))
 		OT_LOG(LOG_ERR, "Failed to unlock mutex");
 
-	if (return_origin)
-		*return_origin = TEE_ORIGIN_API;
 	free(session_internal);
 	session->imp = NULL;
 	return TEEC_ERROR_CANCEL;
@@ -855,23 +936,23 @@ err:
 TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 			       TEEC_Operation *operation, uint32_t *return_origin)
 {
-	struct com_msg_invoke_cmd invoke_msg;
 	struct com_msg_invoke_cmd *recv_msg = NULL;
-	int com_ret = 0;
-	TEEC_Result result = TEEC_SUCCESS;
+	struct com_msg_invoke_cmd invoke_msg;
 	struct session_internal *session_internal;
+	TEEC_Result result = TEEC_SUCCESS;
+	TEEC_SharedMemory temp_shm[4];
+	int com_ret = 0;
+
+	if (return_origin)
+		*return_origin = TEE_ORIGIN_API;
 
 	if (!session) {
 		OT_LOG(LOG_ERR, "session NULL")
-		if (return_origin)
-			*return_origin = TEE_ORIGIN_API;
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
 	if (operation && operation->started) {
 		OT_LOG(LOG_ERR, "Invalid operation state. Operation started. It should be zero")
-		if (return_origin)
-			*return_origin = TEE_ORIGIN_API;
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
@@ -881,15 +962,18 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 	session_internal = (struct session_internal *)session->imp;
 	if (!session_internal) {
 		OT_LOG(LOG_ERR, "session not initialized")
-		if (return_origin)
-			*return_origin = TEE_ORIGIN_API;
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
+
 	/* Fill message */
 	invoke_msg.msg_hdr.msg_name = COM_MSG_NAME_INVOKE_CMD;
 	invoke_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
 	invoke_msg.msg_hdr.sess_id = session_internal->sess_id;
 	invoke_msg.cmd_id = command_id;
+
+	com_ret = register_temp_refs(operation, temp_shm);
+	if (com_ret != TEEC_SUCCESS)
+		return com_ret;
 
 	if (operation)
 		copy_tee_operation_to_internal(operation, &invoke_msg.operation);
@@ -902,8 +986,6 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 	/* Message filled. Send message */
 	if (pthread_mutex_lock(&session_internal->mutex)) {
 		OT_LOG(LOG_ERR, "Failed to lock mutex");
-		if (return_origin)
-			*return_origin = TEE_ORIGIN_API;
 		return TEEC_ERROR_GENERIC;
 	}
 
@@ -963,8 +1045,9 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 
 	/* copy back the response data contained in the operation */
 	if (operation)
-		copy_internal_to_tee_operation(operation, &invoke_msg.operation);
+		copy_internal_to_tee_operation(operation, &recv_msg->operation);
 
+	unregister_temp_refs(operation, temp_shm);
 	free(recv_msg);
 	return result;
 
@@ -981,15 +1064,14 @@ err_com_1:
 	result = TEEC_ERROR_COMMUNICATION;
 
 err_msg:
+	unregister_temp_refs(operation, temp_shm);
 	free(recv_msg);
 	return result;
 
 op_cancel:
 	if (pthread_mutex_unlock(&session_internal->mutex))
 		OT_LOG(LOG_ERR, "Failed to unlock mutex");
-
-	if (return_origin)
-		*return_origin = TEE_ORIGIN_API;
+	unregister_temp_refs(operation, temp_shm);
 	return TEEC_ERROR_CANCEL;
 }
 
