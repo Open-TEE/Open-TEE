@@ -296,6 +296,16 @@ static TEEC_Result create_shared_mem(TEEC_Context *context, TEEC_SharedMemory *s
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
+	/* Three: useful debug print to syslog */
+	if (type == REGISTERED && shared_mem->buffer && !shared_mem->size)
+		OT_LOG(LOG_ERR, "Warning: Registering a buffer, but size-parameter is zero");
+
+	if (type == REGISTERED && shared_mem->size && !shared_mem->buffer)
+		OT_LOG(LOG_ERR, "Warning: Registering a buffer, but buffer-parameter is NULL");
+
+	if (type == ALLOCATED && !shared_mem->size)
+		OT_LOG(LOG_ERR, "Warning: Allocating a buffer, but size-parameter is zero");
+
 	shm_internal = (struct shared_mem_internal *)calloc(1, sizeof(struct shared_mem_internal));
 	if (!shm_internal) {
 		OT_LOG(LOG_ERR, "Failed to allocate memory for Shared memory");
