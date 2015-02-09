@@ -301,7 +301,8 @@ static TEEC_Result create_shared_mem(TEEC_Context *context, TEEC_SharedMemory *s
 		OT_LOG(LOG_ERR, "Warning: Registering a buffer, but size-parameter is zero");
 
 	if (type == REGISTERED && shared_mem->size && !shared_mem->buffer)
-		OT_LOG(LOG_ERR, "Warning: Registering a buffer, but buffer-parameter is NULL");
+		OT_LOG(LOG_ERR, "Warning: Registering a buffer, but buffer-parameter is NULL "
+		       "and size is not zero");
 
 	if (type == ALLOCATED && !shared_mem->size)
 		OT_LOG(LOG_ERR, "Warning: Allocating a buffer, but size-parameter is zero");
@@ -354,7 +355,8 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 
 	FOR_EACH_PARAM(i) {
 
-		if (TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_NONE) {
+		if (TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_NONE ||
+		    TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_VALUE_OUTPUT) {
 			continue;
 
 		} else if (TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_VALUE_INPUT ||
@@ -425,7 +427,8 @@ static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 
 	FOR_EACH_PARAM(i) {
 
-		if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_NONE) {
+		if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_NONE ||
+		    TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_VALUE_INPUT) {
 			continue;
 
 		} else if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_VALUE_OUTPUT ||
