@@ -175,8 +175,8 @@ static TEEC_Result exec_transaction(TEEC_Session *session, TEEC_SharedMemory *sh
 
 	/* Copy message to shm and assign to operation */
 	memcpy(shm_inout->buffer, msg, msg_len);
+	shm_inout->size = MAX_MSG_SIZE;
 	operation.params[1].memref.parent = shm_inout;
-	operation.params[1].memref.size = msg_len;
 
 	/* Fill in parameters type */
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_MEMREF_WHOLE,
@@ -258,7 +258,7 @@ static TEE_Result get_account(TEEC_Session *session, TEEC_SharedMemory *shm_inou
 	memset((void *)&operation, 0, sizeof(operation));
 
 	operation.params[0].memref.parent = shm_inout;
-	operation.params[0].memref.size = sizeof(struct account);
+	shm_inout->size = MAX_MSG_SIZE;
 
 	/* Fill in parameters type */
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_NONE, TEEC_NONE, TEEC_NONE);
@@ -298,8 +298,8 @@ static TEE_Result get_transactions(TEEC_Session *session, TEEC_SharedMemory *shm
 	/* Getting random transaction */
 	operation.params[0].value.a = 6;
 
+	shm_inout->size = MAX_MSG_SIZE;
 	operation.params[1].memref.parent = shm_inout;
-	operation.params[1].memref.size = MAX_MSG_SIZE;
 
 	/* Fill in parameters type */
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_MEMREF_WHOLE,
