@@ -69,6 +69,8 @@ struct mechanisms {
 #define TEE_CLOSE_ALL_PKCS11_SESSION 0x00000021
 #define TEE_GET_SESSION_INFO 0x00000022
 
+/* Object management functions */
+#define TEE_CREATE_OBJECT	0x000000A1
 
 #endif // COMMANDS_H
 

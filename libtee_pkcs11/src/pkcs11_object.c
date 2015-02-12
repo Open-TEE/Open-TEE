@@ -15,6 +15,7 @@
 *****************************************************************************/
 
 #include "cryptoki.h"
+#include "hal.h"
 
 /*
  * 11.7 OBJECT MANAGEMENT FUNCTIONS
@@ -25,11 +26,16 @@ CK_RV C_CreateObject(CK_SESSION_HANDLE hSession,
 		     CK_ULONG ulCount,
 		     CK_OBJECT_HANDLE_PTR phObject)
 {
-	hSession = hSession;
-	pTemplate = pTemplate;
-	ulCount = ulCount;
-	phObject = phObject;
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
+
+	if (!ulCount || !pTemplate || !phObject)
+		return CKR_ARGUMENTS_BAD;
+
+	if (!is_lib_initialized())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
+	return hal_create_object(hSession, pTemplate, ulCount, phObject);
 }
 
 CK_RV C_CopyObject(CK_SESSION_HANDLE hSession,
