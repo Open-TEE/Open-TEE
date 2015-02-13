@@ -64,6 +64,8 @@
 #define COM_MSG_NAME_OPEN_SHM_REGION		0x0C
 #define COM_MSG_NAME_UNLINK_SHM_REGION		0x0D
 #define COM_MSG_NAME_MANAGER_TERMINATION	0x0E
+#define COM_MSG_NAME_INVOKE_MGR_CMD			0x0F
+
 
 /* Request is used internally */
 #define COM_TYPE_QUERY				1
@@ -140,6 +142,30 @@ struct com_msg_open_session {
 	TEE_Result return_code_create_entry;
 	TEE_Result return_code_open_session;
 	uint32_t return_origin;
+} __attribute__((aligned));
+
+
+/**
+ * !brief
+ * container for data to be passed as part of the mgr_invoke command
+ *
+ */
+
+struct com_mgr_invoke_cmd_payload {
+	size_t size;
+	void *data;
+} __attribute__((aligned));
+
+/*!
+ * \brief The com_msg_invoke_cmd struct
+ * CA or TA is invoking command from TA (TEEC_InvokeCommand)
+ */
+struct com_msg_invoke_mgr_cmd {
+	struct com_msg_hdr msg_hdr;
+	TEE_Result result;
+	uint32_t cmd_id;
+	struct com_mgr_invoke_cmd_payload payload;
+
 } __attribute__((aligned));
 
 /*!
