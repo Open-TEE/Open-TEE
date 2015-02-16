@@ -38,13 +38,6 @@ static const uint32_t COM_MSG_START = 0xABCDEF12;
 #define TRY_READ_FD_COUNT 5
 #define ELEMENTS_IN_MESSAGE 2
 
-/* Transport information */
-struct com_transport_info {
-	uint64_t checksum;
-	uint32_t start;
-	uint32_t data_len; /* data_len: user message length */
-} __attribute__((aligned));
-
 int send_fd(int sockfd, int *fd_table_to_send, int fd_count, struct iovec *aiov, int aiovlen)
 {
 	struct msghdr msg_head = {0};

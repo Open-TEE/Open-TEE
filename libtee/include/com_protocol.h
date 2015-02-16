@@ -81,6 +81,13 @@
 #define TA_MAX_NAME_LEN				255
 /* clang-format on */
 
+/* Transport information */
+struct com_transport_info {
+	uint64_t checksum;
+	uint32_t start;
+	uint32_t data_len; /* data_len: user message length */
+} __attribute__((aligned));
+
 /*!
  * \brief The com_msg_hdr struct
  * Message header is containing generic information, which is common for all messages
