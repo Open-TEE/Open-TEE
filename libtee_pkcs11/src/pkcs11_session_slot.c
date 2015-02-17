@@ -25,19 +25,15 @@
 #define TEE_SLOT_ID 1
 /* The number of supported slots */
 #define SLOT_COUNT 1
+/* try 16 as the default number of mecahnisms */
+#define MECHANISM_COUNT 16
 
-CK_SLOT_INFO g_slot_info = {
-	.slotDescription = "TEE_BASED_SLOT",
-	.manufacturerID = "Intel",
-	.flags = CKF_TOKEN_PRESENT | CKF_HW_SLOT,
-	.hardwareVersion = {0, 1},
-	.firmwareVersion = {0, 1}
-};
+static CK_SLOT_INFO g_slot_info;
 
 /* a list of all mechanisms supported by the TEE */
 struct mechanisms *g_supported_mechanisms;
 CK_MECHANISM_TYPE_PTR g_mechanism_types;
-uint32_t g_mechanism_count = 16; /* try 16 as a default number of mechanisms */
+uint32_t g_mechanism_count = MECHANISM_COUNT;
 
 /*
  * 11.5 SLOT AND TOKEN MANAGEMENT
@@ -45,24 +41,51 @@ uint32_t g_mechanism_count = 16; /* try 16 as a default number of mechanisms */
 
 CK_RV C_GetSlotList(CK_BBOOL tokenPresent, CK_SLOT_ID_PTR pSlotList, CK_ULONG_PTR pulCount)
 {
+	int ret = CKR_OK;
+
 	/* in the TEE the token is always present, it is the TA */
 	tokenPresent = tokenPresent;
 
-	/* only support 1 slot */
-	if (pSlotList != NULL && *pulCount >= SLOT_COUNT)
-		pSlotList[0] = TEE_SLOT_ID;
+	if (pulCount == NULL)
+		return CKR_ARGUMENTS_BAD;
 
+	if (pSlotList == NULL)
+		goto out;
+	/* only support 1 slot */
+	if (*pulCount >= SLOT_COUNT)
+		pSlotList[0] = TEE_SLOT_ID;
+	else
+		ret =  CKR_BUFFER_TOO_SMALL;
+
+out:
 	*pulCount = 1;
 
-	return CKR_OK;
+	return ret;
 }
 
 CK_RV C_GetSlotInfo(CK_SLOT_ID slotID, CK_SLOT_INFO_PTR pInfo)
 {
+	if (pInfo == NULL)
+		return CKR_ARGUMENTS_BAD;
+
 	if (slotID != TEE_SLOT_ID)
 		return CKR_SLOT_ID_INVALID;
 
-	pInfo = &g_slot_info;
+	if (g_slot_info.slotDescription[0] == 0) {
+		memset(g_slot_info.slotDescription, ' ', sizeof(g_slot_info.slotDescription));
+		strncpy((char *)g_slot_info.slotDescription, "TEE_BASED_SLOT",
+			strlen("TEE_BASED_SLOT"));
+		memset(g_slot_info.manufacturerID, ' ', sizeof(g_slot_info.manufacturerID));
+		strncpy((char *)g_slot_info.manufacturerID, "Intel", strlen("Intel"));
+
+		g_slot_info.flags = CKF_TOKEN_PRESENT | CKF_HW_SLOT;
+		g_slot_info.hardwareVersion.major = 0;
+		g_slot_info.hardwareVersion.minor = 1;
+		g_slot_info.firmwareVersion.major = 0;
+		g_slot_info.firmwareVersion.minor = 1;
+	}
+
+	memcpy(pInfo, &g_slot_info, sizeof(CK_SLOT_INFO));
 
 	return CKR_OK;
 }
@@ -72,6 +95,9 @@ CK_RV C_GetTokenInfo(CK_SLOT_ID slotID, CK_TOKEN_INFO_PTR pInfo)
 	uint32_t size = sizeof(CK_TOKEN_INFO);
 	if (slotID != TEE_SLOT_ID)
 		return CKR_SLOT_ID_INVALID;
+
+	if (pInfo == NULL)
+		return CKR_ARGUMENTS_BAD;
 
 	return hal_get_info(TEE_GET_TOKEN_INFO, pInfo, &size);
 }
@@ -88,18 +114,24 @@ static CK_RV populate_user_mechanism_list(CK_MECHANISM_TYPE_PTR pMechanismList,
 					  CK_ULONG_PTR pulCount)
 {
 	CK_RV ret = 0;
-	ret = (*pulCount < g_mechanism_count) ? CKR_BUFFER_TOO_SMALL : 0;
+
+	if (pulCount == NULL)
+		return CKR_ARGUMENTS_BAD;
+
+	if (pMechanismList == NULL) {
+		*pulCount = g_mechanism_count;
+		return CKR_OK;
+	}
+
+	ret = (*pulCount < g_mechanism_count) ? CKR_BUFFER_TOO_SMALL : CKR_OK;
 
 	*pulCount = g_mechanism_count;
 	if (ret)
 		return ret;
 
-	if (pMechanismList != NULL) {
-		memcpy(pMechanismList, g_mechanism_types,
-		       g_mechanism_count * sizeof(struct mechanisms));
-	}
+	memcpy(pMechanismList, g_mechanism_types, g_mechanism_count * sizeof(struct mechanisms));
 
-	return CKR_OK;
+	return ret;
 }
 
 CK_RV C_GetMechanismList(CK_SLOT_ID slotID,
@@ -169,13 +201,16 @@ err_out:
 	free(g_mechanism_types);
 	g_mechanism_types = NULL;
 
-	g_mechanism_count = 16;
+	g_mechanism_count = MECHANISM_COUNT;
 	return ret;
 }
 
 CK_RV C_GetMechanismInfo(CK_SLOT_ID slotID, CK_MECHANISM_TYPE type, CK_MECHANISM_INFO_PTR pInfo)
 {
 	uint32_t i;
+
+	if (pInfo == NULL)
+		return CKR_ARGUMENTS_BAD;
 
 	if (slotID != TEE_SLOT_ID)
 		return CKR_SLOT_ID_INVALID;

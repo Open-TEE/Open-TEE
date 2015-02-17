@@ -55,11 +55,11 @@ typedef CK_BYTE           CK_UTF8CHAR;
 typedef CK_BYTE           CK_BBOOL;
 
 /* an unsigned value, at least 32 bits long  (forced to 32 bits for chaabi)*/
-typedef uint32_t	  CK_ULONG;
+typedef unsigned long /*uint32_t*/	  CK_ULONG;
 
 /* a signed value, the same size as a CK_ULONG */
 /* CK_LONG is new for v2.0 */
-typedef int32_t          CK_LONG;
+typedef long /*int32_t*/          CK_LONG;
 
 /* at least 32 bits; each bit is a Boolean flag */
 typedef CK_ULONG          CK_FLAGS;

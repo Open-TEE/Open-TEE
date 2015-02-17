@@ -25,13 +25,7 @@
  * \brief g_info
  * Information about this cryptoki implementation
  */
-static const CK_INFO g_info = {
-	{0x2, 0x14},	/*!< cryptoki 2.20 */
-	"Intel",	/*!< manufacturer */
-	0,		/*!< flags */
-	"libtee_pkcs11",/*!< Description */
-	{0, 1}		/*!< lib Ver */
-};
+static CK_INFO g_info;
 
 /*!
  * \brief g_function_list
@@ -162,6 +156,23 @@ CK_RV C_GetInfo(CK_INFO_PTR pInfo)
 
 	if (!is_lib_initialized())
 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
+	if (g_info.manufacturerID[0] == 0) {
+		g_info.cryptokiVersion.major = 0x2;
+		g_info.cryptokiVersion.minor = 0x14;
+
+		memset(g_info.manufacturerID, ' ', sizeof(g_info.manufacturerID));
+		strncpy((char *)g_info.manufacturerID, "Intel", strlen("Intel"));
+
+		g_info.flags = 0;
+
+		memset(g_info.libraryDescription, ' ', sizeof(g_info.libraryDescription));
+		strncpy((char *)g_info.libraryDescription, "libtee_pkcs11",
+			strlen("libtee_pkcs11"));
+
+		g_info.libraryVersion.major = 0;
+		g_info.libraryVersion.minor = 1;
+	}
 
 	memcpy(pInfo, &g_info, sizeof(CK_INFO));
 
