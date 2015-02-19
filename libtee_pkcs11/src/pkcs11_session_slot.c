@@ -269,18 +269,21 @@ CK_RV C_OpenSession(CK_SLOT_ID slotID,
 		    CK_NOTIFY Notify,
 		    CK_SESSION_HANDLE_PTR phSession)
 {
-	slotID = slotID;
-	flags = flags;
+	if (slotID != TEE_SLOT_ID)
+		return CKR_SLOT_ID_INVALID;
+
+	if (!(flags & CKF_SERIAL_SESSION))
+		return CKR_SESSION_PARALLEL_NOT_SUPPORTED;
+
 	pApplication = pApplication;
 	Notify = Notify;
-	phSession = phSession;
-	return CKR_FUNCTION_NOT_SUPPORTED;
+
+	return hal_open_session(flags, phSession);
 }
 
 CK_RV C_CloseSession(CK_SESSION_HANDLE hSession)
 {
-	hSession = hSession;
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return hal_close_session(hSession);
 }
 
 CK_RV C_CloseAllSessions(CK_SLOT_ID slotID)
@@ -288,14 +291,15 @@ CK_RV C_CloseAllSessions(CK_SLOT_ID slotID)
 	if (slotID != TEE_SLOT_ID)
 		return CKR_SLOT_ID_INVALID;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return hal_close_all_session();
 }
 
 CK_RV C_GetSessionInfo(CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo)
 {
-	hSession = hSession;
-	pInfo = pInfo;
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	if (pInfo == NULL)
+		return CKR_ARGUMENTS_BAD;
+
+	return hal_get_session_info(hSession, pInfo);
 }
 
 CK_RV C_GetOperationState(CK_SESSION_HANDLE hSession,

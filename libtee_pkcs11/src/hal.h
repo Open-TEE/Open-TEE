@@ -120,6 +120,39 @@ CK_RV hal_crypto_final(uint32_t command_id,
 CK_RV hal_get_info(uint32_t command_id, void *data, uint32_t *data_size);
 
 /*!
+ * \brief hal_open_session
+ * Open a pkcs11 session to the Token (i.e. TA)
+ * \param flags CK_SESSION_INFO flags
+ * \param phSession The pointer to the session that we create
+ * \return 0 on success
+ */
+CK_RV hal_open_session(CK_FLAGS flags, CK_SESSION_HANDLE_PTR phSession);
+
+/*!
+ * \brief hal_close_session
+ * Close a pkcs11 session to the token
+ * \param hSession The id of hte session to close
+ * \return 0 on success
+ */
+CK_RV hal_close_session(CK_SESSION_HANDLE hSession);
+
+/*!
+ * \brief hal_close_all_session
+ * Close all the sessions associated with this application
+ * \return 0 on success
+ */
+CK_RV hal_close_all_session();
+
+/*!
+ * \brief hal_get_session_info
+ * Get the info struct related to a session
+ * \param hSession The id of the session
+ * \param pInfo The struct to hold the return data in
+ * \return 0 on success
+ */
+CK_RV hal_get_session_info(CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo);
+
+/*!
  * \brief is_lib_initialized
  * Determine if the library has been properly initialized
  * \return true on success
