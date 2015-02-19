@@ -88,6 +88,20 @@ static CK_RV serialize_template_into_shm(TEEC_SharedMemory *shm,
 	return CKR_OK;
 }
 
+static CK_RV send_single_value(uint32_t param, uint32_t command_id)
+{
+	TEEC_Operation operation = {0};
+
+	if (!is_lib_initialized())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_NONE,
+						TEEC_NONE, TEEC_NONE);
+	operation.params[0].value.a = param;
+
+	return TEEC_InvokeCommand(g_control_session, command_id, &operation, NULL);
+}
+
 bool is_lib_initialized()
 {
 	return g_tee_context != NULL;
@@ -97,11 +111,9 @@ CK_RV hal_initialize_context()
 {
 	int ret = CKR_OK;
 	uint32_t return_origin;
-	TEEC_Operation operation;
+	TEEC_Operation operation = {0};
 
-	memset(&operation, 0, sizeof(TEEC_Operation));
-
-	if (g_tee_context)
+	if (is_lib_initialized())
 		return CKR_CRYPTOKI_ALREADY_INITIALIZED;
 
 	g_tee_context = calloc(1, sizeof(TEEC_Context));
@@ -160,18 +172,13 @@ CK_RV hal_finalize_context()
 
 CK_RV hal_init_token(CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen, CK_UTF8CHAR_PTR pLabel)
 {
-	TEEC_Operation operation;
-	TEEC_SharedMemory pin_mem;
-	TEEC_SharedMemory label_mem;
-	uint32_t return_origin;
+	TEEC_Operation operation = {0};
+	TEEC_SharedMemory pin_mem = {0};
+	TEEC_SharedMemory label_mem = {0};
 	CK_RV ret = 0;
 
-	if (g_tee_context == NULL)
+	if (!is_lib_initialized())
 		return CKR_CRYPTOKI_NOT_INITIALIZED;
-
-	memset(&operation, 0, sizeof(TEEC_Operation));
-	memset(&pin_mem, 0, sizeof(TEEC_SharedMemory));
-	memset(&label_mem, 0, sizeof(TEEC_SharedMemory));
 
 	pin_mem.buffer = pPin;
 	pin_mem.size = ulPinLen;
@@ -196,7 +203,7 @@ CK_RV hal_init_token(CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen, CK_UTF8CHAR_PTR pL
 	operation.params[1].value.a = ulPinLen;
 	operation.params[2].memref.parent = &label_mem;
 
-	ret = TEEC_InvokeCommand(g_control_session, TEE_INIT_TOKEN, &operation, &return_origin);
+	ret = TEEC_InvokeCommand(g_control_session, TEE_INIT_TOKEN, &operation, NULL);
 	if (ret != 0)
 		ret = CKR_GENERAL_ERROR;
 
@@ -340,16 +347,12 @@ CK_RV hal_crypto(uint32_t command_id,
 
 CK_RV hal_get_info(uint32_t command_id, void *data, uint32_t *data_size)
 {
-	TEEC_Operation operation;
-	TEEC_SharedMemory data_mem;
-	uint32_t return_origin;
+	TEEC_Operation operation = {0};
+	TEEC_SharedMemory data_mem = {0};
 	CK_RV ret = 0;
 
-	if (g_tee_context == NULL)
+	if (!is_lib_initialized())
 		return CKR_CRYPTOKI_NOT_INITIALIZED;
-
-	memset(&operation, 0, sizeof(TEEC_Operation));
-	memset(&data_mem, 0, sizeof(TEEC_SharedMemory));
 
 	data_mem.buffer = data;
 	data_mem.size = *data_size;
@@ -365,7 +368,7 @@ CK_RV hal_get_info(uint32_t command_id, void *data, uint32_t *data_size)
 	operation.params[0].memref.parent = &data_mem;
 	operation.params[1].value.a = *data_size;
 
-	ret = TEEC_InvokeCommand(g_control_session, command_id, &operation, &return_origin);
+	ret = TEEC_InvokeCommand(g_control_session, command_id, &operation, NULL);
 	if (ret == TEEC_ERROR_SHORT_BUFFER)
 		ret = CKR_BUFFER_TOO_SMALL;
 	else if (ret != 0)
@@ -382,24 +385,17 @@ out:
 
 CK_RV hal_open_session(CK_FLAGS flags, CK_SESSION_HANDLE_PTR phSession)
 {
-	TEEC_Operation operation;
-	uint32_t return_origin;
+	TEEC_Operation operation = {0};
 	CK_RV ret = 0;
 
-	if (g_tee_context == NULL)
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
-
-	memset(&operation, 0, sizeof(TEEC_Operation));
-
-	if (g_tee_context == NULL)
+	if (!is_lib_initialized())
 		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_VALUE_OUTPUT,
 						TEEC_NONE, TEEC_NONE);
 	operation.params[0].value.a = flags;
 
-	ret = TEEC_InvokeCommand(g_control_session, TEE_CREATE_PKCS11_SESSION, &operation,
-				 &return_origin);
+	ret = TEEC_InvokeCommand(g_control_session, TEE_CREATE_PKCS11_SESSION, &operation, NULL);
 	if (ret != 0)
 		ret = CKR_GENERAL_ERROR;
 
@@ -410,51 +406,28 @@ CK_RV hal_open_session(CK_FLAGS flags, CK_SESSION_HANDLE_PTR phSession)
 
 CK_RV hal_close_session(CK_SESSION_HANDLE hSession)
 {
-	TEEC_Operation operation;
-	uint32_t return_origin;
-
-	if (g_tee_context == NULL)
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
-
-	memset(&operation, 0, sizeof(TEEC_Operation));
-
-	if (g_tee_context == NULL)
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
-
-	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_NONE,
-						TEEC_NONE, TEEC_NONE);
-	operation.params[0].value.a = hSession;
-
-	return TEEC_InvokeCommand(g_control_session, TEE_CLOSE_PKCS11_SESSION, &operation,
-				  &return_origin);
+	return send_single_value(hSession, TEE_CLOSE_PKCS11_SESSION);
 }
 
 CK_RV hal_close_all_session()
 {
-	uint32_t return_origin;
-
-	if (g_tee_context == NULL)
+	if (!is_lib_initialized())
 		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	return TEEC_InvokeCommand(g_control_session, TEE_CLOSE_ALL_PKCS11_SESSION, NULL,
-				  &return_origin);
+	return TEEC_InvokeCommand(g_control_session, TEE_CLOSE_ALL_PKCS11_SESSION, NULL, NULL);
 }
 
 CK_RV hal_get_session_info(CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo)
 {
-	TEEC_Operation operation;
-	TEEC_SharedMemory data_mem;
-	uint32_t return_origin;
+	TEEC_Operation operation = {0};
+	TEEC_SharedMemory data_mem = {0};
 	CK_RV ret = 0;
 
 	if (pInfo == NULL)
 		return CKR_ARGUMENTS_BAD;
 
-	if (g_tee_context == NULL)
+	if (!is_lib_initialized())
 		return CKR_CRYPTOKI_NOT_INITIALIZED;
-
-	memset(&operation, 0, sizeof(TEEC_Operation));
-	memset(&data_mem, 0, sizeof(TEEC_SharedMemory));
 
 	data_mem.buffer = pInfo;
 	data_mem.size = sizeof(CK_SESSION_INFO);
@@ -470,8 +443,7 @@ CK_RV hal_get_session_info(CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo
 	operation.params[0].memref.parent = &data_mem;
 	operation.params[1].value.a = hSession;
 
-	ret = TEEC_InvokeCommand(g_control_session, TEE_GET_SESSION_INFO,
-				 &operation, &return_origin);
+	ret = TEEC_InvokeCommand(g_control_session, TEE_GET_SESSION_INFO, &operation, NULL);
 
 out:
 	TEEC_ReleaseSharedMemory(&data_mem);
@@ -548,3 +520,136 @@ CK_RV hal_destroy_object(CK_SESSION_HANDLE hSession,
 	/* Extract return values from operation and return */
 	return operation.params[3].value.a;
 }
+
+CK_RV hal_login(CK_SESSION_HANDLE hSession,
+		CK_USER_TYPE userType,
+		CK_UTF8CHAR_PTR pPin,
+		CK_ULONG ulPinLen)
+{
+	TEEC_Operation operation = {0};
+	TEEC_SharedMemory data_mem = {0};
+	CK_RV ret = 0;
+
+	if (pPin == NULL)
+		return CKR_ARGUMENTS_BAD;
+
+	if (!is_lib_initialized())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
+	data_mem.buffer = pPin;
+	data_mem.size = ulPinLen;
+	data_mem.flags = TEEC_MEM_INPUT;
+
+	ret = TEEC_RegisterSharedMemory(g_tee_context, &data_mem);
+	if (ret != TEE_SUCCESS) {
+		ret = CKR_GENERAL_ERROR;
+		goto out;
+	}
+
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_INPUT,
+						TEEC_VALUE_INPUT, TEEC_NONE);
+
+	operation.params[0].memref.parent = &data_mem;
+	operation.params[1].value.a = ulPinLen;
+	operation.params[1].value.b = userType;
+	operation.params[2].value.a = hSession;
+
+	ret = TEEC_InvokeCommand(g_control_session, TEE_LOGIN_SESSION, &operation, NULL);
+
+out:
+	TEEC_ReleaseSharedMemory(&data_mem);
+
+	return ret;
+}
+
+CK_RV hal_logout(CK_SESSION_HANDLE hSession)
+{
+	return send_single_value(hSession, TEE_LOGOUT_SESSION);
+}
+
+CK_RV hal_init_pin(CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen)
+{
+	TEEC_Operation operation = {0};
+	TEEC_SharedMemory data_mem = {0};
+	CK_RV ret = 0;
+
+	if (!is_lib_initialized())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
+	data_mem.buffer = pPin;
+	data_mem.size = ulPinLen;
+	data_mem.flags = TEEC_MEM_INPUT;
+
+	ret = TEEC_RegisterSharedMemory(g_tee_context, &data_mem);
+	if (ret != TEE_SUCCESS) {
+		ret = CKR_GENERAL_ERROR;
+		goto out;
+	}
+
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_INPUT,
+						TEEC_NONE, TEEC_VALUE_INOUT);
+
+	operation.params[0].memref.parent = &data_mem;
+	operation.params[1].value.a = ulPinLen;
+	operation.params[3].value.a = hSession;
+
+	ret = TEEC_InvokeCommand(g_control_session, TEE_INIT_PIN, &operation, NULL);
+
+out:
+	TEEC_ReleaseSharedMemory(&data_mem);
+
+	return ret;
+}
+
+CK_RV hal_set_pin(CK_SESSION_HANDLE hSession,
+		  CK_UTF8CHAR_PTR pOldPin,
+		  CK_ULONG ulOldLen,
+		  CK_UTF8CHAR_PTR pNewPin,
+		  CK_ULONG ulNewLen)
+{
+	TEEC_Operation operation = {0};
+	TEEC_SharedMemory old_pin_mem = {0};
+	TEEC_SharedMemory new_pin_mem = {0};
+	CK_RV ret = 0;
+
+	if (!is_lib_initialized())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
+	old_pin_mem.buffer = pOldPin;
+	old_pin_mem.size = ulOldLen;
+	old_pin_mem.flags = TEEC_MEM_INPUT;
+
+	ret = TEEC_RegisterSharedMemory(g_tee_context, &old_pin_mem);
+	if (ret != TEE_SUCCESS) {
+		ret = CKR_GENERAL_ERROR;
+		goto out;
+	}
+
+	new_pin_mem.buffer = pNewPin;
+	new_pin_mem.size = ulNewLen;
+	new_pin_mem.flags = TEEC_MEM_INPUT;
+
+	ret = TEEC_RegisterSharedMemory(g_tee_context, &new_pin_mem);
+	if (ret != TEE_SUCCESS) {
+		ret = CKR_GENERAL_ERROR;
+		goto out;
+	}
+
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_MEMREF_WHOLE,
+						TEEC_VALUE_INPUT, TEEC_VALUE_INOUT);
+
+	operation.params[0].memref.parent = &old_pin_mem;
+	operation.params[1].memref.parent = &new_pin_mem;
+	operation.params[2].value.a = ulOldLen;
+	operation.params[2].value.b = ulNewLen;
+	operation.params[3].value.a = hSession;
+
+	ret = TEEC_InvokeCommand(g_control_session, TEE_SET_PIN, &operation, NULL);
+
+out:
+	TEEC_ReleaseSharedMemory(&old_pin_mem);
+	TEEC_ReleaseSharedMemory(&new_pin_mem);
+
+	return ret;
+}
+

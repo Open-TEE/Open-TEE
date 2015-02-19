@@ -238,11 +238,10 @@ CK_RV C_InitToken(CK_SLOT_ID slotID,
 
 CK_RV C_InitPIN(CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen)
 {
-	hSession = hSession;
-	pPin = pPin;
-	ulPinLen = ulPinLen;
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return hal_init_pin(hSession, pPin, ulPinLen);
 }
 
 CK_RV C_SetPIN(CK_SESSION_HANDLE hSession,
@@ -251,12 +250,10 @@ CK_RV C_SetPIN(CK_SESSION_HANDLE hSession,
 	       CK_UTF8CHAR_PTR pNewPin,
 	       CK_ULONG ulNewLen)
 {
-	hSession = hSession;
-	pOldPin = pOldPin;
-	ulOldLen = ulOldLen;
-	pNewPin = pNewPin;
-	ulNewLen = ulNewLen;
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
+
+	return hal_set_pin(hSession, pOldPin, ulOldLen, pNewPin, ulNewLen);
 }
 
 /*
@@ -283,6 +280,9 @@ CK_RV C_OpenSession(CK_SLOT_ID slotID,
 
 CK_RV C_CloseSession(CK_SESSION_HANDLE hSession)
 {
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
+
 	return hal_close_session(hSession);
 }
 
@@ -298,6 +298,9 @@ CK_RV C_GetSessionInfo(CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo)
 {
 	if (pInfo == NULL)
 		return CKR_ARGUMENTS_BAD;
+
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
 
 	return hal_get_session_info(hSession, pInfo);
 }
@@ -331,15 +334,19 @@ CK_RV C_Login(CK_SESSION_HANDLE hSession,
 	      CK_UTF8CHAR_PTR pPin,
 	      CK_ULONG ulPinLen)
 {
-	hSession = hSession;
-	userType = userType;
-	pPin = pPin;
-	ulPinLen = ulPinLen;
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	if (pPin == NULL)
+		return CKR_ARGUMENTS_BAD;
+
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
+
+	return hal_login(hSession, userType, pPin, ulPinLen);
 }
 
 CK_RV C_Logout(CK_SESSION_HANDLE hSession)
 {
-	hSession = hSession;
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
+
+	return hal_logout(hSession);
 }

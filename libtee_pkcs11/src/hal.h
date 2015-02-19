@@ -121,6 +121,28 @@ CK_RV hal_close_all_session();
 CK_RV hal_get_session_info(CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo);
 
 /*!
+ * \brief hal_login
+ * Log the application into the token
+ * \param hSession The session to login with
+ * \param userType The user mode to login (SO or USER)
+ * \param pPin The pin code for the user
+ * \param ulPinLen The length of the pin
+ * \return 0 on success
+ */
+CK_RV hal_login(CK_SESSION_HANDLE hSession,
+		CK_USER_TYPE userType,
+		CK_UTF8CHAR_PTR pPin,
+		CK_ULONG ulPinLen);
+
+/*!
+ * \brief hal_logout
+ * Log the application out of the token
+ * \param hSession The session that is open
+ * \return 0 on success
+ */
+CK_RV hal_logout(CK_SESSION_HANDLE hSession);
+
+/*!
  * \brief is_lib_initialized
  * Determine if the library has been properly initialized
  * \return true on success
@@ -150,6 +172,32 @@ CK_RV hal_create_object(CK_SESSION_HANDLE hSession,
  */
 CK_RV hal_destroy_object(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject);
 
+/*!
+ * \brief hal_init_pin
+ * Initialize the normal users pin
+ * \param hSession The current valid "R/W SO Function" session
+ * \param pPin The pin code to set (or NULL if the device supports secure UI)
+ * \param ulPinLen The length of the pin or 0 pPin is NULL
+ * \return 0 on success
+ */
+CK_RV hal_init_pin(CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen);
+
+/*!
+ * \brief hal_set_pin
+ * Change the Pin for the currently logged in user or the CKU_USER pin if the session is not logged
+ * in
+ * \param hSession The current valid session
+ * \param pOldPin The old pin being replaced or NULL if trusted UI
+ * \param ulOldLen the len or 0 if pOldPin is NULL
+ * \param pNewPin The new pin or NULL of trusted UI
+ * \param ulNewLen the len or 0 if pNewPin is NULL
+ * \return 0 on success
+ */
+CK_RV hal_set_pin(CK_SESSION_HANDLE hSession,
+		  CK_UTF8CHAR_PTR pOldPin,
+		  CK_ULONG ulOldLen,
+		  CK_UTF8CHAR_PTR pNewPin,
+		  CK_ULONG ulNewLen);
 
 #endif // HAL_H
 
