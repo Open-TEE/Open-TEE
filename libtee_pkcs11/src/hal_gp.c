@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 /*!
  * \brief g_tee_context
@@ -38,6 +39,54 @@ uint64_t g_application_nonce;
 static const TEEC_UUID uuid = {
 	0x12345678, 0x8765, 0x4321, { 'P', 'K', 'C', 'S', '1', '1', 'T', 'A'}
 };
+
+static CK_RV serialize_template_into_shm(TEEC_SharedMemory *shm,
+					 CK_ATTRIBUTE_PTR pTemplate,
+					 CK_ULONG ulCount)
+{
+	uint32_t pos = 0, i;
+
+	/* Calculating the size that is needed for serializing tempalte it to into on buffer */
+	for (i = 0; i < ulCount; i++)
+		shm->size += pTemplate[i].ulValueLen;
+
+	shm->size += ulCount * sizeof(pTemplate->type);
+	shm->size += ulCount * sizeof(pTemplate->ulValueLen);
+	shm->size += sizeof(ulCount);
+
+	shm->buffer = calloc(1, shm->size);
+	if (!shm->buffer)
+		return CKR_HOST_MEMORY;
+
+	/* Serialize template into buffer. Schema:
+	 * |------------------------------------------------------------------------------------|
+	 * | Attr count		| Attribute type,	| ulValueLen,		| pValue	|
+	 * | sizeof(ulCount)	| sizeof (type)		| sizeog (ulValueLen)	| ulValueLen	|
+	 * |------------------------------------------------------------------------------------|
+	 *			|---------------- appers Attr count times ----------------------|
+	 * First line is what and second line is telling its size. */
+
+	memcpy((uint8_t *)shm->buffer, &ulCount, sizeof(ulCount));
+	pos += sizeof(ulCount);
+
+	for (i = 0; i < ulCount; ++i) {
+
+		/* Attribute type */
+		memcpy((uint8_t *)shm->buffer + pos, &pTemplate[i].type, sizeof(pTemplate[i].type));
+		pos += sizeof(pTemplate[i].type);
+
+		/* ulValueLen */
+		memcpy((uint8_t *)shm->buffer + pos,
+		       &pTemplate[i].ulValueLen, sizeof(pTemplate[i].ulValueLen));
+		pos += sizeof(pTemplate[i].ulValueLen);
+
+		/* pValue */
+		memcpy((uint8_t *)shm->buffer + pos, pTemplate[i].pValue, pTemplate[i].ulValueLen);
+		pos += pTemplate[i].ulValueLen;
+	}
+
+	return CKR_OK;
+}
 
 bool is_lib_initialized()
 {
@@ -373,61 +422,24 @@ CK_RV hal_create_object(CK_SESSION_HANDLE hSession,
 			CK_ULONG ulCount,
 			CK_OBJECT_HANDLE_PTR phObject)
 {
-	TEEC_SharedMemory in_shm;
+	TEEC_SharedMemory in_shm = {0};
 	TEEC_Operation operation = {0};
-	uint32_t i = 0, pos = 0;
 	TEEC_Result teec_ret;
+	CK_RV ck_rv;
 
 	/* Object handle is valid if this function succeeds */
 	*phObject = CKR_OBJECT_HANDLE_INVALID;
 
-	/* Calculating the size that is needed for serializing tempalte it to into on buffer */
-	for (i = 0; i < ulCount; i++)
-		in_shm.size += pTemplate[i].ulValueLen;
+	/* Serialize template into buffer (function allocating a buffer!) */
+	ck_rv = serialize_template_into_shm(&in_shm, pTemplate, ulCount);
+	if (ck_rv != CKR_OK)
+		return ck_rv;
 
-	in_shm.size += ulCount * sizeof(pTemplate->type);
-	in_shm.size += ulCount * sizeof(pTemplate->ulValueLen);
-	in_shm.size += sizeof(ulCount);
-
-	/* Allocated buffer and register it as shared memory. It is used for trasfering template
-	 * into TEE environment */
+	/* Register shared memory. It is used for trasfering template into TEE environment */
 	in_shm.flags = TEEC_MEM_INPUT;
-	in_shm.buffer = calloc(1, in_shm.size);
-	if (!in_shm.buffer)
-		return CKR_HOST_MEMORY;
-
 	if (TEEC_RegisterSharedMemory(g_tee_context, &in_shm) != CKR_OK) {
 		free(in_shm.buffer);
 		return CKR_GENERAL_ERROR;
-	}
-
-	/* Serialize template into buffer. Schema:
-	 * |------------------------------------------------------------------------------------|
-	 * | Attr count		| Attribute type,	| ulValueLen,		| pValue	|
-	 * | sizeof(ulCount)	| sizeof (type)		| sizeog (ulValueLen)	| ulValueLen	|
-	 * |------------------------------------------------------------------------------------|
-	 *			|---------------- appers Attr count times ----------------------|
-	 * First line is what and second line is telling its size. */
-
-	memcpy((uint8_t *)in_shm.buffer, &ulCount, sizeof(ulCount));
-	pos += sizeof(ulCount);
-
-	for (i = 0; i < ulCount; ++i) {
-
-		/* Attribute type */
-		memcpy((uint8_t *)in_shm.buffer + pos,
-		       &pTemplate[i].type, sizeof(pTemplate[i].type));
-		pos += sizeof(pTemplate->type);
-
-		/* ulValueLen */
-		memcpy((uint8_t *)in_shm.buffer + pos,
-		       &pTemplate->ulValueLen, sizeof(pTemplate[i].ulValueLen));
-		pos += sizeof(pTemplate->ulValueLen);
-
-		/* pValue */
-		memcpy((uint8_t *)in_shm.buffer + pos,
-		       pTemplate[i].pValue, pTemplate[i].ulValueLen);
-		pos += pTemplate->ulValueLen;
 	}
 
 	/* Fill operation */
