@@ -266,7 +266,7 @@ static TEEC_Result get_shm_from_manager_and_map_region(struct shared_mem_interna
 
 	/* We have finished with the file handle as it has been mapped so don't leak it */
 	close(fd);
-
+	free(recv_msg);
 	return result;
 
 release_shm_2:
