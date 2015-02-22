@@ -141,6 +141,15 @@ CK_RV hal_create_object(CK_SESSION_HANDLE hSession,
 			CK_ULONG ulCount,
 			CK_OBJECT_HANDLE_PTR phObject);
 
+/*!
+ * \brief hal_destroy_object
+ * Destroys an object
+ * \param hSession
+ * \param hObject
+ * \return
+ */
+CK_RV hal_destroy_object(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject);
+
 
 #endif // HAL_H
 

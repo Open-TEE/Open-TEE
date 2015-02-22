@@ -54,10 +54,13 @@ CK_RV C_CopyObject(CK_SESSION_HANDLE hSession,
 
 CK_RV C_DestroyObject(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject)
 {
-	hSession = hSession;
-	hObject = hObject;
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	if (hKey == CK_INVALID_HANDLE)
+		return CKR_OBJECT_HANDLE_INVALID;
+
+	return hal_destroy_object(hSession, hObject);
 }
 
 CK_RV C_GetObjectSize(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject, CK_ULONG_PTR pulSize)

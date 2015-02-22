@@ -526,3 +526,24 @@ CK_RV hal_create_object(CK_SESSION_HANDLE hSession,
 	*phObject = operation.params[1].value.a;
 	return operation.params[1].value.b;
 }
+
+CK_RV hal_destroy_object(CK_SESSION_HANDLE hSession,
+			 CK_OBJECT_HANDLE hObject)
+{
+	TEEC_Operation operation = {0};
+
+	/* Fill in operation. Session and object could be passed in one value parameter, but
+	 * they are passed in two to be consistent with parameter passing */
+	operation.params[0].value.a = hObject;
+	operation.params[3].value.a = hSession;
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_NONE,
+						TEEC_NONE, TEEC_VALUE_INOUT);
+
+	/* Hand over execution to TEE */
+	if (TEEC_InvokeCommand(g_control_session, TEE_DESTROY_OBJECT,
+			       &operation, NULL) != TEEC_SUCCESS)
+		return CKR_GENERAL_ERROR;
+
+	/* Extract return values from operation and return */
+	return operation.params[3].value.a;
+}
