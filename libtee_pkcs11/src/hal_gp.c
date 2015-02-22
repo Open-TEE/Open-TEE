@@ -213,14 +213,65 @@ CK_RV hal_crypto_init(uint32_t command_id,
 		      CK_MECHANISM_PTR pMechanism,
 		      CK_OBJECT_HANDLE hKey)
 {
-	command_id = command_id;
-	hSession = hSession;
-	pMechanism = pMechanism;
-	hKey = hKey;
+	TEEC_SharedMemory in_shm = {0};
+	TEEC_Operation operation = {0};
+	TEEC_Result teec_ret;
+	uint32_t pos = 0;
 
-	/* Not yet implemented */
+	/* Mechanism is copied to memref. Calculate needed size and alloc buffer */
+	in_shm.size = sizeof(pMechanism->mechanism) + pMechanism->ulParameterLen;
+	in_shm.buffer = calloc(1, in_shm.size);
+	if (!in_shm.buffer)
+		return CKR_HOST_MEMORY;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	/* Copy mechanism to memref:
+	 * |----------------------------------------------------------------------------|
+	 * | mechanisms		| ulParameterLen,		| pParameter,		|
+	 * | sizeof(mechanisms)	| sizeof (ulParameterLen)	| ulParameterLen	|
+	 * |----------------------------------------------------------------------------|
+	 */
+
+	/* Mechanisms */
+	memcpy(in_shm.buffer, &pMechanism->mechanism, sizeof(pMechanism->mechanism));
+	pos += sizeof(pMechanism->mechanism);
+
+	/* ulParameterLen */
+	memcpy((uint8_t *)in_shm.buffer + pos,
+	       &pMechanism->ulParameterLen, sizeof(pMechanism->ulParameterLen));
+	pos += sizeof(pMechanism->ulParameterLen);
+
+	/* pParameter */
+	memcpy((uint8_t *)in_shm.buffer + pos, pMechanism->pParameter, pMechanism->ulParameterLen);
+
+	/* Register shared memory. It is used for trasfering template into TEE environment */
+	in_shm.flags = TEEC_MEM_INPUT;
+	if (TEEC_RegisterSharedMemory(g_tee_context, &in_shm) != TEEC_SUCCESS) {
+		free(in_shm.buffer);
+		return CKR_GENERAL_ERROR;
+	}
+
+	/* Fill operation */
+	operation.params[0].memref.parent = &in_shm;
+	operation.params[2].value.a = in_shm.size;
+	operation.params[1].value.a = command_id;
+	operation.params[1].value.b = hKey;
+	operation.params[3].value.a = hSession;
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_INPUT,
+						TEEC_VALUE_INPUT, TEEC_VALUE_INOUT);
+
+	/* Hand over execution to TEE */
+	teec_ret = TEEC_InvokeCommand(g_control_session, TEE_CRYPTO_INIT, &operation, NULL);
+
+	/* Shared momory was INPUT and it have served its purpose */
+	TEEC_ReleaseSharedMemory(&in_shm);
+	free(in_shm.buffer);
+
+	/* Something went wrong and problem is origin from frame work */
+	if (teec_ret != TEEC_SUCCESS)
+		return CKR_GENERAL_ERROR;
+
+	/* Crypto init function return value from TEE */
+	return operation.params[3].value.a;
 }
 
 CK_RV hal_crypto(uint32_t command_id,
@@ -230,50 +281,60 @@ CK_RV hal_crypto(uint32_t command_id,
 		 CK_BYTE_PTR dst,
 		 CK_ULONG_PTR dst_len)
 {
-	command_id = command_id;
-	hSession = hSession;
-	src = src;
-	src_len = src_len;
-	dst = dst;
-	dst_len = dst_len;
+	TEEC_SharedMemory shm = {0};
+	TEEC_Operation operation = {0};
 
-	/* Not yet implemented */
+	/* Although both size are passed to TEE environment, only one SHM is registered.
+	 * SRC is copied to buffer and then it is replaced with DST in TEE */
+	if (src)
+		shm.size = src_len > *dst_len ? src_len : *dst_len;
+	else
+		shm.size = *dst_len;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
-}
+	shm.buffer = calloc(1, shm.size);
+	if (!shm.buffer)
+		return CKR_HOST_MEMORY;
 
-CK_RV hal_crypto_update(uint32_t command_id,
-			CK_SESSION_HANDLE hSession,
-			CK_BYTE_PTR src,
-			CK_ULONG src_len,
-			CK_BYTE_PTR dst,
-			CK_ULONG_PTR dst_len)
-{
-	command_id = command_id;
-	hSession = hSession;
-	src = src;
-	src_len = src_len;
-	dst = dst;
-	dst_len = dst_len;
+	/* Copy SRC data */
+	if (src)
+		memcpy(shm.buffer, src, src_len);
 
-	/* Not yet implemented */
+	/* Register shared memory. It is used for trasfering template into TEE environment */
+	if (src)
+		shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
+	else
+		shm.flags = TEEC_MEM_OUTPUT;
+	if (TEEC_RegisterSharedMemory(g_tee_context, &shm) != TEEC_SUCCESS) {
+		free(shm.buffer);
+		return CKR_GENERAL_ERROR;
+	}
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
-}
+	/* Fill operation */
+	operation.params[0].memref.parent = &shm;
+	operation.params[2].value.a = src_len;
+	operation.params[2].value.b = *dst_len;
+	operation.params[1].value.a = command_id;
+	operation.params[3].value.a = hSession;
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_INPUT,
+						TEEC_VALUE_INOUT, TEEC_VALUE_INOUT);
 
-CK_RV hal_crypto_final(uint32_t command_id,
-			CK_SESSION_HANDLE hSession,
-			CK_BYTE_PTR dst,
-			CK_ULONG_PTR dst_len)
-{
-	command_id = command_id;
-	hSession = hSession;
-	dst = dst;
-	dst_len = dst_len;
+	/* Hand over execution to TEE */
+	if (TEEC_InvokeCommand(g_control_session, TEE_CRYPTO, &operation, NULL) != TEEC_SUCCESS) {
+		TEEC_ReleaseSharedMemory(&shm);
+		free(shm.buffer);
+		return CKR_GENERAL_ERROR;
+	}
 
-	/* Not yet implemented */
+	/* Memcpy dst data into buffer */
+	*dst_len = operation.params[2].value.b;
+	memcpy(dst, shm.buffer, *dst_len);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	/* Shared momory was INPUT and it have served its purpose */
+	TEEC_ReleaseSharedMemory(&shm);
+	free(shm.buffer);
+
+	/* Crypto init function return value from TEE */
+	return operation.params[3].value.a;
 }
 
 CK_RV hal_get_info(uint32_t command_id, void *data, uint32_t *data_size)

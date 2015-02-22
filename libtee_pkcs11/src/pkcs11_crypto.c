@@ -14,6 +14,7 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
+#include <stdlib.h>
 #include <stdint.h>
 
 #include "cryptoki.h"
@@ -35,6 +36,15 @@ static CK_RV crypto_init(uint32_t command_id,
 			 CK_MECHANISM_PTR pMechanism,
 			 CK_OBJECT_HANDLE hKey)
 {
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
+
+	if (hKey == CK_INVALID_HANDLE)
+		return CKR_OBJECT_HANDLE_INVALID;
+
+	if (!pMechanism)
+		return CKR_ARGUMENTS_BAD;
+
 	return hal_crypto_init(command_id, hSession, pMechanism, hKey);
 }
 
@@ -57,6 +67,12 @@ static CK_RV crypto(uint32_t command_id,
 		    CK_BYTE_PTR dst,
 		    CK_ULONG_PTR dst_len)
 {
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
+
+	if (!src || !dst || !dst_len)
+		return CKR_ARGUMENTS_BAD;
+
 	return hal_crypto(command_id, hSession, src, src_len, dst, dst_len);
 }
 
@@ -79,7 +95,13 @@ static CK_RV crypto_update(uint32_t command_id,
 			   CK_BYTE_PTR dst,
 			   CK_ULONG_PTR dst_len)
 {
-	return hal_crypto_update(command_id, hSession, src, src_len, dst, dst_len);
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
+
+	if (!src || !dst || !dst_len)
+		return CKR_ARGUMENTS_BAD;
+
+	return hal_crypto(command_id, hSession, src, src_len, dst, dst_len);
 }
 /*!
  * \brief crypto_final
@@ -96,7 +118,13 @@ static CK_RV crypto_final(uint32_t command_id,
 			  CK_BYTE_PTR dst,
 			  CK_ULONG_PTR dst_len)
 {
-	return hal_crypto_final(command_id, hSession, dst, dst_len);
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
+
+	if (!dst || !dst_len)
+		return CKR_ARGUMENTS_BAD;
+
+	return hal_crypto(command_id, hSession, NULL, 0, dst, dst_len);
 }
 
 /*

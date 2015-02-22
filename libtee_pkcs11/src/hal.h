@@ -61,10 +61,10 @@ CK_RV hal_crypto_init(uint32_t command_id,
 
 /*!
  * \brief hal_crypto
- * One stage crypto operation
+ * Maps XX_crypto, xx_crypto_update and xx_crypto_final
  * \param command_id invoked command from TEE
  * \param hSession see PKCS11
- * \param src is operation target buffer
+ * \param src is operation target buffer. Accept NULL (crypto_final).
  * \param src_len is src buffer lenghtn in bytes
  * \param dst operation output is placed into dst buffer
  * \param dst_len is dst buffer length in bytes
@@ -76,38 +76,6 @@ CK_RV hal_crypto(uint32_t command_id,
 		 CK_ULONG src_len,
 		 CK_BYTE_PTR dst,
 		 CK_ULONG_PTR dst_len);
-
-/*!
- * \brief hal_crypto_update
- * Update one going crypto operation
- * \param command_id invoked command from TEE
- * \param hSession see PKCS11
- * \param src is operation target buffer
- * \param src_len is src buffer lenghtn in bytes
- * \param dst operation output is placed into dst buffer
- * \param dst_len is dst buffer length in bytes
- * \return
- */
-CK_RV hal_crypto_update(uint32_t command_id,
-			CK_SESSION_HANDLE hSession,
-			CK_BYTE_PTR src,
-			CK_ULONG src_len,
-			CK_BYTE_PTR dst,
-			CK_ULONG_PTR dst_len);
-
-/*!
- * \brief hal_crypto_final
- * Finalizes crypto operation
- * \param command_id invoked command from TEE
- * \param hSession see PKCS11
- * \param dst operation output is placed into dst buffer
- * \param dst_len is dst buffer length in bytes
- * \return
- */
-CK_RV hal_crypto_final(uint32_t command_id,
-			CK_SESSION_HANDLE hSession,
-			CK_BYTE_PTR dst,
-			CK_ULONG_PTR dst_len);
 
 /*!
  * \brief hal_get_info
