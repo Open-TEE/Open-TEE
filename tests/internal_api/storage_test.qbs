@@ -9,5 +9,7 @@ CppApplication {
 
     destinationDirectory: '.'
 
-    files: ["storage_test.c"]
+    files: ["storage_test.c",
+	   		"../../emulator/manager/opentee_manager_storage_api.c",
+    		]
 }
