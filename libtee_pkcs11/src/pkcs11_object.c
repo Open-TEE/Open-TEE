@@ -57,7 +57,7 @@ CK_RV C_DestroyObject(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject)
 	if (hSession == CK_INVALID_HANDLE)
 		return CKR_SESSION_HANDLE_INVALID;
 
-	if (hKey == CK_INVALID_HANDLE)
+	if (hObject == CK_INVALID_HANDLE)
 		return CKR_OBJECT_HANDLE_INVALID;
 
 	return hal_destroy_object(hSession, hObject);
