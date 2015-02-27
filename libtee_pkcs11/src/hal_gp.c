@@ -219,7 +219,8 @@ CK_RV hal_crypto_init(uint32_t command_id,
 	uint32_t pos = 0;
 
 	/* Mechanism is copied to memref. Calculate needed size and alloc buffer */
-	in_shm.size = sizeof(pMechanism->mechanism) + pMechanism->ulParameterLen;
+	in_shm.size = sizeof(pMechanism->mechanism) +
+		      sizeof(pMechanism->ulParameterLen) + pMechanism->ulParameterLen;
 	in_shm.buffer = calloc(1, in_shm.size);
 	if (!in_shm.buffer)
 		return CKR_HOST_MEMORY;
