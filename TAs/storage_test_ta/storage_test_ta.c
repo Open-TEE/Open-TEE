@@ -75,12 +75,14 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 
 void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 {
+	sessionContext = sessionContext;
 	OT_LOG(LOG_ERR, "Calling the Close session entry point");
 }
 
 TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t commandID,
 						uint32_t paramTypes, TEE_Param params[4])
 {
+	sessionContext = sessionContext;
 	paramTypes = paramTypes;
 
 	OT_LOG(LOG_ERR, "Calling the Invoke command entry point");
