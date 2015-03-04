@@ -388,6 +388,9 @@ CK_RV hal_open_session(CK_FLAGS flags, CK_SESSION_HANDLE_PTR phSession)
 	TEEC_Operation operation = {0};
 	CK_RV ret = 0;
 
+	if (phSession == NULL)
+		return CKR_ARGUMENTS_BAD;
+
 	if (!is_lib_initialized())
 		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
