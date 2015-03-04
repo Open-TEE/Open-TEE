@@ -442,6 +442,47 @@ static void data_stream_write_read()
 		goto err;
 	}
 
+	if (count != data_size ||
+	    memcmp(read_data, write_data, count)) {
+		priiintf("Fail: read and written data doesn't match\n");
+		goto err;
+	}
+
+	ret = TEE_SeekObjectData(per_han, -count, TEE_DATA_SEEK_CUR);
+	if (ret != TEE_SUCCESS) {
+		priiintf("Fail: per seek\n");
+		goto err;
+	}
+
+	ret = TEE_ReadObjectData(per_han, read_data, data_size, &count);
+	if (ret != TEE_SUCCESS) {
+		priiintf("Fail: per read\n");
+		goto err;
+	}
+
+	if (count != data_size ||
+	    memcmp(read_data, write_data, count)) {
+		priiintf("Fail: read and written data doesn't match\n");
+		goto err;
+	}
+
+	ret = TEE_SeekObjectData(per_han, -count, TEE_DATA_SEEK_END);
+	if (ret != TEE_SUCCESS) {
+		priiintf("Fail: per seek\n");
+		goto err;
+	}
+
+	ret = TEE_ReadObjectData(per_han, read_data, data_size, &count);
+	if (ret != TEE_SUCCESS) {
+		priiintf("Fail: per read\n");
+		goto err;
+	}
+
+	if (count != data_size ||
+	    memcmp(read_data, write_data, count)) {
+		priiintf("Fail: read and written data doesn't match\n");
+		goto err;
+	}
 err:
 	TEE_CloseAndDeletePersistentObject(per_han);
 	TEE_CloseObject(handler);
