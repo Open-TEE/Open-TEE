@@ -73,7 +73,10 @@ static CK_RV crypto(uint32_t command_id,
 	if (!src || !dst || !dst_len)
 		return CKR_ARGUMENTS_BAD;
 
-	return hal_crypto(command_id, hSession, src, src_len, dst, dst_len);
+	if (command_id == TEE_VERIFY)
+		return hal_verify_crypto(hSession, src, src_len, dst, *dst_len);
+	else
+		return hal_crypto(command_id, hSession, src, src_len, dst, dst_len);
 }
 
 /*!

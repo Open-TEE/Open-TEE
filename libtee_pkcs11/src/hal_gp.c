@@ -282,6 +282,56 @@ CK_RV hal_crypto_init(uint32_t command_id,
 	return operation.params[3].value.a;
 }
 
+CK_RV hal_verify_crypto(CK_SESSION_HANDLE hSession,
+			CK_BYTE_PTR msg,
+			CK_ULONG msg_len,
+			CK_BYTE_PTR sig,
+			CK_ULONG sig_len)
+{
+	TEEC_SharedMemory shm_msg = {0};
+	TEEC_SharedMemory shm_sig = {0};
+	TEEC_Operation operation = {0};
+	TEEC_Result teec_rv;
+
+	/* Register shared memory. It is used for trasfering template into TEE environment */
+	shm_msg.flags = TEEC_MEM_INPUT;
+	shm_msg.size = msg_len;
+	shm_msg.buffer = msg;
+	if (TEEC_RegisterSharedMemory(g_tee_context, &shm_msg) != TEEC_SUCCESS)
+		return CKR_GENERAL_ERROR;
+
+	/* Signature */
+	shm_sig.flags = TEEC_MEM_INPUT;
+	shm_sig.size = sig_len;
+	shm_sig.buffer = sig;
+	if (TEEC_RegisterSharedMemory(g_tee_context, &shm_sig) != TEEC_SUCCESS) {
+		TEEC_ReleaseSharedMemory(&shm_msg);
+		return CKR_GENERAL_ERROR;
+	}
+
+	/* Fill operation */
+	operation.params[0].memref.parent = &shm_msg;
+	operation.params[1].memref.parent = &shm_sig;
+	operation.params[2].value.a = msg_len;
+	operation.params[2].value.b = sig_len;
+	operation.params[3].value.a = hSession;
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_MEMREF_WHOLE,
+						TEEC_VALUE_INOUT, TEEC_VALUE_INOUT);
+
+	/* Hand over execution to TEE */
+	teec_rv = TEEC_InvokeCommand(g_control_session, TEE_VERIFY, &operation, NULL);
+
+	/* Shared memory have served its purpose */
+	TEEC_ReleaseSharedMemory(&shm_msg);
+	TEEC_ReleaseSharedMemory(&shm_sig);
+
+	if (teec_rv != TEEC_SUCCESS)
+		return CKR_GENERAL_ERROR;
+
+	/* Crypto verify function return value from TEE */
+	return operation.params[3].value.a;
+}
+
 CK_RV hal_crypto(uint32_t command_id,
 		 CK_SESSION_HANDLE hSession,
 		 CK_BYTE_PTR src,
@@ -341,7 +391,7 @@ CK_RV hal_crypto(uint32_t command_id,
 	TEEC_ReleaseSharedMemory(&shm);
 	free(shm.buffer);
 
-	/* Crypto init function return value from TEE */
+	/* Crypto function return value from TEE */
 	return operation.params[3].value.a;
 }
 
