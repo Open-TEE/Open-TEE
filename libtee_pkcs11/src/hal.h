@@ -78,6 +78,22 @@ CK_RV hal_crypto(uint32_t command_id,
 		 CK_ULONG_PTR dst_len);
 
 /*!
+ * \brief hal_verify_crypto
+ * Verify crypto operation is special case, because it has two input buffer
+ * \param hSession
+ * \param msg
+ * \param msg_len
+ * \param sig
+ * \param sig_len
+ * \return
+ */
+CK_RV hal_verify_crypto(CK_SESSION_HANDLE hSession,
+			CK_BYTE_PTR msg,
+			CK_ULONG msg_len,
+			CK_BYTE_PTR sig,
+			CK_ULONG sig_len);
+
+/*!
  * \brief hal_get_info
  * A generic function to populate an info structure (CK_SLOT_INFO, CK_TOKEN_INFO)
  * \param command_id The command to invoke
