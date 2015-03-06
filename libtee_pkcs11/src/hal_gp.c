@@ -22,6 +22,14 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifndef TEEC_PARAM_TYPES
+#define TEEC_PARAM_TYPES(a, b, c, d) (	\
+	(((a) & 0xff) << 0) |	\
+	(((b) & 0xff) << 8) |	\
+	(((c) & 0xff) << 16) |	\
+	(((d) & 0xff) << 24))
+#endif
+
 /*!
  * \brief g_tee_context
  * A context that is created towards the TEE
@@ -189,11 +197,11 @@ CK_RV hal_init_token(CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen, CK_UTF8CHAR_PTR pL
 	label_mem.flags = TEEC_MEM_INPUT;
 
 	ret = TEEC_RegisterSharedMemory(g_tee_context, &pin_mem);
-	if (ret != TEE_SUCCESS)
+	if (ret != TEEC_SUCCESS)
 		goto out1;
 
 	ret = TEEC_RegisterSharedMemory(g_tee_context, &label_mem);
-	if (ret != TEE_SUCCESS)
+	if (ret != TEEC_SUCCESS)
 		goto out2;
 
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_INPUT,
@@ -409,7 +417,7 @@ CK_RV hal_get_info(uint32_t command_id, void *data, uint32_t *data_size)
 	data_mem.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
 
 	ret = TEEC_RegisterSharedMemory(g_tee_context, &data_mem);
-	if (ret != TEE_SUCCESS)
+	if (ret != TEEC_SUCCESS)
 		goto out;
 
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_INOUT,
@@ -487,7 +495,7 @@ CK_RV hal_get_session_info(CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo
 	data_mem.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
 
 	ret = TEEC_RegisterSharedMemory(g_tee_context, &data_mem);
-	if (ret != TEE_SUCCESS)
+	if (ret != TEEC_SUCCESS)
 		goto out;
 
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_INPUT,
@@ -594,7 +602,7 @@ CK_RV hal_login(CK_SESSION_HANDLE hSession,
 	data_mem.flags = TEEC_MEM_INPUT;
 
 	ret = TEEC_RegisterSharedMemory(g_tee_context, &data_mem);
-	if (ret != TEE_SUCCESS) {
+	if (ret != TEEC_SUCCESS) {
 		ret = CKR_GENERAL_ERROR;
 		goto out;
 	}
@@ -634,7 +642,7 @@ CK_RV hal_init_pin(CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pPin, CK_ULONG ul
 	data_mem.flags = TEEC_MEM_INPUT;
 
 	ret = TEEC_RegisterSharedMemory(g_tee_context, &data_mem);
-	if (ret != TEE_SUCCESS) {
+	if (ret != TEEC_SUCCESS) {
 		ret = CKR_GENERAL_ERROR;
 		goto out;
 	}
@@ -673,7 +681,7 @@ CK_RV hal_set_pin(CK_SESSION_HANDLE hSession,
 	old_pin_mem.flags = TEEC_MEM_INPUT;
 
 	ret = TEEC_RegisterSharedMemory(g_tee_context, &old_pin_mem);
-	if (ret != TEE_SUCCESS) {
+	if (ret != TEEC_SUCCESS) {
 		ret = CKR_GENERAL_ERROR;
 		goto out;
 	}
@@ -683,7 +691,7 @@ CK_RV hal_set_pin(CK_SESSION_HANDLE hSession,
 	new_pin_mem.flags = TEEC_MEM_INPUT;
 
 	ret = TEEC_RegisterSharedMemory(g_tee_context, &new_pin_mem);
-	if (ret != TEE_SUCCESS) {
+	if (ret != TEEC_SUCCESS) {
 		ret = CKR_GENERAL_ERROR;
 		goto out;
 	}
