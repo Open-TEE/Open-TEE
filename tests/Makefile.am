@@ -14,3 +14,4 @@ TESTS = $(check_PROGRAMS)
 
 # Include module-specific Makefiles
 include internal_api/Makemodule.am
+include pkcs11/Makemodule.am

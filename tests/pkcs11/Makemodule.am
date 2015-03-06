@@ -1,0 +1,19 @@
+# pkcs11_test executable
+
+check_PROGRAMS += pkcs11_test
+
+pkcs11_test_includes = \
+	../emulator/include/tee_internal_api.h \
+	../emulator/include/tee_logging.h
+
+pkcs11_test_SOURCES = ${pkcs11_test_include} \
+	pkcs11/pkcs11_test_app.c
+
+pkcs11_test_CFLAGS = ${AM_CFLAGS} \
+	-iquote $(top_srcdir)/../emulator/include\
+	-I$(top_srcdir)/../libtee_pkcs11/include
+
+pkcs11_test_LDFLAGS = ${AM_LDFLAGS} \
+	-ltee_pkcs11
+
+pkcs11_test_LDADD = ../emulator/libInternalApi.la
