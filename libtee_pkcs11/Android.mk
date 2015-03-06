@@ -9,6 +9,7 @@ local_src_files :=                          \
                 src/pkcs11_crypto.c	    \
                 src/pkcs11_general.c        \
                 src/pkcs11_object.c         \
+                src/mutex_manager.c	    \
                 src/pkcs11_session_slot.c
 
 local_c_includes := \
