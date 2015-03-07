@@ -21,170 +21,154 @@
 
 static CK_FUNCTION_LIST_PTR func_list;
 
+#define SIZE_OF_VEC(vec) (sizeof(vec) - 1)
+
+/* RSA */
+uint8_t modulus[] = "\xa8\xd6\x8a\xcd\x41\x3c\x5e\x19\x5d\x5e\xf0\x4e\x1b\x4f\xaa\xf2"
+		    "\x42\x36\x5c\xb4\x50\x19\x67\x55\xe9\x2e\x12\x15\xba\x59\x80\x2a"
+		    "\xaf\xba\xdb\xf2\x56\x4d\xd5\x50\x95\x6a\xbb\x54\xf8\xb1\xc9\x17"
+		    "\x84\x4e\x5f\x36\x19\x5d\x10\x88\xc6\x00\xe0\x7c\xad\xa5\xc0\x80"
+		    "\xed\xe6\x79\xf5\x0b\x3d\xe3\x2c\xf4\x02\x6e\x51\x45\x42\x49\x5c"
+		    "\x54\xb1\x90\x37\x68\x79\x1a\xae\x9e\x36\xf0\x82\xcd\x38\xe9\x41"
+		    "\xad\xa8\x9b\xae\xca\xda\x61\xab\x0d\xd3\x7a\xd5\x36\xbc\xb0\xa0"
+		    "\x94\x62\x71\x59\x48\x36\xe9\x2a\xb5\x51\x73\x01\xd4\x51\x76\xb5";
+
+uint8_t public_exp[] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+		       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+		       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+		       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+		       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+		       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+		       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+		       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03";
+
+uint8_t private_exp[] = "\x1c\x23\xc1\xcc\xe0\x34\xba\x59\x8f\x8f\xd2\xb7\xaf\x37\xf1\xd3"
+			"\x0b\x09\x0f\x73\x62\xae\xe6\x8e\x51\x87\xad\xae\x49\xb9\x95\x5c"
+			"\x72\x9f\x24\xa8\x63\xb7\xa3\x8d\x6e\x3c\x74\x8e\x29\x72\xf6\xd9"
+			"\x40\xb7\xba\x89\x04\x3a\x2d\x6c\x21\x00\x25\x6a\x1c\xf0\xf5\x6a"
+			"\x8c\xd3\x5f\xc6\xee\x20\x52\x44\x87\x66\x42\xf6\xf9\xc3\x82\x0a"
+			"\x3d\x9d\x2c\x89\x21\xdf\x7d\x82\xaa\xad\xca\xf2\xd7\x33\x4d\x39"
+			"\x89\x31\xdd\xbb\xa5\x53\x19\x0b\x3a\x41\x60\x99\xf3\xaa\x07\xfd"
+			"\x5b\x26\x21\x46\x45\xa8\x28\x41\x9e\x12\x2c\xfb\x85\x7a\xd7\x3b";
+
+uint8_t rsa_msg[] = "\xd7\x38\x29\x49\x7c\xdd\xbe\x41\xb7\x05\xfa\xac\x50\xe7\x89\x9f"
+		    "\xdb\x5a\x38\xbf\x3a\x45\x9e\x53\x63\x57\x02\x9e\x64\xf8\x79\x6b"
+		    "\xa4\x7f\x4f\xe9\x6b\xa5\xa8\xb9\xa4\x39\x67\x46\xe2\x16\x4f\x55"
+		    "\xa2\x53\x68\xdd\xd0\xb9\xa5\x18\x8c\x7a\xc3\xda\x2d\x1f\x74\x22"
+		    "\x86\xc3\xbd\xee\x69\x7f\x9d\x54\x6a\x25\xef\xcf\xe5\x31\x91\xd7"
+		    "\x43\xfc\xc6\xb4\x78\x33\xd9\x93\xd0\x88\x04\xda\xec\xa7\x8f\xb9"
+		    "\x07\x6c\x3c\x01\x7f\x53\xe3\x3a\x90\x30\x5a\xf0\x62\x20\x97\x4d"
+		    "\x46\xbf\x19\xed\x3c\x9b\x84\xed\xba\xe9\x8b\x45\xa8\x77\x12\x58";
+
+uint8_t rsa_sig[] = "\x17\x50\x15\xbd\xa5\x0a\xbe\x0f\xa7\xd3\x9a\x83\x53\x88\x5c\xa0"
+		    "\x1b\xe3\xa7\xe7\xfc\xc5\x50\x45\x74\x41\x11\x36\x2e\xe1\x91\x44"
+		    "\x73\xa4\x8d\xc5\x37\xd9\x56\x29\x4b\x9e\x20\xa1\xef\x66\x1d\x58"
+		    "\x53\x7a\xcd\xc8\xde\x90\x8f\xa0\x50\x63\x0f\xcc\x27\x2e\x6d\x00"
+		    "\x10\x45\xe6\xfd\xee\xd2\xd1\x05\x31\xc8\x60\x33\x34\xc2\xe8\xdb"
+		    "\x39\xe7\x3e\x6d\x96\x65\xee\x13\x43\xf9\xe4\x19\x83\x02\xd2\x20"
+		    "\x1b\x44\xe8\xe8\xd0\x6b\x3e\xf4\x9c\xee\x61\x97\x58\x21\x63\xa8"
+		    "\x49\x00\x89\xca\x65\x4c\x00\x12\xfc\xe1\xba\x65\x11\x08\x97\x50";
+
+
+/* AES */
+uint8_t aes_key[] = "\x1f\x8e\x49\x73\x95\x3f\x3f\xb0\xbd\x6b\x16\x66\x2e\x9a\x3c\x17";
+uint8_t aes_IV[] = "\x2f\xe2\xb3\x33\xce\xda\x8f\x98\xf4\xa9\x9b\x40\xd2\xcd\x34\xa8";
+uint8_t aes_msg[] = "\x45\xcf\x12\x96\x4f\xc8\x24\xab\x76\x61\x6a\xe2\xf4\xbf\x08\x22";
+uint8_t aes_cipher[] = "\x0f\x61\xc4\xd4\x4c\x51\x47\xc0\x3c\x19\x5a\xd7\xe2\xcc\x12\xb2";
+
+/* Debug printing */
+static void __attribute__((unused)) pri_buf_hex_format(const char *title,
+						       const unsigned char *buf,
+						       int buf_len)
+{
+	int i;
+	printf("%s:", title);
+	for (i = 0; i < buf_len; ++i) {
+
+		if ((i % 32) == 0)
+			printf("\n");
+
+
+		printf("%02x ", buf[i]);
+	}
+
+	printf("\n");
+}
+
 static void aes_test(CK_SESSION_HANDLE session)
 {
+	CK_MECHANISM mechanism = {CKM_AES_CBC, aes_IV, SIZE_OF_VEC(aes_IV)};
 	CK_BBOOL ck_true = CK_TRUE;
 	CK_OBJECT_CLASS obj_class = CKO_SECRET_KEY;
 	CK_OBJECT_HANDLE hKey = 0;
 	CK_MECHANISM_TYPE allow_mech = CKM_AES_CBC;
 	CK_KEY_TYPE keyType = CKK_AES;
 	CK_RV ret;
+	char cipher[SIZE_OF_VEC(aes_cipher)];
+	CK_ULONG cipher_len = SIZE_OF_VEC(aes_cipher);
+	char decrypted[SIZE_OF_VEC(aes_msg)];
+	CK_ULONG decrypted_len = SIZE_OF_VEC(aes_msg);
 
-	/* Nist vector */
-	char key_hex[] = "1f8e4973953f3fb0bd6b16662e9a3c17";
-	char IV_hex[] = "2fe2b333ceda8f98f4a99b40d2cd34a8";
-	char plain_hex[] = "45cf12964fc824ab76616ae2f4bf0822";
-	char know_result_hex[] = "0f61c4d44c5147c03c195ad7e2cc12b2";
-	CK_ULONG i, key_len = 16, plain_len = key_len, iv_len = key_len,
-			cipher_len = key_len, know_result_len = key_len ;
-	char key[plain_len], plain[plain_len], IV[iv_len],
-			cipher[cipher_len], know_result[know_result_len];
-	char *i_key_hex = key_hex, *i_plain_hex = plain_hex,
-			*i_iv_hex = IV_hex, *i_know_result_hex = know_result_hex;
-
-	for(i = 0; i < key_len; i++) {
-		sscanf(i_key_hex, "%2hhx", &key[i]);
-		sscanf(i_plain_hex, "%2hhx", &plain[i]);
-		sscanf(i_iv_hex, "%2hhx", &IV[i]);
-		sscanf(i_know_result_hex, "%2hhx", &know_result[i]);
-		i_key_hex += 2 * sizeof(char);
-		i_plain_hex += 2 * sizeof(char);
-		i_iv_hex += 2 * sizeof(char);
-		i_know_result_hex += 2 * sizeof(char);
-	}
-
-	char decrypted[plain_len];
-	CK_ULONG decrypted_len = plain_len;
-
-	CK_MECHANISM mechanism = {CKM_AES_CBC, IV, iv_len};
-
-	uint32_t attr_count = 6;
 	CK_ATTRIBUTE attrs[6] = {
 		{CKA_CLASS, &obj_class, sizeof(obj_class)},
 		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
-		{CKA_VALUE, &key, key_len},
+		{CKA_VALUE, &aes_key, SIZE_OF_VEC(aes_key)},
 		{CKA_ENCRYPT, &ck_true, sizeof(ck_true)},
 		{CKA_DECRYPT, &ck_true, sizeof(ck_true)},
 		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
 	};
 
 
-	ret = func_list->C_CreateObject(session, attrs, attr_count, &hKey);
+	ret = func_list->C_CreateObject(session, attrs, 6, &hKey);
 	if (ret != CKR_OK) {
 		printf("AES: Failed to create object: %lu : 0x%x\n", ret, (uint32_t)ret);
-		exit(4);
+		return;
 	}
 
 	ret = func_list->C_EncryptInit(session, &mechanism, hKey);
 	if (ret != CKR_OK) {
 		printf("AES: Failed to init encrypt: %lu : 0x%x\n", ret, (uint32_t)ret);
-		exit(4);
+		return;
 	}
 
-	ret = func_list->C_Encrypt(session, (CK_BYTE_PTR)plain, plain_len,
+	ret = func_list->C_Encrypt(session, (CK_BYTE_PTR)aes_msg, SIZE_OF_VEC(aes_msg),
 				   (CK_BYTE_PTR)cipher, &cipher_len);
 	if (ret != CKR_OK) {
 		printf("AES: Failed to encrypt: %lu : 0x%x\n", ret, (uint32_t)ret);
-		exit(4);
+		return;
 	}
 
-	if (decrypted_len != plain_len) {
+	if (cipher_len != SIZE_OF_VEC(aes_key)) {
 		printf("AES: Invalid size after encryption\n");
-		exit(4);
+		return;
 	}
 
-	if (memcmp(know_result, cipher, cipher_len) != 0) {
+	if (memcmp(aes_cipher, cipher, cipher_len) != 0) {
 		printf("AES: Not expexted encryption result\n");
-		exit(4);
+		return;
 	}
 
 	ret = func_list->C_DecryptInit(session, &mechanism, hKey);
 	if (ret != CKR_OK) {
 		printf("AES: Failed to init Decrypt: %lu : 0x%x\n", ret, (uint32_t)ret);
-		exit(4);
+		return;
 	}
 
 	ret = func_list->C_Decrypt(session, (CK_BYTE_PTR)cipher, cipher_len,
 				   (CK_BYTE_PTR)decrypted, &decrypted_len);
 	if (ret != CKR_OK) {
 		printf("AES: Failed to Decrypt: %lu : 0x%x\n", ret, (uint32_t)ret);
-		exit(4);
+		return;
 	}
 
-	if (decrypted_len != plain_len) {
+	if (decrypted_len != SIZE_OF_VEC(aes_msg)) {
 		printf("AES: Invalid size after decrypt\n");
-		exit(4);
+		return;
 	}
 
-	if (memcmp(decrypted, plain, decrypted_len) != 0) {
+	if (memcmp(aes_msg, decrypted, decrypted_len) != 0) {
 		printf("AES: decryption failure\n");
-		exit(4);
-	}
-}
-
-static void rsa_keygen(CK_SESSION_HANDLE session)
-{
-	CK_OBJECT_CLASS pub_class = CKO_PUBLIC_KEY, pri_class = CKO_PRIVATE_KEY;
-	CK_KEY_TYPE keyType = CKK_RSA;
-	CK_OBJECT_HANDLE hKey = 0;
-	uint32_t attr_count, i;
-	CK_RV ret;
-
-	uint32_t key_size = 128; /* 1024bit */
-	char mod_hex[] = "a8d68acd413c5e195d5ef04e1b4faaf242365cb450196755e92e1215ba59802aafbadbf25"
-			 "64dd550956abb54f8b1c917844e5f36195d1088c600e07cada5c080ede679f50b3de32cf4"
-			 "026e514542495c54b1903768791aae9e36f082cd38e941ada89baecada61ab0dd37ad536b"
-			 "cb0a0946271594836e92ab5517301d45176b5";
-	char pub_e_hex[] = "00000000000000000000000000000000000000000000000000000000000000000000000"
-			   "00000000000000000000000000000000000000000000000000000000000000000000000"
-			   "00000000000000000000000000000000000000000000000000000000000000000000000"
-			   "0000000000000000000000000000000000000010001";
-	char pri_e_hex[] = "1c23c1cce034ba598f8fd2b7af37f1d30b090f7362aee68e5187adae49b9955c729f24a"
-			   "863b7a38d6e3c748e2972f6d940b7ba89043a2d6c2100256a1cf0f56a8cd35fc6ee2052"
-			   "44876642f6f9c3820a3d9d2c8921df7d82aaadcaf2d7334d398931ddbba553190b3a416"
-			   "099f3aa07fd5b26214645a828419e122cfb857ad73b";
-	char mod[key_size], pub_e[key_size], pri_e[key_size];
-	char *i_mod_hex = mod_hex, *i_pub_e_hex = pub_e_hex, *i_pri_e_hex = pri_e_hex;
-
-	for(i = 0; i < key_size; i++) {
-		sscanf(i_mod_hex, "%2hhx", &mod[i]);
-		sscanf(i_pub_e_hex, "%2hhx", &pub_e[i]);
-		sscanf(i_pri_e_hex, "%2hhx", &pri_e[i]);
-		i_mod_hex += 2 * sizeof(char);
-		i_pub_e_hex += 2 * sizeof(char);
-		i_pri_e_hex += 2 * sizeof(char);
-	}
-
-	/* Private key */
-	attr_count = 4;
-	CK_ATTRIBUTE pri_attrs[4] = {
-		{CKA_CLASS, &pri_class, sizeof(pri_class)},
-		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
-		{CKA_MODULUS, &mod, key_size},
-		{CKA_PRIVATE_EXPONENT, &pri_e, key_size}
-	};
-
-	ret = func_list->C_CreateObject(session, pri_attrs, attr_count, &hKey);
-	if (ret != CKR_OK) {
-		printf("rsa_keygen: Failed to create RSA "
-		       "private object: %lu : 0x%x\n", ret, (uint32_t)ret);
-		exit(4);
-	}
-
-	/* Pub key */
-	attr_count = 4;
-	CK_ATTRIBUTE pub_attrs[4] = {
-		{CKA_CLASS, &pub_class, sizeof(pub_class)},
-		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
-		{CKA_MODULUS, &mod, key_size},
-		{CKA_PUBLIC_EXPONENT, &pub_e, key_size}
-	};
-
-	ret = func_list->C_CreateObject(session, pub_attrs, attr_count, &hKey);
-	if (ret != CKR_OK) {
-		printf("rsa_keygen :Failed to create RSA "
-		       "public object: %lu : 0x%x\n", ret, (uint32_t)ret);
-		exit(4);
+		return;
 	}
 }
 
@@ -195,118 +179,67 @@ static void rsa_sign_ver(CK_SESSION_HANDLE session)
 	CK_MECHANISM_TYPE allow_mech = CKM_SHA1_RSA_PKCS;
 	CK_KEY_TYPE keyType = CKK_RSA;
         CK_OBJECT_HANDLE pri_Key = 0, pub_Key = 0;
-	uint32_t attr_count, i;
 	CK_RV ret;
 	CK_MECHANISM mechanism = {CKM_SHA1_RSA_PKCS, NULL_PTR, 0};
 
-	uint32_t key_size = 128, msg_len = key_size, know_result_len = key_size; /* 1024bit */
-	char mod_hex[] = "a8d68acd413c5e195d5ef04e1b4faaf242365cb450196755e92e1215ba59802aafbadbf25"
-			 "64dd550956abb54f8b1c917844e5f36195d1088c600e07cada5c080ede679f50b3de32cf4"
-			 "026e514542495c54b1903768791aae9e36f082cd38e941ada89baecada61ab0dd37ad536b"
-			 "cb0a0946271594836e92ab5517301d45176b5";
-	char pub_e_hex[] = "00000000000000000000000000000000000000000000000000000000000000000000000"
-			   "00000000000000000000000000000000000000000000000000000000000000000000000"
-			   "00000000000000000000000000000000000000000000000000000000000000000000000"
-			   "0000000000000000000000000000000000000000003";
-	char pri_e_hex[] = "1c23c1cce034ba598f8fd2b7af37f1d30b090f7362aee68e5187adae49b9955c729f24a"
-			   "863b7a38d6e3c748e2972f6d940b7ba89043a2d6c2100256a1cf0f56a8cd35fc6ee2052"
-			   "44876642f6f9c3820a3d9d2c8921df7d82aaadcaf2d7334d398931ddbba553190b3a416"
-			   "099f3aa07fd5b26214645a828419e122cfb857ad73b";
-        char mod[key_size], pri_e[key_size], pub_e[key_size];
-        char *i_mod_hex = mod_hex, *i_pri_e_hex = pri_e_hex, *i_pub_hex = pub_e_hex;
-	for(i = 0; i < key_size; i++) {
-		sscanf(i_mod_hex, "%2hhx", &mod[i]);
-		sscanf(i_pri_e_hex, "%2hhx", &pri_e[i]);
-                sscanf(i_pub_hex, "%2hhx", &pub_e[i]);
-		i_mod_hex += 2 * sizeof(char);
-		i_pri_e_hex += 2 * sizeof(char);
-                i_pub_hex += 2 * sizeof(char);
-	}
-
-	/* Message: SHA1 */
-	char msg_hex[] = "d73829497cddbe41b705faac50e7899fdb5a38bf3a459e536357029e64f8796ba47f4fe96"
-			 "ba5a8b9a4396746e2164f55a25368ddd0b9a5188c7ac3da2d1f742286c3bdee697f9d546a"
-			 "25efcfe53191d743fcc6b47833d993d08804daeca78fb9076c3c017f53e33a90305af0622"
-			 "0974d46bf19ed3c9b84edbae98b45a8771258";
-	char msg[msg_len];
-	char *i_msg_hex = msg_hex;
-	for(i = 0; i < msg_len; i++) {
-		sscanf(i_msg_hex, "%2hhx", &msg[i]);
-		i_msg_hex += 2 * sizeof(char);
-	}
-
-	/* Know result */
-	char know_result_hex[] = "175015bda50abe0fa7d39a8353885ca01be3a7e7fcc55045744111362ee191447"
-				 "3a48dc537d956294b9e20a1ef661d58537acdc8de908fa050630fcc272e6d0010"
-				 "45e6fdeed2d10531c8603334c2e8db39e73e6d9665ee1343f9e4198302d2201b4"
-				 "4e8e8d06b3ef49cee6197582163a8490089ca654c0012fce1ba6511089750";
-	char know_result[know_result_len];
-	char *i_know_result_hex = know_result_hex;
-	for(i = 0; i < know_result_len; i++) {
-		sscanf(i_know_result_hex, "%2hhx", &know_result[i]);
-		i_know_result_hex += 2 * sizeof(char);
-	}
-
 	/* Signature bufffer */
-	char sig[key_size];
-	CK_ULONG sig_len = key_size;
+	char sig[SIZE_OF_VEC(rsa_sig)];
+	CK_ULONG sig_len = SIZE_OF_VEC(rsa_sig);
 
-        /* Create private key object */
-	attr_count = 7;
+	/* Create private key object */
 	CK_ATTRIBUTE pri_attrs[7] = {
 		{CKA_CLASS, &pri_class, sizeof(pri_class)},
 		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
-		{CKA_MODULUS, &mod, key_size},
-		{CKA_PRIVATE_EXPONENT, &pri_e, key_size},
-		{CKA_PUBLIC_EXPONENT, &pub_e, key_size},
+		{CKA_MODULUS, &modulus, SIZE_OF_VEC(modulus)},
+		{CKA_PRIVATE_EXPONENT, &private_exp, SIZE_OF_VEC(private_exp)},
+		{CKA_PUBLIC_EXPONENT, &public_exp, SIZE_OF_VEC(public_exp)},
 		{CKA_SIGN, &ck_true, sizeof(ck_true)},
 		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
 	};
 
-        ret = func_list->C_CreateObject(session, pri_attrs, attr_count, &pri_Key);
+	ret = func_list->C_CreateObject(session, pri_attrs, 7, &pri_Key);
 	if (ret != CKR_OK) {
 		printf("Failed to create RSA private object: %lu : 0x%x\n", ret, (uint32_t)ret);
-		exit(4);
+		return;
 	}
 
         /* Create Public key object */
-	attr_count = 6;
 	CK_ATTRIBUTE pub_attrs[6] = {
                 {CKA_CLASS, &pub_class, sizeof(pri_class)},
                 {CKA_KEY_TYPE, &keyType, sizeof(keyType)},
-                {CKA_MODULUS, &mod, key_size},
-                {CKA_PUBLIC_EXPONENT, &pub_e, key_size},
+		{CKA_MODULUS, &modulus, SIZE_OF_VEC(modulus)},
+		{CKA_PUBLIC_EXPONENT, &public_exp, SIZE_OF_VEC(public_exp)},
                 {CKA_VERIFY, &ck_true, sizeof(ck_true)},
                 {CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
         };
 
-        ret = func_list->C_CreateObject(session, pub_attrs, attr_count, &pub_Key);
+	ret = func_list->C_CreateObject(session, pub_attrs, 6, &pub_Key);
         if (ret != CKR_OK) {
                 printf("Failed to create RSA public object: %lu : 0x%x\n", ret, (uint32_t)ret);
-                exit(4);
+		return;
         }
 
         ret = func_list->C_SignInit(session, &mechanism, pri_Key);
 	if (ret != CKR_OK) {
 		printf("Failed to signature init: %lu : 0x%x\n", ret, (uint32_t)ret);
-		exit(4);
+		return;
 	}
 
-	ret = func_list->C_Sign(session, (CK_BYTE_PTR)msg, msg_len, (CK_BYTE_PTR)sig, &sig_len);
+	ret = func_list->C_Sign(session, (CK_BYTE_PTR)rsa_msg, SIZE_OF_VEC(rsa_msg),
+				(CK_BYTE_PTR)sig, &sig_len);
 	if (ret != CKR_OK) {
 		printf("Failed to sign: %lu : 0x%x\n", ret, (uint32_t)ret);
-		exit(4);
+		return;
 	}
 
-	if (know_result_len != sig_len) {
+	if (SIZE_OF_VEC(rsa_sig) != sig_len) {
 		printf("RSA: Invalid size after signature : %lu\n", sig_len);
-		exit(4);
+		return;
 	}
 
-	if (memcmp(know_result, sig, sig_len) != 0) {
-
+	if (memcmp(rsa_sig, sig, sig_len) != 0) {
 		printf("RSA: Not expected signature\n");
-		exit(4);
+		return;
 	} else {
 		printf("RSA: Signature OK\n");
 	}
@@ -314,10 +247,11 @@ static void rsa_sign_ver(CK_SESSION_HANDLE session)
 	ret = func_list->C_VerifyInit(session, &mechanism, pub_Key);
 	if (ret != CKR_OK) {
 		printf("Failed to verify init: %lu : 0x%x\n", ret, (uint32_t)ret);
-		exit(4);
+		return;
 	}
 
-	ret = func_list->C_Verify(session, (CK_BYTE_PTR)msg, msg_len, (CK_BYTE_PTR)sig, sig_len);
+	ret = func_list->C_Verify(session, (CK_BYTE_PTR)rsa_msg, SIZE_OF_VEC(rsa_msg),
+				  (CK_BYTE_PTR)sig, sig_len);
 	if (ret == CKR_OK) {
 		printf("RSA: Verified\n");
 	} else if (ret == CKR_SIGNATURE_INVALID) {
@@ -337,19 +271,19 @@ int main()
 	ret = C_GetFunctionList(&func_list);
 	if (ret != CKR_OK || func_list == NULL) {
 		printf("Failed to get function list: %ld\n", ret);
-		exit(1);
+		return 0;
 	}
 
 	ret = func_list->C_Initialize(NULL);
 	if (ret != CKR_OK) {
 		printf("Failed to initialize the library: %ld\n", ret);
-		exit(2);
+		return 0;
 	}
 
 	ret = C_GetInfo(&info);
 	if (ret != CKR_OK) {
 		printf("Failed to get the library info: %ld\n", ret);
-		exit(3);
+		return 0;
 	}
 
 	printf("Version : Major %d: Minor %d\n",
@@ -358,23 +292,23 @@ int main()
 	ret = func_list->C_OpenSession(1, CKF_RW_SESSION | CKF_SERIAL_SESSION, NULL, NULL, &session);
 	if (ret != CKR_OK) {
 		printf("Failed to Open session the library: 0x%x\n", (uint32_t)ret);
-		exit(4);
+		return 0;
 	}
 
 	ret = func_list->C_Login(session, CKU_USER, (CK_BYTE_PTR)pin, 4);
 	if (ret != CKR_OK) {
 		printf("Failed to login: 0x%x\n", (uint32_t)ret);
-		exit(4);
+		return 0;
 	}
 
+	/* Do aes signature and RSA sign/verfy */
 	aes_test(session);
-	rsa_keygen(session);
 	rsa_sign_ver(session);
 
 	ret = func_list->C_Logout(session);
 	if (ret != CKR_OK) {
 		printf("Failed to logout: 0x%x\n", (uint32_t)ret);
-		exit(4);
+		return 0;
 	}
 
 	func_list->C_CloseSession(session);
@@ -382,7 +316,7 @@ int main()
 	ret = func_list->C_Finalize(NULL);
 	if (ret != CKR_OK) {
 		printf("Failed to Finalize the library: %ld\n", ret);
-		exit(4);
+		return 0;
 	}
 
 	return 0;
