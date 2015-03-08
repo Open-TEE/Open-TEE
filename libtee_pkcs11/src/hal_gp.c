@@ -22,14 +22,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#ifndef TEEC_PARAM_TYPES
-#define TEEC_PARAM_TYPES(a, b, c, d) (	\
-	(((a) & 0xff) << 0) |	\
-	(((b) & 0xff) << 8) |	\
-	(((c) & 0xff) << 16) |	\
-	(((d) & 0xff) << 24))
-#endif
-
 /*!
  * \brief g_tee_context
  * A context that is created towards the TEE
@@ -607,13 +599,13 @@ CK_RV hal_login(CK_SESSION_HANDLE hSession,
 		goto out;
 	}
 
-	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_INPUT,
-						TEEC_VALUE_INPUT, TEEC_NONE);
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_NONE,
+						TEEC_VALUE_INPUT, TEEC_VALUE_INPUT);
 
 	operation.params[0].memref.parent = &data_mem;
-	operation.params[1].value.a = ulPinLen;
-	operation.params[1].value.b = userType;
-	operation.params[2].value.a = hSession;
+	operation.params[2].value.a = ulPinLen;
+	operation.params[2].value.b = userType;
+	operation.params[3].value.a = hSession;
 
 	ret = TEEC_InvokeCommand(g_control_session, TEE_LOGIN_SESSION, &operation, NULL);
 
