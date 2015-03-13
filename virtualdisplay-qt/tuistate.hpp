@@ -14,39 +14,54 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#ifndef MAINWINDOW_HPP
-#define MAINWINDOW_HPP
+#ifndef TUISTATE_HPP
+#define TUISTATE_HPP
 
-#include <QCloseEvent>
-#include <QMainWindow>
-#include <QScopedPointer>
+#include <QObject>
+#include <QSharedPointer>
 
-#include "settingsdialog.hpp"
+#include <tuple>
 
-namespace Ui {
-class MainWindow;
-}
+#include "comprotocolmessage.hpp"
+#include "tuiprotocol.hpp"
+#include "tuisettings.hpp"
 
-class TrustedUIWidget;
-
-class MainWindow : public QMainWindow
+/***
+ * \brief Class that maintains the State of Trusted User Interface.
+ */
+class TUIState : public QObject
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
+	enum State {
+		TUI_STATE_DISCONNECTED,
+		TUI_STATE_CONNECTED,
+		TUI_STATE_SESSION,
+		TUI_STATE_DISPLAY
+	};
 
-private slots:
-    void openSettingsDialog();
-    bool close();
-    void closeEvent(QCloseEvent *event);
-    void showStatusBarMessage(const QString &msg);
+	explicit TUIState(QObject *parent = NULL);
+	~TUIState();
+
+	std::tuple <uint32_t, uint32_t, uint32_t, uint32_t> checkTextFormat(const QString &text);
+
+	TUIProtocol::GetScreenInfoResponse getScreenInfo(TUIProtocol::GetScreenInfoRequest req);
+
+	uint32_t initSession();
+
+	uint32_t closeSession();
+
+	uint32_t displayScreen();
+
+public slots:
+	void connected();
+
+	void disconnected();
 
 private:
-    QScopedPointer <Ui::MainWindow> ui_;
-    QScopedPointer <TrustedUIWidget> tui_widget_;
-    SettingsDialog settings_;
+	State current_state_;
+	TUISettings settings_;
 };
 
-#endif // MAINWINDOW_HPP
+#endif // TUISTATE_HPP

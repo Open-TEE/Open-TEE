@@ -14,39 +14,44 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#ifndef MAINWINDOW_HPP
-#define MAINWINDOW_HPP
+#ifndef TUISERVICE_HPP
+#define TUISERVICE_HPP
 
-#include <QCloseEvent>
-#include <QMainWindow>
-#include <QScopedPointer>
+#include <QObject>
+#include <QSharedPointer>
 
-#include "settingsdialog.hpp"
+#include "comprotocolmessage.hpp"
 
-namespace Ui {
-class MainWindow;
-}
+class TUIState;
 
-class TrustedUIWidget;
-
-class MainWindow : public QMainWindow
+/***
+ * \brief Class that handles incoming messages from Socket,
+ *        deserializes them, calls the appropriate function in TUI State,
+ *        and serializes and send back the response.
+ */
+class TUIService : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
+    explicit TUIService(QSharedPointer <TUIState> state,
+		        QObject *parent = NULL);
+    ~TUIService();
 
-private slots:
-    void openSettingsDialog();
-    bool close();
-    void closeEvent(QCloseEvent *event);
-    void showStatusBarMessage(const QString &msg);
+signals:
+    void sendMessage(const ComProtocolMessage& msg);
+
+public slots:
+    void messageReceived(const ComProtocolMessage& msg);
 
 private:
-    QScopedPointer <Ui::MainWindow> ui_;
-    QScopedPointer <TrustedUIWidget> tui_widget_;
-    SettingsDialog settings_;
+    void check_text_format(QByteArray &response, const QByteArray &msg);
+    void get_screen_info(QByteArray &response, const QByteArray &msg);
+    void init_session(QByteArray &response);
+    void close_session(QByteArray &response);
+    void display_screen(QByteArray &response, const QByteArray &msg);
+
+    QSharedPointer <TUIState> state_;
 };
 
-#endif // MAINWINDOW_HPP
+#endif // TUISERVICE_HPP

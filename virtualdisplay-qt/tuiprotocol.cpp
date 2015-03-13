@@ -14,39 +14,6 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#ifndef MAINWINDOW_HPP
-#define MAINWINDOW_HPP
+#include "tuiprotocol.hpp"
 
-#include <QCloseEvent>
-#include <QMainWindow>
-#include <QScopedPointer>
 
-#include "settingsdialog.hpp"
-
-namespace Ui {
-class MainWindow;
-}
-
-class TrustedUIWidget;
-
-class MainWindow : public QMainWindow
-{
-    Q_OBJECT
-
-public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
-
-private slots:
-    void openSettingsDialog();
-    bool close();
-    void closeEvent(QCloseEvent *event);
-    void showStatusBarMessage(const QString &msg);
-
-private:
-    QScopedPointer <Ui::MainWindow> ui_;
-    QScopedPointer <TrustedUIWidget> tui_widget_;
-    SettingsDialog settings_;
-};
-
-#endif // MAINWINDOW_HPP

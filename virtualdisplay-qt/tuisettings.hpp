@@ -14,39 +14,38 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#ifndef MAINWINDOW_HPP
-#define MAINWINDOW_HPP
+#ifndef TUISETTINGS_HPP
+#define TUISETTINGS_HPP
 
-#include <QCloseEvent>
-#include <QMainWindow>
-#include <QScopedPointer>
-
-#include "settingsdialog.hpp"
-
-namespace Ui {
-class MainWindow;
+extern "C" {
+#include "../emulator/include/tee_tui_data_types.h"
 }
+#include <QString>
+#include <array>
 
-class TrustedUIWidget;
-
-class MainWindow : public QMainWindow
-{
-    Q_OBJECT
-
-public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
-
-private slots:
-    void openSettingsDialog();
-    bool close();
-    void closeEvent(QCloseEvent *event);
-    void showStatusBarMessage(const QString &msg);
-
-private:
-    QScopedPointer <Ui::MainWindow> ui_;
-    QScopedPointer <TrustedUIWidget> tui_widget_;
-    SettingsDialog settings_;
+struct ButtonInfo{
+	QString buttonText;
+	uint32_t buttonWidth = 100;
+	uint32_t buttonHeight = 50;
+	bool buttonTextCustom = true;
+	bool buttonImageCustom = true;
 };
 
-#endif // MAINWINDOW_HPP
+struct TUISettings {
+	uint32_t grayscaleBitsDepth = 8;
+	uint32_t redBitsDepth = 8;
+	uint32_t greenBitsDepth = 8;
+	uint32_t blueBitsDepth = 8;
+	uint32_t widthInch = 150;
+	uint32_t heightInch = 150;
+	uint32_t maxEntryFields = 4;
+	uint32_t entryFieldLabelWidth = 200;
+	uint32_t entryFieldLabelHeight = 100;
+	uint32_t maxEntryFieldLength = 255;
+	uint8_t labelColor[3] = {0, 0, 0};
+	uint32_t labelWidth = 600;
+	uint32_t labelHeight = 200;
+	std::array <ButtonInfo, 6> buttonInfos;
+};
+
+#endif // TUISETTINGS_HPP

@@ -14,39 +14,37 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#ifndef MAINWINDOW_HPP
-#define MAINWINDOW_HPP
+#include "test_comprotocolmessage.hpp"
+#include "../comprotocolmessage.hpp"
 
-#include <QCloseEvent>
-#include <QMainWindow>
-#include <QScopedPointer>
+void TestComProtocolMessage::serialize_and_deserialize()
+{
+    QByteArray source = "AABBCCDDEEFFaabbccddeeff";
+    uint8_t name = 18;
+    uint8_t type = 1;
+    uint64_t session_id = 39481083;
 
-#include "settingsdialog.hpp"
+    ComProtocolMessage msg1(name, type, session_id, source);
 
-namespace Ui {
-class MainWindow;
+    QCOMPARE(msg1.getPayload(), source);
+    QCOMPARE(msg1.getHeader().msg_name, name);
+    QCOMPARE(msg1.getHeader().msg_type, type);
+    QCOMPARE(msg1.getHeader().sess_id, session_id);
+
+    ComProtocolMessage msg2(msg1.getRawData());
+
+    QCOMPARE(msg2.getRawData(), msg1.getRawData());
+    QCOMPARE(msg2.getPayload(), source);
+    QCOMPARE(msg2.getHeader().msg_name, name);
+    QCOMPARE(msg2.getHeader().msg_type, type);
+    QCOMPARE(msg2.getHeader().sess_id, session_id);
+
+    ComProtocolMessage msg3(msg1.getHeader(), msg1.getPayload());
+    QCOMPARE(msg3.getRawData(), msg1.getRawData());
+    QCOMPARE(msg3.getPayload(), source);
+    QCOMPARE(msg3.getHeader().msg_name, name);
+    QCOMPARE(msg3.getHeader().msg_type, type);
+    QCOMPARE(msg3.getHeader().sess_id, session_id);
 }
 
-class TrustedUIWidget;
-
-class MainWindow : public QMainWindow
-{
-    Q_OBJECT
-
-public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
-
-private slots:
-    void openSettingsDialog();
-    bool close();
-    void closeEvent(QCloseEvent *event);
-    void showStatusBarMessage(const QString &msg);
-
-private:
-    QScopedPointer <Ui::MainWindow> ui_;
-    QScopedPointer <TrustedUIWidget> tui_widget_;
-    SettingsDialog settings_;
-};
-
-#endif // MAINWINDOW_HPP
+QTEST_MAIN(TestComProtocolMessage)
