@@ -9,6 +9,7 @@ Project {
         "example_sha1_ca/example_sha1_ca.qbs",
         "storage_test_ca/storage_test_ca.qbs",
         "usr_study_ca/usr_study_ca.qbs",
+        "services_test/services_test.qbs",
     ]
 }
 

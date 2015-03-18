@@ -1,0 +1,15 @@
+# conn_test_app executable
+
+bin_PROGRAMS += services_test
+
+conn_test_SOURCES = \
+	services_test/services_test.c
+
+conn_test_CFLAGS = ${AM_CFLAGS} \
+	-iquote $(top_srcdir)/../libtee/include
+
+conn_test_LDFLAGS = ${AM_LDFLAGS} \
+	-rdynamic
+
+conn_test_LDADD = \
+	../libtee/libtee.la
