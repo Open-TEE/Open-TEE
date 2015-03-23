@@ -49,7 +49,9 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
 	OT_LOG(LOG_ERR, "Calling the create entry point");
 
-	/* No functionality */
+	/* Run one round of testcases */
+	ta_storage_test(1);
+
 
 	return TEE_SUCCESS;
 }
@@ -57,7 +59,6 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 void TA_EXPORT TA_DestroyEntryPoint(void)
 {
 	OT_LOG(LOG_ERR, "Calling the Destroy entry point");
-
 	/* No functionality */
 }
 
@@ -69,6 +70,8 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 	params[0] = params[0];
 	sessionContext = sessionContext;
 
+	/* Run one round of testcases */
+	ta_storage_test(1);
 
 	return TEE_SUCCESS;
 }
