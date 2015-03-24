@@ -316,7 +316,7 @@ CK_RV hal_verify_crypto(CK_SESSION_HANDLE hSession,
 	operation.params[2].value.b = sig_len;
 	operation.params[3].value.a = hSession;
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_MEMREF_WHOLE,
-						TEEC_VALUE_INOUT, TEEC_VALUE_INOUT);
+						TEEC_VALUE_INPUT, TEEC_VALUE_INOUT);
 
 	/* Hand over execution to TEE */
 	teec_rv = TEEC_InvokeCommand(g_control_session, TEE_VERIFY, &operation, NULL);
@@ -535,7 +535,7 @@ CK_RV hal_create_object(CK_SESSION_HANDLE hSession,
 	operation.params[3].value.a = hSession;
 
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_OUTPUT,
-						TEEC_VALUE_INOUT, TEEC_VALUE_INPUT);
+						TEEC_VALUE_INPUT, TEEC_VALUE_INPUT);
 
 	/* Hand over execution to TEE */
 	teec_ret = TEEC_InvokeCommand(g_control_session, TEE_CREATE_OBJECT, &operation, NULL);
