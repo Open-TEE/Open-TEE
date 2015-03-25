@@ -266,7 +266,7 @@ int main()
 	CK_SESSION_HANDLE session;
 	CK_INFO info;
 	CK_RV ret;
-	char pin[4] = "1234";
+	char pin[8] = "12345678";
 
 	ret = C_GetFunctionList(&func_list);
 	if (ret != CKR_OK || func_list == NULL) {
@@ -295,7 +295,7 @@ int main()
 		return 0;
 	}
 
-	ret = func_list->C_Login(session, CKU_USER, (CK_BYTE_PTR)pin, 4);
+	ret = func_list->C_Login(session, CKU_USER, (CK_BYTE_PTR)pin, sizeof(pin));
 	if (ret != CKR_OK) {
 		printf("Failed to login: 0x%x\n", (uint32_t)ret);
 		return 0;
