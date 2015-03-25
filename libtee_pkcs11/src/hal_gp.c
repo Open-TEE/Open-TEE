@@ -706,3 +706,33 @@ out:
 	return ret;
 }
 
+CK_RV hal_generate_random(CK_SESSION_HANDLE hSession, CK_BYTE_PTR RandomData, CK_ULONG ulRandomLen)
+{
+	TEEC_Operation operation = {0};
+	TEEC_SharedMemory rand_data = {0};
+	CK_RV ret = 0;
+
+	if (!is_lib_initialized())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
+	rand_data.buffer = RandomData;
+	rand_data.size = ulRandomLen;
+	rand_data.flags = TEEC_MEM_OUTPUT;
+
+	ret = TEEC_RegisterSharedMemory(g_tee_context, &rand_data);
+	if (ret != TEEC_SUCCESS)
+		return CKR_GENERAL_ERROR;
+
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_NONE,
+						TEEC_VALUE_INPUT, TEEC_VALUE_INOUT);
+
+	operation.params[0].memref.parent = &rand_data;
+	operation.params[2].value.a = ulRandomLen;
+	operation.params[3].value.a = hSession;
+
+	ret = TEEC_InvokeCommand(g_control_session, TEE_GENERATE_RANDOM, &operation, NULL);
+
+	TEEC_ReleaseSharedMemory(&rand_data);
+
+	return ret;
+}

@@ -22,7 +22,7 @@
 #include <string.h>
 
 /* the slot id that we will assign to the TEE */
-#define TEE_SLOT_ID 1
+#define TEE_SLOT_ID 0
 /* The number of supported slots */
 #define SLOT_COUNT 1
 /* try 16 as the default number of mecahnisms */

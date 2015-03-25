@@ -83,6 +83,9 @@ struct mechanisms {
 #define TEE_CRYPTO_UPDATE	0x000000C3
 #define TEE_CRYPTO_FINAL	0x000000C4
 
+/* Generate Random */
+#define TEE_GENERATE_RANDOM     0x000000D1
+
 
 #endif // COMMANDS_H
 

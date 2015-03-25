@@ -215,5 +215,15 @@ CK_RV hal_set_pin(CK_SESSION_HANDLE hSession,
 		  CK_UTF8CHAR_PTR pNewPin,
 		  CK_ULONG ulNewLen);
 
+/*!
+ * \brief hal_generate_random
+ * Generate random data
+ * \param hSession The currently logged in session
+ * \param RandomData The location that receives the random data
+ * \param ulRandomLen The length of the data to be generated
+ * \return 0 on success
+ */
+CK_RV hal_generate_random(CK_SESSION_HANDLE hSession, CK_BYTE_PTR RandomData, CK_ULONG ulRandomLen);
+
 #endif // HAL_H
 
