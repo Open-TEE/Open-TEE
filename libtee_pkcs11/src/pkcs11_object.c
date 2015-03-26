@@ -76,11 +76,19 @@ CK_RV C_GetAttributeValue(CK_SESSION_HANDLE hSession,
 			  CK_ATTRIBUTE_PTR pTemplate,
 			  CK_ULONG ulCount)
 {
-	hSession = hSession;
-	hObject = hObject;
-	pTemplate = pTemplate;
-	ulCount = ulCount;
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
+
+	if (hObject == CK_INVALID_HANDLE)
+		return CKR_OBJECT_HANDLE_INVALID;
+
+	if (!pTemplate)
+		return CKR_ARGUMENTS_BAD;
+
+	if (!is_lib_initialized())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
+	return hal_get_attribute_value(hSession, hObject, pTemplate, ulCount);
 }
 
 CK_RV C_SetAttributeValue(CK_SESSION_HANDLE hSession,

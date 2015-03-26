@@ -225,5 +225,20 @@ CK_RV hal_set_pin(CK_SESSION_HANDLE hSession,
  */
 CK_RV hal_generate_random(CK_SESSION_HANDLE hSession, CK_BYTE_PTR RandomData, CK_ULONG ulRandomLen);
 
+/*!
+ * \brief hal_get_attribute_value
+ * Getting attribute values from queried object.
+ * \param hSession
+ * \param hObject
+ * \param pTemplate
+ * \param ulCount
+ * \return
+ */
+CK_RV hal_get_attribute_value(CK_SESSION_HANDLE hSession,
+			      CK_OBJECT_HANDLE hObject,
+			      CK_ATTRIBUTE_PTR pTemplate,
+			      CK_ULONG ulCount);
+
+
 #endif // HAL_H
 

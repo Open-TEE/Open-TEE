@@ -47,8 +47,15 @@ static CK_RV serialize_template_into_shm(TEEC_SharedMemory *shm,
 	uint32_t pos = 0, i;
 
 	/* Calculating the size that is needed for serializing tempalte it to into on buffer */
-	for (i = 0; i < ulCount; i++)
+	for (i = 0; i < ulCount; i++) {
+
+		/* If pValue is NULL, only attribute length is returned. This usecase is from
+		 * get atttribute value function. */
+		if (pTemplate[i].pValue == NULL_PTR && pTemplate[i].ulValueLen != 0)
+			return CKR_TEMPLATE_INCONSISTENT;
+
 		shm->size += pTemplate[i].ulValueLen;
+	}
 
 	shm->size += ulCount * sizeof(pTemplate->type);
 	shm->size += ulCount * sizeof(pTemplate->ulValueLen);
@@ -81,11 +88,65 @@ static CK_RV serialize_template_into_shm(TEEC_SharedMemory *shm,
 		pos += sizeof(pTemplate[i].ulValueLen);
 
 		/* pValue */
+		if (pTemplate[i].pValue == NULL_PTR)
+			continue;
+
 		memcpy((uint8_t *)shm->buffer + pos, pTemplate[i].pValue, pTemplate[i].ulValueLen);
 		pos += pTemplate[i].ulValueLen;
 	}
 
 	return CKR_OK;
+}
+
+static void deserialize_shm_into_template(TEEC_SharedMemory *shm,
+					   CK_ATTRIBUTE_PTR pTemplate,
+					   CK_ULONG ulCount)
+{
+	CK_ULONG shm_attr_count = 0;
+	CK_ATTRIBUTE shm_attr = {0};
+	uint32_t pos = 0, i, j;
+
+	/* See shm serialization documentation in serialize_template_into_shm() */
+
+	memcpy(&shm_attr_count, (uint8_t *)shm->buffer, sizeof(ulCount));
+	pos += sizeof(ulCount);
+
+	for (i = 0; i < shm_attr_count; ++i) {
+
+		/* Attribute type */
+		memcpy(&shm_attr.type, (uint8_t *)shm->buffer + pos, sizeof(shm_attr.type));
+		pos += sizeof(shm_attr.type);
+
+		/* ulValueLen */
+		memcpy(&shm_attr.ulValueLen, (uint8_t *)shm->buffer + pos,
+		       sizeof(shm_attr.ulValueLen));
+		pos += sizeof(shm_attr.ulValueLen);
+
+		/* pValue
+		 * If ulValueLen is -1:
+		 * - Attribute can not be revealed
+		 * - Provided buffer is too small
+		 * - Attribute is not found
+		 * --> pValue is not placed into shm */
+		if ((CK_LONG)shm_attr.ulValueLen != -1) {
+			shm_attr.pValue = (uint8_t *)shm->buffer + pos;
+			pos += shm_attr.ulValueLen;
+		}
+
+		/* Attribute extracted from shm. Get right attribute from template and copy */
+		for (j = 0; j < ulCount; ++j) {
+			if (shm_attr.type != pTemplate[j].type)
+				continue;
+
+			/* If template pValue is NULL, only attribute lenght is copied */
+			if ((CK_LONG)shm_attr.ulValueLen != -1 && pTemplate[j].pValue != NULL_PTR)
+				memcpy(pTemplate[j].pValue, shm_attr.pValue, shm_attr.ulValueLen);
+
+			/* pValue lenght */
+			pTemplate[j].ulValueLen = shm_attr.ulValueLen;
+			break;
+		}
+	}
 }
 
 static CK_RV send_single_value(uint32_t param, uint32_t command_id)
@@ -735,4 +796,51 @@ CK_RV hal_generate_random(CK_SESSION_HANDLE hSession, CK_BYTE_PTR RandomData, CK
 	TEEC_ReleaseSharedMemory(&rand_data);
 
 	return ret;
+}
+
+CK_RV hal_get_attribute_value(CK_SESSION_HANDLE hSession,
+			      CK_OBJECT_HANDLE hObject,
+			      CK_ATTRIBUTE_PTR pTemplate,
+			      CK_ULONG ulCount)
+{
+	TEEC_SharedMemory inout_shm = {0};
+	TEEC_Operation operation = {0};
+	CK_RV ck_rv;
+
+	/* Serialize template into buffer (function allocating a buffer!) */
+	ck_rv = serialize_template_into_shm(&inout_shm, pTemplate, ulCount);
+	if (ck_rv != CKR_OK)
+		return ck_rv;
+
+	/* Register shared memory. It is used for trasfering template into TEE environment */
+	inout_shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
+	if (TEEC_RegisterSharedMemory(g_tee_context, &inout_shm) != CKR_OK) {
+		free(inout_shm.buffer);
+		return CKR_GENERAL_ERROR;
+	}
+
+	/* Fill operation */
+	operation.params[0].memref.parent = &inout_shm;
+	operation.params[1].value.a = hObject;
+	operation.params[2].value.a = inout_shm.size;
+	operation.params[3].value.a = hSession;
+
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_INPUT,
+						TEEC_VALUE_INPUT, TEEC_VALUE_INOUT);
+
+	/* Hand over execution to TEE */
+	if (TEE_SUCCESS !=
+	    TEEC_InvokeCommand(g_control_session, TEE_GET_ATTR_VALUE, &operation, NULL)) {
+		operation.params[3].value.a = CKR_GENERAL_ERROR;
+		goto err;
+	}
+
+	/* Get return template and fill it into user provided template */
+	deserialize_shm_into_template(&inout_shm, pTemplate, ulCount);
+
+err:
+	/* Free memorys and return */
+	TEEC_ReleaseSharedMemory(&inout_shm);
+	free(inout_shm.buffer);
+	return operation.params[3].value.a;
 }
