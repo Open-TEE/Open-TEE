@@ -129,7 +129,7 @@ static CK_RV populate_user_mechanism_list(CK_MECHANISM_TYPE_PTR pMechanismList,
 	if (ret)
 		return ret;
 
-	memcpy(pMechanismList, g_mechanism_types, g_mechanism_count * sizeof(struct mechanisms));
+	memcpy(pMechanismList, g_mechanism_types, g_mechanism_count * sizeof(CK_MECHANISM_TYPE));
 
 	return ret;
 }
