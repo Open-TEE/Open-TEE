@@ -239,6 +239,35 @@ CK_RV hal_get_attribute_value(CK_SESSION_HANDLE hSession,
 			      CK_ATTRIBUTE_PTR pTemplate,
 			      CK_ULONG ulCount);
 
+/*!
+ * \brief hal_find_objects_init
+ * \param hSession
+ * \param pTemplate
+ * \param ulCount
+ * \return
+ */
+CK_RV hal_find_objects_init(CK_SESSION_HANDLE hSession,
+			    CK_ATTRIBUTE_PTR pTemplate,
+			    CK_ULONG ulCount);
+/*!
+ * \brief hal_find_objects
+ * \param hSession
+ * \param phObject
+ * \param ulMaxObjectCount
+ * \param pulObjectCount
+ * \return
+ */
+CK_RV hal_find_objects(CK_SESSION_HANDLE hSession,
+		       CK_OBJECT_HANDLE_PTR phObject,
+		       CK_ULONG ulMaxObjectCount,
+		       CK_ULONG_PTR pulObjectCount);
+
+/*!
+ * \brief hal_find_objects_final
+ * \param hSession
+ * \return
+ */
+CK_RV hal_find_objects_final(CK_SESSION_HANDLE hSession);
 
 #endif // HAL_H
 

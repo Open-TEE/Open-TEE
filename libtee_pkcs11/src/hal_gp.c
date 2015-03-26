@@ -798,6 +798,7 @@ CK_RV hal_generate_random(CK_SESSION_HANDLE hSession, CK_BYTE_PTR RandomData, CK
 	return ret;
 }
 
+
 CK_RV hal_get_attribute_value(CK_SESSION_HANDLE hSession,
 			      CK_OBJECT_HANDLE hObject,
 			      CK_ATTRIBUTE_PTR pTemplate,
@@ -842,5 +843,104 @@ err:
 	/* Free memorys and return */
 	TEEC_ReleaseSharedMemory(&inout_shm);
 	free(inout_shm.buffer);
+	return operation.params[3].value.a;
+}
+
+CK_RV hal_find_objects_init(CK_SESSION_HANDLE hSession,
+			    CK_ATTRIBUTE_PTR pTemplate,
+			    CK_ULONG ulCount)
+{
+	TEEC_SharedMemory in_shm = {0};
+	TEEC_Operation operation = {0};
+	TEEC_Result teec_ret;
+	CK_RV ck_rv;
+
+	/* Serialize template into buffer (function allocating a buffer!) */
+	ck_rv = serialize_template_into_shm(&in_shm, pTemplate, ulCount);
+	if (ck_rv != CKR_OK)
+		return ck_rv;
+
+	/* Register shared memory. It is used for trasfering template into TEE environment */
+	in_shm.flags = TEEC_MEM_INPUT;
+	if (TEEC_RegisterSharedMemory(g_tee_context, &in_shm) != TEE_SUCCESS) {
+		free(in_shm.buffer);
+		return CKR_GENERAL_ERROR;
+	}
+
+	/* Fill operation */
+	operation.params[0].memref.parent = &in_shm;
+	operation.params[2].value.a = in_shm.size;
+	operation.params[3].value.a = hSession;
+
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_NONE,
+						TEEC_VALUE_INPUT, TEEC_VALUE_INOUT);
+
+	/* Hand over execution to TEE */
+	teec_ret = TEEC_InvokeCommand(g_control_session, TEE_FIND_OBJECTS_INIT, &operation, NULL);
+
+	/* Shared momory was INPUT and it have served its purpose */
+	TEEC_ReleaseSharedMemory(&in_shm);
+	free(in_shm.buffer);
+
+	/* Something went wrong and problem is origin from frame work */
+	if (teec_ret != TEEC_SUCCESS)
+		return CKR_GENERAL_ERROR;
+
+	/* Return value from TEE environment */
+	return operation.params[3].value.a;
+}
+
+CK_RV hal_find_objects(CK_SESSION_HANDLE hSession,
+		       CK_OBJECT_HANDLE_PTR phObject,
+		       CK_ULONG ulMaxObjectCount,
+		       CK_ULONG_PTR pulObjectCount)
+{
+	TEEC_SharedMemory out_shm = {0};
+	TEEC_Operation operation = {0};
+	TEEC_Result teec_ret;
+
+	/* Register shared memory. It is used for trasfering template into TEE environment */
+	out_shm.buffer = phObject;
+	out_shm.size = ulMaxObjectCount * sizeof(CK_OBJECT_HANDLE_PTR);
+	out_shm.flags = TEEC_MEM_OUTPUT;
+	if (TEEC_RegisterSharedMemory(g_tee_context, &out_shm) != TEE_SUCCESS) {
+		free(out_shm.buffer);
+		return CKR_GENERAL_ERROR;
+	}
+
+	/* Fill operation */
+	operation.params[0].memref.parent = &out_shm;
+	operation.params[2].value.a = out_shm.size; /* IN ulMaxObjectCount and OUT pulObjectCount */
+	operation.params[3].value.a = hSession;
+
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_NONE,
+						TEEC_VALUE_INOUT, TEEC_VALUE_INOUT);
+
+	/* Hand over execution to TEE */
+	teec_ret = TEEC_InvokeCommand(g_control_session, TEE_FIND_OBJECTS, &operation, NULL);
+
+	/* Shared momory was INPUT and it have served its purpose */
+	TEEC_ReleaseSharedMemory(&out_shm);
+
+	/* Something went wrong and problem is origin from frame work */
+	if (teec_ret != TEEC_SUCCESS)
+		return CKR_GENERAL_ERROR;
+
+	/* Return value from TEE environment */
+	*pulObjectCount = operation.params[2].value.a;
+	return operation.params[3].value.a;
+}
+
+CK_RV hal_find_objects_final(CK_SESSION_HANDLE hSession)
+{
+	TEEC_Operation operation = {0};
+
+	operation.params[3].value.a = hSession;
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_NONE, TEEC_NONE, TEEC_NONE, TEEC_VALUE_INOUT);
+
+	if (TEEC_SUCCESS !=
+	    TEEC_InvokeCommand(g_control_session, TEE_FIND_OBJECTS_FINAL, &operation, NULL))
+		return CKR_GENERAL_ERROR;
+
 	return operation.params[3].value.a;
 }

@@ -104,12 +104,17 @@ CK_RV C_SetAttributeValue(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_FindObjectsInit(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount)
+CK_RV C_FindObjectsInit(CK_SESSION_HANDLE hSession,
+			CK_ATTRIBUTE_PTR pTemplate,
+			CK_ULONG ulCount)
 {
-	hSession = hSession;
-	pTemplate = pTemplate;
-	ulCount = ulCount;
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
+
+	if (!is_lib_initialized())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
+	return hal_find_objects_init(hSession, pTemplate, ulCount);
 }
 
 CK_RV C_FindObjects(CK_SESSION_HANDLE hSession,
@@ -117,16 +122,25 @@ CK_RV C_FindObjects(CK_SESSION_HANDLE hSession,
 		    CK_ULONG ulMaxObjectCount,
 		    CK_ULONG_PTR pulObjectCount)
 {
-	hSession = hSession;
-	phObject = phObject;
-	ulMaxObjectCount = ulMaxObjectCount;
-	pulObjectCount = pulObjectCount;
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	if (!phObject || !pulObjectCount)
+		return CKR_ARGUMENTS_BAD;
+
+	if (!is_lib_initialized())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
+	return hal_find_objects(hSession, phObject, ulMaxObjectCount, pulObjectCount);
 }
 
 CK_RV C_FindObjectsFinal(CK_SESSION_HANDLE hSession)
 {
-	hSession = hSession;
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
+
+	if (!is_lib_initialized())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
+	return hal_find_objects_final(hSession);
 }
