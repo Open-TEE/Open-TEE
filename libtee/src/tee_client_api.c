@@ -159,6 +159,8 @@ static void free_shm_and_from_manager(struct shared_mem_internal *shm_internal)
 	if (shm_internal->org_size == 0)
 		return;
 
+	memset((void *)&unlink_msg, 0, sizeof(struct com_msg_unlink_shm_region));
+
 	unlink_msg.msg_hdr.msg_name = COM_MSG_NAME_UNLINK_SHM_REGION;
 	unlink_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
 	unlink_msg.msg_hdr.sess_id = 0;
@@ -193,6 +195,8 @@ static TEEC_Result get_shm_from_manager_and_map_region(struct shared_mem_interna
 	/* Zero size is special case */
 	if (!shm_internal->org_size)
 		return TEE_SUCCESS;
+
+	memset((void *)&open_shm, 0, sizeof(struct com_msg_open_shm_region));
 
 	/* Fill message */
 	open_shm.msg_hdr.msg_name = COM_MSG_NAME_OPEN_SHM_REGION;
@@ -569,9 +573,11 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 {
 	int com_ret;
 	TEE_Result ret = TEEC_SUCCESS;
-	struct sockaddr_un sock_addr;
+	struct sockaddr_un sock_addr = {0};
 	struct com_msg_ca_init_tee_conn init_msg;
 	struct com_msg_ca_init_tee_conn *recv_msg = NULL;
+
+	memset((void *)&init_msg, 0, sizeof(struct com_msg_ca_init_tee_conn));
 
 	/* We ignore the name as we are only communicating with a single instance of the emulator */
 	(void)name;
@@ -747,8 +753,10 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	struct com_msg_open_session *recv_msg = NULL;
 	struct com_msg_open_session open_msg;
 	TEEC_Result result = TEEC_SUCCESS;
-	TEEC_SharedMemory temp_shm[4];
+	TEEC_SharedMemory temp_shm[4] = { {0} };
 	int com_ret = 0;
+
+	memset((void *)&open_msg, 0, sizeof(struct com_msg_open_session));
 
 	if (return_origin)
 		*return_origin = TEE_ORIGIN_API;
@@ -951,10 +959,12 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 {
 	struct com_msg_invoke_cmd *recv_msg = NULL;
 	struct com_msg_invoke_cmd invoke_msg;
-	struct session_internal *session_internal;
+	struct session_internal *session_internal = NULL;
 	TEEC_Result result = TEEC_SUCCESS;
-	TEEC_SharedMemory temp_shm[4];
+	TEEC_SharedMemory temp_shm[4] = { {0} };
 	int com_ret = 0;
+
+	memset((void *)&invoke_msg, 0, sizeof(struct com_msg_invoke_cmd));
 
 	if (return_origin)
 		*return_origin = TEE_ORIGIN_API;

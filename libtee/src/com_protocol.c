@@ -167,9 +167,9 @@ err:
 
 int com_send_msg(int sockfd, void *msg, int msg_len)
 {
-	struct iovec iov[ELEMENTS_IN_MESSAGE];
+	struct iovec iov[ELEMENTS_IN_MESSAGE] = { {0} };
 	int bytes_write;
-	struct com_transport_info com_trans_info;
+	struct com_transport_info com_trans_info = {0};
 
 	if (!msg) {
 		OT_LOG(LOG_ERR, "message null");
