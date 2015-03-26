@@ -95,6 +95,8 @@ static void __attribute__((unused)) pri_buf_hex_format(const char *title,
 	printf("\n");
 }
 
+#define PRI(str, ...) printf("%s : " str "\n",  __func__, ##__VA_ARGS__);
+
 static void aes_test(CK_SESSION_HANDLE session)
 {
 	CK_MECHANISM mechanism = {CKM_AES_CBC, aes_IV, SIZE_OF_VEC(aes_IV)};
@@ -261,6 +263,104 @@ static void rsa_sign_ver(CK_SESSION_HANDLE session)
 	}
 }
 
+static void get_attr_value(CK_SESSION_HANDLE session)
+{
+	CK_OBJECT_CLASS obj_class = CKO_SECRET_KEY;
+	CK_MECHANISM_TYPE allow_mech = CKM_AES_CBC;
+	CK_UTF8CHAR label[] = { "New label" };
+	uint32_t label_len = sizeof(label) - 1;
+	CK_OBJECT_HANDLE obj_handle = 0;
+	CK_KEY_TYPE keyType = CKK_AES;
+	CK_BBOOL ck_true = CK_TRUE;
+	CK_RV ret;
+
+	CK_ATTRIBUTE attrs[7] = {
+		{CKA_CLASS, &obj_class, sizeof(obj_class)},
+		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
+		{CKA_VALUE, &aes_key, SIZE_OF_VEC(aes_key)},
+		{CKA_ENCRYPT, &ck_true, sizeof(ck_true)},
+		{CKA_DECRYPT, &ck_true, sizeof(ck_true)},
+		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)},
+		{CKA_LABEL, label, label_len}
+	};
+
+	ret = func_list->C_CreateObject(session, attrs, 7, &obj_handle);
+	if (ret != CKR_OK) {
+		PRI("Failed to create object: %lu : 0x%x", ret, (uint32_t)ret)
+		return;
+	}
+
+	/* Get label size */
+	CK_ATTRIBUTE get_label_size_template = {CKA_LABEL, NULL_PTR, 0};
+	ret = func_list->C_GetAttributeValue(session, obj_handle, &get_label_size_template, 1);
+	if (ret != CKR_OK) {
+		PRI("failed to get label size %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	if (get_label_size_template.ulValueLen != label_len) {
+		PRI("Wrong label size");
+		return;
+	}
+
+	/* Get label */
+	CK_UTF8CHAR obj_label[20] = {0};
+	CK_ATTRIBUTE get_label_template = {CKA_LABEL, &obj_label, 20};
+	ret = func_list->C_GetAttributeValue(session, obj_handle, &get_label_template, 1);
+	if (ret != CKR_OK) {
+		PRI("failed to get label %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	if (get_label_template.ulValueLen != label_len) {
+		PRI("Get wrong label size");
+		return;
+	}
+
+	if (memcmp(obj_label, label, get_label_template.ulValueLen)) {
+		PRI("Wrong label");
+		return;
+	}
+
+	/* Invalid size */
+	CK_KEY_TYPE obj_keyType;
+	CK_UTF8CHAR obj_short_label[2];
+	CK_ATTRIBUTE get_label_too_small_template[2] = {
+		{CKA_KEY_TYPE, &obj_keyType, sizeof(obj_keyType)},
+		{CKA_LABEL, &obj_short_label, 2}
+	};
+	ret = func_list->C_GetAttributeValue(session, obj_handle, get_label_too_small_template, 2);
+	if (ret != CKR_BUFFER_TOO_SMALL) {
+		PRI("failed to get short label %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	if (*((CK_KEY_TYPE *)get_label_too_small_template[0].pValue) != keyType) {
+		PRI("Invalid key type");
+		return;
+	}
+
+	if ((CK_LONG)get_label_too_small_template[1].ulValueLen != -1) {
+		PRI("Expected -1 label size");
+		return;
+	}
+
+	/* Invalid attribute */
+	CK_ATTRIBUTE get_invalid_attr = {CKA_SIGN, NULL_PTR, 0};
+	ret = func_list->C_GetAttributeValue(session, obj_handle, &get_invalid_attr, 1);
+	if (ret != CKR_ATTRIBUTE_TYPE_INVALID) {
+		PRI("failed to get invalid attribute %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	if ((CK_LONG)get_invalid_attr.ulValueLen == -1) {
+		PRI("Should not found");
+		return;
+	}
+
+	PRI("Get attribute function OK")
+}
+
 int main()
 {
 	CK_SESSION_HANDLE session;
@@ -311,8 +411,9 @@ int main()
 	}
 
 	/* Do aes signature and RSA sign/verfy */
-	aes_test(session);
-	rsa_sign_ver(session);
+	//aes_test(session);
+	//rsa_sign_ver(session);
+	get_attr_value(session);
 
 	ret = func_list->C_Logout(session);
 	if (ret != CKR_OK) {
