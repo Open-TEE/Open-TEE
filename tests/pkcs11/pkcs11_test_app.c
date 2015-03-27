@@ -120,7 +120,6 @@ static void aes_test(CK_SESSION_HANDLE session)
 		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
 	};
 
-
 	ret = func_list->C_CreateObject(session, attrs, 6, &hKey);
 	if (ret != CKR_OK) {
 		printf("AES: Failed to create object: %lu : 0x%x\n", ret, (uint32_t)ret);
@@ -361,6 +360,104 @@ static void get_attr_value(CK_SESSION_HANDLE session)
 	PRI("Get attribute function OK")
 }
 
+static void find_objects(CK_SESSION_HANDLE session)
+{
+	CK_OBJECT_HANDLE hObject[10];
+	CK_ULONG ulObjectCount;
+	CK_RV ck_rv;
+
+	/* Find all objects
+	 * Note: This test result are not checked, because it depends our SS stated */
+	ck_rv = func_list->C_FindObjectsInit(session, NULL_PTR, 0);
+	if (ck_rv != CKR_OK) {
+		PRI("Failed to init find object");
+		return;
+	}
+
+	while (1) {
+		ck_rv = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
+		if (ck_rv != CKR_OK) {
+			PRI("Failed to find objects");
+			return;
+		}
+
+		if (ulObjectCount != 10)
+			break;
+	}
+
+	ck_rv = func_list->C_FindObjectsFinal(session);
+	if (ck_rv != CKR_OK) {
+		PRI("Failed to finalize objects find");
+		return;
+	}
+
+	if (ulObjectCount != 3)
+		PRI("Cant find all the object. There should be three object "
+		    "(Depends our SS state, this might not be a problem)")
+
+	/* Get AES key object */
+	CK_KEY_TYPE keyType = CKK_AES;
+	CK_OBJECT_CLASS obj_class = CKO_SECRET_KEY;
+	CK_ATTRIBUTE aes_object[2] = {
+		{CKA_CLASS, &obj_class, sizeof(obj_class)},
+		{CKA_KEY_TYPE, &keyType, sizeof(keyType)}
+	};
+	ck_rv = func_list->C_FindObjectsInit(session, aes_object, 2);
+	if (ck_rv != CKR_OK) {
+		PRI("Failed to init find object");
+		return;
+	}
+
+	ck_rv = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
+	if (ck_rv != CKR_OK) {
+		PRI("Failed to find objects");
+		return;
+	}
+
+	ck_rv = func_list->C_FindObjectsFinal(session);
+	if (ck_rv != CKR_OK) {
+		PRI("Failed to finalize objects find");
+		return;
+	}
+
+	/* If you have it clean state, it should find one object */
+	if (ulObjectCount != 1)
+		PRI("Expected to find only one AES key object (Depends our SS "
+		    "state, this might not be a problem)")
+
+	/* find object that have two common attributes */
+	CK_MECHANISM_TYPE allow_mech = CKM_SHA1_RSA_PKCS;
+	CK_ATTRIBUTE allow_object[1] = {
+		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
+	};
+
+	ck_rv = func_list->C_FindObjectsInit(session, allow_object, 1);
+	if (ck_rv != CKR_OK) {
+		PRI("Failed to init find object");
+		return;
+	}
+
+	ck_rv = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
+	if (ck_rv != CKR_OK) {
+		PRI("Failed to find objects");
+		return;
+	}
+
+	ck_rv = func_list->C_FindObjectsFinal(session);
+	if (ck_rv != CKR_OK) {
+		PRI("Failed to finalize objects find");
+		return;
+	}
+
+	/* If you have it clean state, it should find one object */
+	if (ulObjectCount != 2) {
+		PRI("Expected to find two object (Depends our SS "
+		    "state, this might not be a problem)")
+	}
+
+	PRI("Find object test complited");
+}
+
 int main()
 {
 	CK_SESSION_HANDLE session;
@@ -411,9 +508,10 @@ int main()
 	}
 
 	/* Do aes signature and RSA sign/verfy */
-	//aes_test(session);
-	//rsa_sign_ver(session);
+	aes_test(session);
+	rsa_sign_ver(session);
 	get_attr_value(session);
+	find_objects(session);
 
 	ret = func_list->C_Logout(session);
 	if (ret != CKR_OK) {
