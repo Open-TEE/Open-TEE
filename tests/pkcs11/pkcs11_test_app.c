@@ -266,6 +266,8 @@ int main()
 	CK_SESSION_HANDLE session;
 	CK_INFO info;
 	CK_RV ret;
+	CK_SLOT_ID available_slots[1];
+	CK_ULONG num_slots = 1;
 	char pin[8] = "12345678";
 
 	ret = C_GetFunctionList(&func_list);
@@ -289,7 +291,14 @@ int main()
 	printf("Version : Major %d: Minor %d\n",
 	       info.cryptokiVersion.major, info.cryptokiVersion.minor);
 
-	ret = func_list->C_OpenSession(1, CKF_RW_SESSION | CKF_SERIAL_SESSION, NULL, NULL, &session);
+	ret = func_list->C_GetSlotList(1, available_slots, &num_slots);
+	if (ret != CKR_OK) {
+		printf("Failed to get the available slots: %ld\n", ret);
+		return 0;
+	}
+
+	ret = func_list->C_OpenSession(available_slots[0], CKF_RW_SESSION | CKF_SERIAL_SESSION,
+				       NULL, NULL, &session);
 	if (ret != CKR_OK) {
 		printf("Failed to Open session the library: 0x%x\n", (uint32_t)ret);
 		return 0;
