@@ -76,6 +76,23 @@ uint8_t aes_IV[] = "\x2f\xe2\xb3\x33\xce\xda\x8f\x98\xf4\xa9\x9b\x40\xd2\xcd\x34
 uint8_t aes_msg[] = "\x45\xcf\x12\x96\x4f\xc8\x24\xab\x76\x61\x6a\xe2\xf4\xbf\x08\x22";
 uint8_t aes_cipher[] = "\x0f\x61\xc4\xd4\x4c\x51\x47\xc0\x3c\x19\x5a\xd7\xe2\xcc\x12\xb2";
 
+/* sha256 */
+uint8_t sha256msg[] = "\x45\x11\x01\x25\x0e\xc6\xf2\x66\x52\x24\x9d\x59\xdc\x97\x4b\x73"
+		      "\x61\xd5\x71\xa8\x10\x1c\xdf\xd3\x6a\xba\x3b\x58\x54\xd3\xae\x08"
+		      "\x6b\x5f\xdd\x45\x97\x72\x1b\x66\xe3\xc0\xdc\x5d\x8c\x60\x6d\x96"
+		      "\x57\xd0\xe3\x23\x28\x3a\x52\x17\xd1\xf5\x3f\x2f\x28\x4f\x57\xb8"
+		      "\x5c\x8a\x61\xac\x89\x24\x71\x1f\x89\x5c\x5e\xd9\x0e\xf1\x77\x45"
+		      "\xed\x2d\x72\x8a\xbd\x22\xa5\xf7\xa1\x34\x79\xa4\x62\xd7\x1b\x56"
+		      "\xc1\x9a\x74\xa4\x0b\x65\x5c\x58\xed\xfe\x0a\x18\x8a\xd2\xcf\x46"
+		      "\xcb\xf3\x05\x24\xf6\x5d\x42\x3c\x83\x7d\xd1\xff\x2b\xf4\x62\xac"
+		      "\x41\x98\x00\x73\x45\xbb\x44\xdb\xb7\xb1\xc8\x61\x29\x8c\xdf\x61"
+		      "\x98\x2a\x83\x3a\xfc\x72\x8f\xae\x1e\xda\x2f\x87\xaa\x2c\x94\x80"
+		      "\x85\x8b\xec";
+
+uint8_t sha256hash[] = "\x3c\x59\x3a\xa5\x39\xfd\xcd\xae\x51\x6c\xdf\x2f\x15\x00\x0f\x66"
+		       "\x34\x18\x5c\x88\xf5\x05\xb3\x97\x75\xfb\x9a\xb1\x37\xa1\x0a\xa2";
+
+
 /* Debug printing */
 static void __attribute__((unused)) pri_buf_hex_format(const char *title,
 						       const unsigned char *buf,
@@ -122,54 +139,56 @@ static void aes_test(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_CreateObject(session, attrs, 6, &hKey);
 	if (ret != CKR_OK) {
-		printf("AES: Failed to create object: %lu : 0x%x\n", ret, (uint32_t)ret);
+		PRI("Failed to create object: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	ret = func_list->C_EncryptInit(session, &mechanism, hKey);
 	if (ret != CKR_OK) {
-		printf("AES: Failed to init encrypt: %lu : 0x%x\n", ret, (uint32_t)ret);
+		PRI("Failed to init encrypt: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	ret = func_list->C_Encrypt(session, (CK_BYTE_PTR)aes_msg, SIZE_OF_VEC(aes_msg),
 				   (CK_BYTE_PTR)cipher, &cipher_len);
 	if (ret != CKR_OK) {
-		printf("AES: Failed to encrypt: %lu : 0x%x\n", ret, (uint32_t)ret);
+		PRI("Failed to encrypt: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	if (cipher_len != SIZE_OF_VEC(aes_key)) {
-		printf("AES: Invalid size after encryption\n");
+		PRI("Invalid size after encryption");
 		return;
 	}
 
 	if (memcmp(aes_cipher, cipher, cipher_len) != 0) {
-		printf("AES: Not expexted encryption result\n");
+		PRI("Not expexted encryption result");
 		return;
 	}
 
 	ret = func_list->C_DecryptInit(session, &mechanism, hKey);
 	if (ret != CKR_OK) {
-		printf("AES: Failed to init Decrypt: %lu : 0x%x\n", ret, (uint32_t)ret);
+		PRI("Failed to init Decrypt: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	ret = func_list->C_Decrypt(session, (CK_BYTE_PTR)cipher, cipher_len,
 				   (CK_BYTE_PTR)decrypted, &decrypted_len);
 	if (ret != CKR_OK) {
-		printf("AES: Failed to Decrypt: %lu : 0x%x\n", ret, (uint32_t)ret);
+		PRI("Failed to Decrypt: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	if (decrypted_len != SIZE_OF_VEC(aes_msg)) {
-		printf("AES: Invalid size after decrypt\n");
+		PRI("Invalid size after decrypt");
 		return;
 	}
 
 	if (memcmp(aes_msg, decrypted, decrypted_len) != 0) {
-		printf("AES: decryption failure\n");
+		PRI("decryption failure");
 		return;
+	} else {
+		PRI("Ok");
 	}
 }
 
@@ -200,7 +219,7 @@ static void rsa_sign_ver(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_CreateObject(session, pri_attrs, 7, &pri_Key);
 	if (ret != CKR_OK) {
-		printf("Failed to create RSA private object: %lu : 0x%x\n", ret, (uint32_t)ret);
+		PRI("Failed to create RSA private object: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -216,49 +235,49 @@ static void rsa_sign_ver(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_CreateObject(session, pub_attrs, 6, &pub_Key);
         if (ret != CKR_OK) {
-                printf("Failed to create RSA public object: %lu : 0x%x\n", ret, (uint32_t)ret);
+		PRI("Failed to create RSA public object: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
         }
 
         ret = func_list->C_SignInit(session, &mechanism, pri_Key);
 	if (ret != CKR_OK) {
-		printf("Failed to signature init: %lu : 0x%x\n", ret, (uint32_t)ret);
+		PRI("Failed to signature init: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	ret = func_list->C_Sign(session, (CK_BYTE_PTR)rsa_msg, SIZE_OF_VEC(rsa_msg),
 				(CK_BYTE_PTR)sig, &sig_len);
 	if (ret != CKR_OK) {
-		printf("Failed to sign: %lu : 0x%x\n", ret, (uint32_t)ret);
+		PRI("Failed to sign: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	if (SIZE_OF_VEC(rsa_sig) != sig_len) {
-		printf("RSA: Invalid size after signature : %lu\n", sig_len);
+		PRI("RSA Invalid size after signature : %lu", sig_len);
 		return;
 	}
 
 	if (memcmp(rsa_sig, sig, sig_len) != 0) {
-		printf("RSA: Not expected signature\n");
+		PRI("RSA Not expected signature");
 		return;
 	} else {
-		printf("RSA: Signature OK\n");
+		PRI("RSA Signature OK");
 	}
 
 	ret = func_list->C_VerifyInit(session, &mechanism, pub_Key);
 	if (ret != CKR_OK) {
-		printf("Failed to verify init: %lu : 0x%x\n", ret, (uint32_t)ret);
+		PRI("Failed to verify init: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	ret = func_list->C_Verify(session, (CK_BYTE_PTR)rsa_msg, SIZE_OF_VEC(rsa_msg),
 				  (CK_BYTE_PTR)sig, sig_len);
 	if (ret == CKR_OK) {
-		printf("RSA: Verified\n");
+		PRI("RSA Verified OK");
 	} else if (ret == CKR_SIGNATURE_INVALID) {
-		printf("RSA: Invalid signature\n");
+		PRI("RSA Invalid signature");
 	} else {
-		printf("RSA: Failed to verify: %lu : 0x%x\n", ret, (uint32_t)ret);
+		PRI("RSA Failed to verify: %lu : 0x%x", ret, (uint32_t)ret);
 	}
 }
 
@@ -363,37 +382,39 @@ static void get_attr_value(CK_SESSION_HANDLE session)
 static void find_objects(CK_SESSION_HANDLE session)
 {
 	CK_OBJECT_HANDLE hObject[10];
-	CK_ULONG ulObjectCount;
-	CK_RV ck_rv;
+	CK_ULONG ulObjectCount, total_ulObjectCount = 0;
+	CK_RV ret;
 
 	/* Find all objects
 	 * Note: This test result are not checked, because it depends our SS stated */
-	ck_rv = func_list->C_FindObjectsInit(session, NULL_PTR, 0);
-	if (ck_rv != CKR_OK) {
-		PRI("Failed to init find object");
+	ret = func_list->C_FindObjectsInit(session, NULL_PTR, 0);
+	if (ret != CKR_OK) {
+		PRI("Failed to init find object %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	while (1) {
-		ck_rv = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
-		if (ck_rv != CKR_OK) {
-			PRI("Failed to find objects");
+		ret = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
+		if (ret != CKR_OK) {
+			PRI("Failed to find objects %lu : 0x%x", ret, (uint32_t)ret);
 			return;
 		}
 
-		if (ulObjectCount != 10)
+		total_ulObjectCount += ulObjectCount;
+
+		if (ulObjectCount == 10)
+			continue;
+		else
 			break;
 	}
 
-	ck_rv = func_list->C_FindObjectsFinal(session);
-	if (ck_rv != CKR_OK) {
-		PRI("Failed to finalize objects find");
+	ret = func_list->C_FindObjectsFinal(session);
+	if (ret != CKR_OK) {
+		PRI("Failed to finalize objects find %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
-	if (ulObjectCount != 3)
-		PRI("Cant find all the object. There should be three object "
-		    "(Depends our SS state, this might not be a problem)")
+	PRI("Found %lu objects", total_ulObjectCount)
 
 	/* Get AES key object */
 	CK_KEY_TYPE keyType = CKK_AES;
@@ -402,28 +423,35 @@ static void find_objects(CK_SESSION_HANDLE session)
 		{CKA_CLASS, &obj_class, sizeof(obj_class)},
 		{CKA_KEY_TYPE, &keyType, sizeof(keyType)}
 	};
-	ck_rv = func_list->C_FindObjectsInit(session, aes_object, 2);
-	if (ck_rv != CKR_OK) {
-		PRI("Failed to init find object");
+	ret = func_list->C_FindObjectsInit(session, aes_object, 2);
+	if (ret != CKR_OK) {
+		PRI("Failed to init find AES objects %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
-	ck_rv = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
-	if (ck_rv != CKR_OK) {
-		PRI("Failed to find objects");
+	total_ulObjectCount = 0;
+	while (1) {
+		ret = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
+		if (ret != CKR_OK) {
+			PRI("Failed to find AES objects %lu : 0x%x", ret, (uint32_t)ret);
+			return;
+		}
+
+		total_ulObjectCount += ulObjectCount;
+
+		if (ulObjectCount == 10)
+			continue;
+		else
+			break;
+	}
+
+	ret = func_list->C_FindObjectsFinal(session);
+	if (ret != CKR_OK) {
+		PRI("Failed to finalize AES objects find %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
-	ck_rv = func_list->C_FindObjectsFinal(session);
-	if (ck_rv != CKR_OK) {
-		PRI("Failed to finalize objects find");
-		return;
-	}
-
-	/* If you have it clean state, it should find one object */
-	if (ulObjectCount != 1)
-		PRI("Expected to find only one AES key object (Depends our SS "
-		    "state, this might not be a problem)")
+	PRI("Found %lu AES key object", total_ulObjectCount)
 
 	/* find object that have two common attributes */
 	CK_MECHANISM_TYPE allow_mech = CKM_SHA1_RSA_PKCS;
@@ -431,31 +459,101 @@ static void find_objects(CK_SESSION_HANDLE session)
 		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
 	};
 
-	ck_rv = func_list->C_FindObjectsInit(session, allow_object, 1);
-	if (ck_rv != CKR_OK) {
-		PRI("Failed to init find object");
+	ret = func_list->C_FindObjectsInit(session, allow_object, 1);
+	if (ret != CKR_OK) {
+		PRI("Failed to init find object %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
-	ck_rv = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
-	if (ck_rv != CKR_OK) {
-		PRI("Failed to find objects");
+	total_ulObjectCount = 0;
+	while (1) {
+		ret = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
+		if (ret != CKR_OK) {
+			PRI("Failed to find objects %lu : 0x%x", ret, (uint32_t)ret);
+			return;
+		}
+
+		total_ulObjectCount += ulObjectCount;
+
+		if (ulObjectCount == 10)
+			continue;
+		else
+			break;
+	}
+
+	ret = func_list->C_FindObjectsFinal(session);
+	if (ret != CKR_OK) {
+		PRI("Failed to finalize objects find %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
-	ck_rv = func_list->C_FindObjectsFinal(session);
-	if (ck_rv != CKR_OK) {
-		PRI("Failed to finalize objects find");
+	PRI("Found %lu CKM_SHA1_RSA_PKCS allowed object", total_ulObjectCount);
+
+	/* find object that have does not exist */
+	CK_BBOOL temp; /* Not neede */
+	CK_ATTRIBUTE not_existing_attribute[1] = {
+		{CKA_OTP_LENGTH, &temp, sizeof(temp)}
+	};
+
+	ret = func_list->C_FindObjectsInit(session, not_existing_attribute, 1);
+	if (ret != CKR_OK) {
+		PRI("Failed to init find object %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
-	/* If you have it clean state, it should find one object */
-	if (ulObjectCount != 2) {
-		PRI("Expected to find two object (Depends our SS "
-		    "state, this might not be a problem)")
+	ret = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
+	if (ret != CKR_OK) {
+		PRI("Failed to find objects %lu : 0x%x", ret, (uint32_t)ret);
+		return;
 	}
 
-	PRI("Find object test complited");
+	ret = func_list->C_FindObjectsFinal(session);
+	if (ret != CKR_OK) {
+		PRI("Failed to finalize objects find %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+	if (ulObjectCount != 0)
+		PRI("FAIL: Object with this attribute should not be found!!");
+
+	PRI("Find object test complited (result need to verified manualy) (OK)");
+}
+
+static void do_hash(CK_SESSION_HANDLE session)
+{
+	CK_MECHANISM mechanism = {CKM_SHA256, NULL_PTR, 0};
+	CK_BYTE digest[SIZE_OF_VEC(sha256hash)];
+	CK_ULONG ulDigestLen = SIZE_OF_VEC(sha256hash);
+	CK_RV ret;
+
+	ret = func_list->C_DigestInit(session, &mechanism);
+	if (ret != CKR_OK) {
+		PRI("Failed to init digest mechanism %lu : 0x%x", ret, (uint32_t)ret)
+		return;
+	}
+
+	ret = func_list->C_DigestUpdate(session, sha256msg, SIZE_OF_VEC(sha256msg));
+	if (ret != CKR_OK) {
+		PRI("Failed to update digest %lu : 0x%x", ret, (uint32_t)ret)
+		return;
+	}
+
+	ret = func_list->C_DigestFinal(session, digest, &ulDigestLen);
+	if (ret != CKR_OK) {
+		PRI("Failed to finalize digest %lu : 0x%x", ret, (uint32_t)ret)
+		return;
+	}
+
+	if (ulDigestLen != SIZE_OF_VEC(sha256hash)) {
+		PRI("FAIL: Not expected sha256 size");
+		return;
+	}
+
+	if (memcmp(sha256hash, digest, ulDigestLen) != 0) {
+		PRI("Not expected hash");
+		return;
+	} else {
+		PRI("SHA256 OK");
+	}
 }
 
 int main()
@@ -469,53 +567,54 @@ int main()
 
 	ret = C_GetFunctionList(&func_list);
 	if (ret != CKR_OK || func_list == NULL) {
-		printf("Failed to get function list: %ld\n", ret);
+		PRI("Failed to get function list: %ld", ret);
 		return 0;
 	}
 
 	ret = func_list->C_Initialize(NULL);
 	if (ret != CKR_OK) {
-		printf("Failed to initialize the library: %ld\n", ret);
+		PRI("Failed to initialize the library: %ld", ret);
 		return 0;
 	}
 
 	ret = C_GetInfo(&info);
 	if (ret != CKR_OK) {
-		printf("Failed to get the library info: %ld\n", ret);
+		PRI("Failed to get the library info: %ld", ret);
 		return 0;
 	}
 
-	printf("Version : Major %d: Minor %d\n",
+	PRI("Version : Major %d: Minor %d",
 	       info.cryptokiVersion.major, info.cryptokiVersion.minor);
 
 	ret = func_list->C_GetSlotList(1, available_slots, &num_slots);
 	if (ret != CKR_OK) {
-		printf("Failed to get the available slots: %ld\n", ret);
+		PRI("Failed to get the available slots: %ld", ret);
 		return 0;
 	}
 
 	ret = func_list->C_OpenSession(available_slots[0], CKF_RW_SESSION | CKF_SERIAL_SESSION,
 				       NULL, NULL, &session);
 	if (ret != CKR_OK) {
-		printf("Failed to Open session the library: 0x%x\n", (uint32_t)ret);
+		PRI("Failed to Open session the library: 0x%x", (uint32_t)ret);
 		return 0;
 	}
 
 	ret = func_list->C_Login(session, CKU_USER, (CK_BYTE_PTR)pin, sizeof(pin));
 	if (ret != CKR_OK) {
-		printf("Failed to login: 0x%x\n", (uint32_t)ret);
+		PRI("Failed to login: 0x%x", (uint32_t)ret);
 		return 0;
 	}
 
-	/* Do aes signature and RSA sign/verfy */
+	/* Basic smoke tests */
 	aes_test(session);
 	rsa_sign_ver(session);
 	get_attr_value(session);
 	find_objects(session);
+	do_hash(session);
 
 	ret = func_list->C_Logout(session);
 	if (ret != CKR_OK) {
-		printf("Failed to logout: 0x%x\n", (uint32_t)ret);
+		PRI("Failed to logout: 0x%x", (uint32_t)ret);
 		return 0;
 	}
 
@@ -523,7 +622,7 @@ int main()
 
 	ret = func_list->C_Finalize(NULL);
 	if (ret != CKR_OK) {
-		printf("Failed to Finalize the library: %ld\n", ret);
+		PRI("Failed to Finalize the library: %ld", ret);
 		return 0;
 	}
 
