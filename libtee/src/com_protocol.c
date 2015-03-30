@@ -103,7 +103,7 @@ int com_recv_msg(int sockfd, void **msg, int *msg_len)
 	struct com_transport_info com_recv_trans_info;
 
 	if (!msg) {
-		OT_LOG(LOG_ERR, "msg null")
+		OT_LOG(LOG_ERR, "msg null");
 		return 1;
 	}
 

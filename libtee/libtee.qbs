@@ -13,6 +13,8 @@ DynamicLibrary {
     cpp.includePaths: ["include"]
     cpp.dynamicLibraries: ["rt", "z"]
 
+    cpp.defines: ["OT_LOGGING"]
+
     destinationDirectory: '.'
 
     Export {

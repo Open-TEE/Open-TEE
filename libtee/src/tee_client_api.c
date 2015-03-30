@@ -147,7 +147,7 @@ static int send_msg(int fd, void *msg, int msg_len, pthread_mutex_t mutex)
 	ret = com_send_msg(fd, msg, msg_len);
 
 	if (pthread_mutex_unlock(&mutex))
-		OT_LOG(LOG_ERR, "Failed to unlock mutex")
+		OT_LOG(LOG_ERR, "Failed to unlock mutex");
 
 	return ret;
 }
@@ -206,7 +206,7 @@ static TEEC_Result get_shm_from_manager_and_map_region(struct shared_mem_interna
 
 	/* Message filled. Send message */
 	if (pthread_mutex_lock(&ctx_internal.mutex)) {
-		OT_LOG(LOG_ERR, "Failed to lock mutex")
+		OT_LOG(LOG_ERR, "Failed to lock mutex");
 		return TEEC_ERROR_GENERIC;
 	}
 
@@ -225,18 +225,18 @@ static TEEC_Result get_shm_from_manager_and_map_region(struct shared_mem_interna
 
 	/* Check received message */
 	if (com_ret == -1) {
-		OT_LOG(LOG_ERR, "Socket error")
+		OT_LOG(LOG_ERR, "Socket error");
 		return TEEC_ERROR_COMMUNICATION;
 
 	} else if (com_ret > 0) {
-		OT_LOG(LOG_ERR, "Received bad message, discarding")
+		OT_LOG(LOG_ERR, "Received bad message, discarding");
 		return TEEC_ERROR_COMMUNICATION;
 	}
 
 	/* Check received message */
 	if (!verify_msg_name_and_type(recv_msg, COM_MSG_NAME_OPEN_SHM_REGION, COM_TYPE_RESPONSE)) {
 		if (!get_return_vals_from_err_msg(recv_msg, &result, NULL)) {
-			OT_LOG(LOG_ERR, "Received unknow message")
+			OT_LOG(LOG_ERR, "Received unknow message");
 			result = TEEC_ERROR_COMMUNICATION;
 			goto err_ret;
 		}
@@ -291,12 +291,12 @@ static TEEC_Result create_shared_mem(TEEC_Context *context, TEEC_SharedMemory *s
 	TEEC_Result ret;
 
 	if (!context || ctx_internal.ctx_status != CTX_INTERNAL_INIT) {
-		OT_LOG(LOG_ERR, "Context NULL or Initialize context before reg/alloc memory")
+		OT_LOG(LOG_ERR, "Context NULL or Initialize context before reg/alloc memory");
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
 	if (!shared_mem) {
-		OT_LOG(LOG_ERR, "Shared memory NULL")
+		OT_LOG(LOG_ERR, "Shared memory NULL");
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
@@ -373,7 +373,7 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 		} else if (TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_INPUT ||
 			   TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_INOUT ||
 			   TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_OUTPUT) {
-			OT_LOG(LOG_ERR, "WARNING: MEMREF partial is not implemented")
+			OT_LOG(LOG_ERR, "WARNING: MEMREF partial is not implemented");
 			continue;
 		}
 
@@ -445,7 +445,7 @@ static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 		} else if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_PARTIAL_INPUT ||
 			   TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_PARTIAL_INOUT ||
 			   TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_PARTIAL_OUTPUT) {
-			OT_LOG(LOG_ERR, "WARNING: MEMREF partial is not implemented")
+			OT_LOG(LOG_ERR, "WARNING: MEMREF partial is not implemented");
 			continue;
 		}
 
@@ -583,7 +583,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	(void)name;
 
 	if (!context || ctx_internal.ctx_status == CTX_INTERNAL_INIT) {
-		OT_LOG(LOG_ERR, "Contex NULL or initialized")
+		OT_LOG(LOG_ERR, "Contex NULL or initialized");
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
@@ -592,14 +592,14 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 
 	/* Init context mutex */
 	if (pthread_mutex_init(&ctx_internal.mutex, NULL)) {
-		OT_LOG(LOG_ERR, "Failed to init mutex")
+		OT_LOG(LOG_ERR, "Failed to init mutex");
 		ret = TEEC_ERROR_GENERIC;
 		goto err_1;
 	}
 
 	ctx_internal.sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (ctx_internal.sockfd == -1) {
-		OT_LOG(LOG_ERR, "Socket creation failed")
+		OT_LOG(LOG_ERR, "Socket creation failed");
 		ret = TEEC_ERROR_COMMUNICATION;
 		goto err_2;
 	}
@@ -610,7 +610,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 
 	if (connect(ctx_internal.sockfd,
 		    (struct sockaddr *)&sock_addr, sizeof(struct sockaddr_un)) == -1) {
-		OT_LOG(LOG_ERR, "Failed to connect to TEE")
+		OT_LOG(LOG_ERR, "Failed to connect to TEE");
 		ret = TEEC_ERROR_COMMUNICATION;
 		goto err_3;
 	}
@@ -622,7 +622,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 
 	/* Message filled. Send message */
 	if (pthread_mutex_lock(&ctx_internal.mutex)) {
-		OT_LOG(LOG_ERR, "Failed to lock mutex")
+		OT_LOG(LOG_ERR, "Failed to lock mutex");
 		goto err_3;
 	}
 
@@ -689,7 +689,7 @@ void TEEC_FinalizeContext(TEEC_Context *context)
 	fin_con_msg.msg_hdr.sess_id = 0;     /* ignored */
 
 	if (pthread_mutex_lock(&ctx_internal.mutex)) {
-		OT_LOG(LOG_ERR, "Failed to lock mutex")
+		OT_LOG(LOG_ERR, "Failed to lock mutex");
 		goto err;
 	}
 
@@ -767,7 +767,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	}
 
 	if (operation && operation->started) {
-		OT_LOG(LOG_ERR, "Invalid operation state. Operation started. It should be zero")
+		OT_LOG(LOG_ERR, "Invalid operation state. Operation started. It should be zero");
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
@@ -857,7 +857,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	/* Check received message */
 	if (!verify_msg_name_and_type(recv_msg, COM_MSG_NAME_OPEN_SESSION, COM_TYPE_RESPONSE)) {
 		if (!get_return_vals_from_err_msg(recv_msg, &result, return_origin)) {
-			OT_LOG(LOG_ERR, "Received unknow message")
+			OT_LOG(LOG_ERR, "Received unknow message");
 			goto err_com_2;
 		}
 
@@ -937,7 +937,7 @@ void TEEC_CloseSession(TEEC_Session *session)
 
 	/* Message filled. Send message */
 	if (pthread_mutex_lock(&internal_imp->mutex)) {
-		OT_LOG(LOG_ERR, "Failed to lock mutex")
+		OT_LOG(LOG_ERR, "Failed to lock mutex");
 		goto err;
 	}
 
@@ -947,7 +947,7 @@ void TEEC_CloseSession(TEEC_Session *session)
 		OT_LOG(LOG_ERR, "Failed to send message TEE");
 
 	if (pthread_mutex_unlock(&internal_imp->mutex))
-		OT_LOG(LOG_ERR, "Failed to unlock mutex")
+		OT_LOG(LOG_ERR, "Failed to unlock mutex");
 
 err:
 	free(internal_imp);
@@ -970,12 +970,12 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 		*return_origin = TEE_ORIGIN_API;
 
 	if (!session) {
-		OT_LOG(LOG_ERR, "session NULL")
+		OT_LOG(LOG_ERR, "session NULL");
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
 	if (operation && operation->started) {
-		OT_LOG(LOG_ERR, "Invalid operation state. Operation started. It should be zero")
+		OT_LOG(LOG_ERR, "Invalid operation state. Operation started. It should be zero");
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
@@ -984,7 +984,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 
 	session_internal = (struct session_internal *)session->imp;
 	if (!session_internal) {
-		OT_LOG(LOG_ERR, "session not initialized")
+		OT_LOG(LOG_ERR, "session not initialized");
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
@@ -1020,7 +1020,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 	if (send_msg(session_internal->sockfd, &invoke_msg,
 		     sizeof(struct com_msg_invoke_cmd), fd_write_mutex) !=
 	    sizeof(struct com_msg_invoke_cmd)) {
-		OT_LOG(LOG_ERR, "Failed to send message TEE")
+		OT_LOG(LOG_ERR, "Failed to send message TEE");
 		goto err_com_2;
 	}
 
@@ -1040,10 +1040,10 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 
 	/* Check received message */
 	if (com_ret == -1) {
-		OT_LOG(LOG_ERR, "Socket error")
+		OT_LOG(LOG_ERR, "Socket error");
 		goto err_com_1;
 	} else if (com_ret > 0) {
-		OT_LOG(LOG_ERR, "Received bad message, discarding")
+		OT_LOG(LOG_ERR, "Received bad message, discarding");
 		/* TODO: Do what? End session? Problem: We do not know what message was
 		 * incomming. Error or Response to invoke cmd message. Worst case situation is
 		 * that task is complited, but message delivery only failed. For now, just report
@@ -1054,7 +1054,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 	/* Check received message */
 	if (!verify_msg_name_and_type(recv_msg, COM_MSG_NAME_INVOKE_CMD, COM_TYPE_RESPONSE)) {
 		if (!get_return_vals_from_err_msg(recv_msg, &result, return_origin)) {
-			OT_LOG(LOG_ERR, "Received unknow message")
+			OT_LOG(LOG_ERR, "Received unknow message");
 			goto err_com_2;
 		}
 
@@ -1103,7 +1103,7 @@ void TEEC_RequestCancellation(TEEC_Operation *operation)
 	struct com_msg_request_cancellation cancel_msg;
 
 	if (!operation) {
-		OT_LOG(LOG_ERR, "Cancel not send, because opearion NULL")
+		OT_LOG(LOG_ERR, "Cancel not send, because opearion NULL");
 		return;
 	}
 
@@ -1114,7 +1114,7 @@ void TEEC_RequestCancellation(TEEC_Operation *operation)
 	/* Operation may have send already to TEE. If started member NULL, operation is not send
 	 * to TEE and is queued in CA */
 	if (!operation->started) {
-		OT_LOG(LOG_ERR, "Cancel not send, because operation not yet started")
+		OT_LOG(LOG_ERR, "Cancel not send, because operation not yet started");
 		return;
 	}
 
