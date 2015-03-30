@@ -102,7 +102,7 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 		break;
 
 	default:
-		OT_LOG(LOG_ERR, "Unknow hash algorithm")
+		OT_LOG(LOG_ERR, "Unknow hash algorithm");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 

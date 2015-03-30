@@ -83,8 +83,8 @@ static void free_transaction(struct internal_transaction *rm_trans)
 	if (!rm_trans)
 		return;
 
-	free(rm_trans->message);
-	free(rm_trans);
+	TEE_Free(rm_trans->message);
+	TEE_Free(rm_trans);
 }
 
 /*
@@ -150,7 +150,7 @@ static TEE_Result add_digest_to_transaction(struct internal_transaction *new_tra
 	/* Malloc space for transaction message */
 	new_trans->digest = TEE_Malloc(DIGEST_SIZE, 0);
 	if (!new_trans->digest) {
-		OT_LOG(LOG_ERR, "Out of memory")
+		OT_LOG(LOG_ERR, "Out of memory");
 		return TEE_ERROR_OUT_OF_MEMORY;
 	}
 
@@ -174,13 +174,13 @@ static TEE_Result exec_transaction(uint32_t transaction_type,
 
 	/* Check parameter types */
 	if (TEE_PARAM_TYPE_GET(paramTypes, 0) != TEE_PARAM_TYPE_VALUE_INPUT) {
-		OT_LOG(LOG_ERR, "Expected value input type as a index 0 parameter")
+		OT_LOG(LOG_ERR, "Expected value input type as a index 0 parameter");
 		ret = TEE_ERROR_BAD_PARAMETERS;
 		goto end;
 	}
 
 	if (TEE_PARAM_TYPE_GET(paramTypes, 1) != TEE_PARAM_TYPE_MEMREF_INOUT) {
-		OT_LOG(LOG_ERR, "Expected memref inout as a index 1 parameter")
+		OT_LOG(LOG_ERR, "Expected memref inout as a index 1 parameter");
 		ret = TEE_ERROR_BAD_PARAMETERS;
 		goto end;
 	}
@@ -205,7 +205,7 @@ static TEE_Result exec_transaction(uint32_t transaction_type,
 	/* Malloc space for new transaction */
 	new_trans = TEE_Malloc(sizeof(struct internal_transaction), 0);
 	if (!new_trans) {
-		OT_LOG(LOG_ERR, "Out of memory")
+		OT_LOG(LOG_ERR, "Out of memory");
 		ret = TEE_ERROR_OUT_OF_MEMORY;
 		goto end;
 	}
@@ -213,7 +213,7 @@ static TEE_Result exec_transaction(uint32_t transaction_type,
 	/* Malloc space for transaction message */
 	new_trans->message = TEE_Malloc(params[1].memref.size, 0);
 	if (!new_trans->message) {
-		OT_LOG(LOG_ERR, "Out of memory")
+		OT_LOG(LOG_ERR, "Out of memory");
 		ret = TEE_ERROR_OUT_OF_MEMORY;
 		goto end;
 	}
@@ -251,12 +251,12 @@ end:
 static TEE_Result get_account(uint32_t paramTypes, TEE_Param *params)
 {
 	if (TEE_PARAM_TYPE_GET(paramTypes, 0) != TEE_PARAM_TYPE_MEMREF_INOUT) {
-		OT_LOG(LOG_ERR, "Expected memref inout as a index 0 parameter")
+		OT_LOG(LOG_ERR, "Expected memref inout as a index 0 parameter");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
 	if (params[0].memref.size < sizeof(struct account)) {
-		OT_LOG(LOG_ERR, "Short buffer")
+		OT_LOG(LOG_ERR, "Short buffer");
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
@@ -282,7 +282,7 @@ static TEE_Result ta_self_check()
 	}
 
 	if (usr_account.transaction_count != trans_count) {
-		OT_LOG(LOG_ERR, "Transactions count is not a match")
+		OT_LOG(LOG_ERR, "Transactions count is not a match");
 		return TEE_ERROR_GENERIC;
 	}
 
@@ -298,22 +298,22 @@ static TEE_Result get_transaction(uint32_t paramTypes, TEE_Param *params)
 
 	/* Check parameter types */
 	if (TEE_PARAM_TYPE_GET(paramTypes, 0) != TEE_PARAM_TYPE_VALUE_INPUT) {
-		OT_LOG(LOG_ERR, "Expected value input type as a index 0 parameter")
+		OT_LOG(LOG_ERR, "Expected value input type as a index 0 parameter");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
 	if (TEE_PARAM_TYPE_GET(paramTypes, 1) != TEE_PARAM_TYPE_MEMREF_INOUT) {
-		OT_LOG(LOG_ERR, "Expected memref inout as a index 1 parameter")
+		OT_LOG(LOG_ERR, "Expected memref inout as a index 1 parameter");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
 	if (params[1].memref.size < sizeof(struct transaction)) {
-		OT_LOG(LOG_ERR, "Short buffer")
+		OT_LOG(LOG_ERR, "Short buffer");
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
 	if (params[0].value.a > usr_account.transaction_count) {
-		OT_LOG(LOG_ERR, "Transaction is not found")
+		OT_LOG(LOG_ERR, "Transaction is not found");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
@@ -362,7 +362,7 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 	sessionContext = sessionContext; /* Not used */
 
 	if (TEE_PARAM_TYPE_GET(paramTypes, 0) != TEE_PARAM_TYPE_VALUE_INPUT) {
-		OT_LOG(LOG_ERR, "Expected account interest rate as a index 0 parameter")
+		OT_LOG(LOG_ERR, "Expected account interest rate as a index 0 parameter");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
