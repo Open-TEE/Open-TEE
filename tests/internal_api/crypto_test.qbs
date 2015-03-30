@@ -7,6 +7,9 @@ CppApplication {
     destinationDirectory: '.'
 
     cpp.debugInformation: true
+
+    cpp.defines: ["OT_LOGGING"]
+
     Depends { name: "InternalApi" }
     Depends { name: "OpenSSL" }
 
