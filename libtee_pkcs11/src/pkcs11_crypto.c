@@ -39,7 +39,7 @@ static CK_RV crypto_init(uint32_t command_id,
 	if (hSession == CK_INVALID_HANDLE)
 		return CKR_SESSION_HANDLE_INVALID;
 
-	if (hKey == CK_INVALID_HANDLE)
+	if (command_id != TEE_DIGEST_INIT && hKey == CK_INVALID_HANDLE)
 		return CKR_OBJECT_HANDLE_INVALID;
 
 	if (!pMechanism)
@@ -101,7 +101,10 @@ static CK_RV crypto_update(uint32_t command_id,
 	if (hSession == CK_INVALID_HANDLE)
 		return CKR_SESSION_HANDLE_INVALID;
 
-	if (!src || !dst || !dst_len)
+	if (!src)
+		return CKR_ARGUMENTS_BAD;
+
+	if (command_id != TEE_DIGEST_UPDATE && (!dst || !dst_len))
 		return CKR_ARGUMENTS_BAD;
 
 	return hal_crypto(command_id, hSession, src, src_len, dst, dst_len);
@@ -228,7 +231,7 @@ CK_RV C_Digest(CK_SESSION_HANDLE hSession,
 
 CK_RV C_DigestUpdate(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONG ulPartLen)
 {
-	return crypto(TEE_DIGEST_UPDATE, hSession, pPart, ulPartLen, NULL_PTR, NULL_PTR);
+	return crypto_update(TEE_DIGEST_UPDATE, hSession, pPart, ulPartLen, NULL_PTR, NULL_PTR);
 }
 
 CK_RV C_DigestKey(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hKey)

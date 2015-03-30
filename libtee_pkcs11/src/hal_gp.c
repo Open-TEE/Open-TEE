@@ -400,15 +400,22 @@ CK_RV hal_crypto(uint32_t command_id,
 		 CK_BYTE_PTR dst,
 		 CK_ULONG_PTR dst_len)
 {
-	TEEC_SharedMemory shm = {0};
+	CK_ULONG safe_dst_len = dst_len ? *dst_len : 0; /* If dst_len is NULL */
 	TEEC_Operation operation = {0};
+	TEEC_SharedMemory shm = {0};
 
 	/* Although both size are passed to TEE environment, only one SHM is registered.
 	 * SRC is copied to buffer and then it is replaced with DST in TEE */
-	if (src)
-		shm.size = src_len > *dst_len ? src_len : *dst_len;
-	else
-		shm.size = *dst_len;
+	if (src && !dst) {
+		shm.flags = TEEC_MEM_INPUT;
+		shm.size = src_len;
+	} else if (!src && dst) {
+		shm.flags = TEEC_MEM_OUTPUT;
+		shm.size = safe_dst_len;
+	} else {
+		shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
+		shm.size = src_len > safe_dst_len ? src_len : safe_dst_len;
+	}
 
 	shm.buffer = calloc(1, shm.size);
 	if (!shm.buffer)
@@ -419,10 +426,6 @@ CK_RV hal_crypto(uint32_t command_id,
 		memcpy(shm.buffer, src, src_len);
 
 	/* Register shared memory. It is used for trasfering template into TEE environment */
-	if (src)
-		shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
-	else
-		shm.flags = TEEC_MEM_OUTPUT;
 	if (TEEC_RegisterSharedMemory(g_tee_context, &shm) != TEEC_SUCCESS) {
 		free(shm.buffer);
 		return CKR_GENERAL_ERROR;
@@ -431,7 +434,7 @@ CK_RV hal_crypto(uint32_t command_id,
 	/* Fill operation */
 	operation.params[0].memref.parent = &shm;
 	operation.params[2].value.a = src_len;
-	operation.params[2].value.b = *dst_len;
+	operation.params[2].value.b = safe_dst_len;
 	operation.params[1].value.a = command_id;
 	operation.params[3].value.a = hSession;
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_INPUT,
@@ -445,8 +448,10 @@ CK_RV hal_crypto(uint32_t command_id,
 	}
 
 	/* Memcpy dst data into buffer */
-	*dst_len = operation.params[2].value.b;
-	memcpy(dst, shm.buffer, *dst_len);
+	if (dst) {
+		*dst_len = operation.params[2].value.b;
+		memcpy(dst, shm.buffer, *dst_len);
+	}
 
 	/* Shared momory was INPUT and it have served its purpose */
 	TEEC_ReleaseSharedMemory(&shm);
