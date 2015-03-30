@@ -31,11 +31,11 @@
  */
 
 #include "tee_internal_api.h" /* TA envrionment */
-#include "tee_logging.h" /* OpenTEE logging functions */
 #include "usr_study_ta_ctrl.h" /* Control structures */
 
 #ifdef TA_PLUGIN
 #include "tee_ta_properties.h" /* Setting TA properties */
+#include "tee_logging.h" /* OpenTEE logging functions */
 
 /* Setting TA properties */
 SET_TA_PROPERTIES(
@@ -45,6 +45,14 @@ SET_TA_PROPERTIES(
 		1, /* singletonInstance */
 		0, /* multiSession */
 		1) /* instanceKeepAlive */
+#else
+
+#define OT_LOG(...) do {} while (0)
+#define OT_LOG1(...) do {} while (0)
+#define OT_LOG_ERR(...) do {} while (0)
+#define OT_LOG_INT(...) do {} while (0)
+#define OT_LOG_STR(...) do {} while (0)
+
 #endif
 
 /* Inner representation of transaction */
