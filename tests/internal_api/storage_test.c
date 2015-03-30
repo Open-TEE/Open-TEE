@@ -545,7 +545,7 @@ static void gen_rand_per_data_obj(TEE_ObjectHandle *gen_obj, size_t data_len)
 {
 	void *ID = NULL;
 	size_t ID_len = 30;
-	uint32_t flags = 0xffffffff ^ TEE_DATA_FLAG_EXCLUSIVE;
+	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE | TEE_DATA_FLAG_ACCESS_WRITE_META;
 	void *init_data = NULL;
 	TEE_Result ret;
 
@@ -732,7 +732,7 @@ static void rename_per_obj_and_enum_and_open_renameObj()
 	TEE_Result ret;
 	TEE_ObjectHandle object = NULL;
 	TEE_ObjectHandle object2 = NULL;
-	uint32_t flags = 0xffffffff ^ TEE_DATA_FLAG_EXCLUSIVE;
+	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META | TEE_DATA_FLAG_ACCESS_WRITE;
 	TEE_ObjectEnumHandle iter_enum = NULL;
 	TEE_ObjectInfo info;
 	void *new_ID = NULL;
@@ -800,14 +800,21 @@ static void rename_per_obj_and_enum_and_open_renameObj()
 
 	ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, (void *)ret_ID, ret_ID_len, flags,
 				       &object2);
-	if (ret != TEE_SUCCESS) {
-		priiintf("Fail: per open\n");
+
+	if (ret != TEE_ERROR_ACCESS_CONFLICT) {
+		priiintf("Fail: should return access denied on secondary open\n");
 		goto err;
 	}
 
 err:
-	TEE_CloseAndDeletePersistentObject(object2);
 	TEE_CloseObject(object);
+
+	ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, (void *)ret_ID, ret_ID_len, flags,
+				       &object2);
+	if (ret != TEE_SUCCESS)
+		priiintf("Fail: open persistent\n");
+
+	TEE_CloseAndDeletePersistentObject(object2);
 	TEE_FreePersistentObjectEnumerator(iter_enum);
 	free(ret_ID);
 	free(new_ID);
