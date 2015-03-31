@@ -70,7 +70,7 @@ static CK_RV crypto(uint32_t command_id,
 	if (hSession == CK_INVALID_HANDLE)
 		return CKR_SESSION_HANDLE_INVALID;
 
-	if (!src || !dst || !dst_len)
+	if (!src || !dst_len)
 		return CKR_ARGUMENTS_BAD;
 
 	if (command_id == TEE_VERIFY)

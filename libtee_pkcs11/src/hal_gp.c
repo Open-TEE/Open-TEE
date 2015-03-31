@@ -407,6 +407,7 @@ CK_RV hal_crypto(uint32_t command_id,
 	/* Although both size are passed to TEE environment, only one SHM is registered.
 	 * SRC is copied to buffer and then it is replaced with DST in TEE */
 	if (src && !dst) {
+		safe_dst_len = 0; /* Destination buffer is NULL */
 		shm.flags = TEEC_MEM_INPUT;
 		shm.size = src_len;
 	} else if (!src && dst) {
@@ -448,10 +449,10 @@ CK_RV hal_crypto(uint32_t command_id,
 	}
 
 	/* Memcpy dst data into buffer */
-	if (dst) {
-		*dst_len = operation.params[2].value.b;
+	if (dst)
 		memcpy(dst, shm.buffer, *dst_len);
-	}
+	if (dst_len)
+		*dst_len = operation.params[2].value.b;
 
 	/* Shared momory was INPUT and it have served its purpose */
 	TEEC_ReleaseSharedMemory(&shm);
