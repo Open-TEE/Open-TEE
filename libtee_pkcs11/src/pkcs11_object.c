@@ -17,6 +17,27 @@
 #include "cryptoki.h"
 #include "hal.h"
 
+static CK_RV get_or_set_object_attr(uint32_t command_id,
+                                    CK_SESSION_HANDLE hSession,
+                                    CK_OBJECT_HANDLE hObject,
+                                    CK_ATTRIBUTE_PTR pTemplate,
+                                    CK_ULONG ulCount)
+{
+	if (hSession == CK_INVALID_HANDLE)
+		return CKR_SESSION_HANDLE_INVALID;
+
+	if (hObject == CK_INVALID_HANDLE)
+		return CKR_OBJECT_HANDLE_INVALID;
+
+	if (!pTemplate)
+		return CKR_ARGUMENTS_BAD;
+
+	if (!is_lib_initialized())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
+        return hal_get_or_set_object_attr(command_id, hSession, hObject, pTemplate, ulCount);
+}
+
 /*
  * 11.7 OBJECT MANAGEMENT FUNCTIONS
  */
@@ -76,19 +97,7 @@ CK_RV C_GetAttributeValue(CK_SESSION_HANDLE hSession,
 			  CK_ATTRIBUTE_PTR pTemplate,
 			  CK_ULONG ulCount)
 {
-	if (hSession == CK_INVALID_HANDLE)
-		return CKR_SESSION_HANDLE_INVALID;
-
-	if (hObject == CK_INVALID_HANDLE)
-		return CKR_OBJECT_HANDLE_INVALID;
-
-	if (!pTemplate)
-		return CKR_ARGUMENTS_BAD;
-
-	if (!is_lib_initialized())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
-
-	return hal_get_attribute_value(hSession, hObject, pTemplate, ulCount);
+        return get_or_set_object_attr(TEE_GET_ATTR_VALUE, hSession, hObject, pTemplate, ulCount);
 }
 
 CK_RV C_SetAttributeValue(CK_SESSION_HANDLE hSession,
@@ -96,12 +105,7 @@ CK_RV C_SetAttributeValue(CK_SESSION_HANDLE hSession,
 			  CK_ATTRIBUTE_PTR pTemplate,
 			  CK_ULONG ulCount)
 {
-	hSession = hSession;
-	hObject = hObject;
-	pTemplate = pTemplate;
-	ulCount = ulCount;
-
-	return CKR_FUNCTION_NOT_SUPPORTED;
+        return get_or_set_object_attr(TEE_SET_ATTR_VALUE, hSession, hObject, pTemplate, ulCount);
 }
 
 CK_RV C_FindObjectsInit(CK_SESSION_HANDLE hSession,

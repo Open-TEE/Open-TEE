@@ -804,51 +804,54 @@ CK_RV hal_generate_random(CK_SESSION_HANDLE hSession, CK_BYTE_PTR RandomData, CK
 	return ret;
 }
 
-
-CK_RV hal_get_attribute_value(CK_SESSION_HANDLE hSession,
-			      CK_OBJECT_HANDLE hObject,
-			      CK_ATTRIBUTE_PTR pTemplate,
-			      CK_ULONG ulCount)
+CK_RV hal_get_or_set_object_attr(uint32_t command_id,
+                                 CK_SESSION_HANDLE hSession,
+                                 CK_OBJECT_HANDLE hObject,
+                                 CK_ATTRIBUTE_PTR pTemplate,
+                                 CK_ULONG ulCount)
 {
-	TEEC_SharedMemory inout_shm = {0};
 	TEEC_Operation operation = {0};
+	TEEC_SharedMemory shm = {0};
 	CK_RV ck_rv;
 
 	/* Serialize template into buffer (function allocating a buffer!) */
-	ck_rv = serialize_template_into_shm(&inout_shm, pTemplate, ulCount);
+	ck_rv = serialize_template_into_shm(&shm, pTemplate, ulCount);
 	if (ck_rv != CKR_OK)
 		return ck_rv;
 
 	/* Register shared memory. It is used for trasfering template into TEE environment */
-	inout_shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
-	if (TEEC_RegisterSharedMemory(g_tee_context, &inout_shm) != CKR_OK) {
-		free(inout_shm.buffer);
+	if (command_id == TEE_SET_ATTR_VALUE)
+		shm.flags = TEEC_MEM_INPUT;
+	else
+		shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
+	if (TEEC_RegisterSharedMemory(g_tee_context, &shm) != CKR_OK) {
+		free(shm.buffer);
 		return CKR_GENERAL_ERROR;
 	}
 
 	/* Fill operation */
-	operation.params[0].memref.parent = &inout_shm;
+	operation.params[0].memref.parent = &shm;
 	operation.params[1].value.a = hObject;
-	operation.params[2].value.a = inout_shm.size;
+	operation.params[2].value.a = shm.size;
 	operation.params[3].value.a = hSession;
 
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_INPUT,
 						TEEC_VALUE_INPUT, TEEC_VALUE_INOUT);
 
 	/* Hand over execution to TEE */
-	if (TEE_SUCCESS !=
-	    TEEC_InvokeCommand(g_control_session, TEE_GET_ATTR_VALUE, &operation, NULL)) {
+	if (TEE_SUCCESS != TEEC_InvokeCommand(g_control_session, command_id, &operation, NULL)) {
 		operation.params[3].value.a = CKR_GENERAL_ERROR;
 		goto err;
 	}
 
 	/* Get return template and fill it into user provided template */
-	deserialize_shm_into_template(&inout_shm, pTemplate, ulCount);
+	if (command_id == TEE_GET_ATTR_VALUE)
+		deserialize_shm_into_template(&shm, pTemplate, ulCount);
 
 err:
 	/* Free memorys and return */
-	TEEC_ReleaseSharedMemory(&inout_shm);
-	free(inout_shm.buffer);
+	TEEC_ReleaseSharedMemory(&shm);
+	free(shm.buffer);
 	return operation.params[3].value.a;
 }
 

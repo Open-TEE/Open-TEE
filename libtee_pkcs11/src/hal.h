@@ -226,18 +226,19 @@ CK_RV hal_set_pin(CK_SESSION_HANDLE hSession,
 CK_RV hal_generate_random(CK_SESSION_HANDLE hSession, CK_BYTE_PTR RandomData, CK_ULONG ulRandomLen);
 
 /*!
- * \brief hal_get_attribute_value
- * Getting attribute values from queried object.
+ * \brief hal_get_or_set_object_attr
+ * Query object attribute or set object attribute
  * \param hSession
  * \param hObject
  * \param pTemplate
  * \param ulCount
  * \return
  */
-CK_RV hal_get_attribute_value(CK_SESSION_HANDLE hSession,
-			      CK_OBJECT_HANDLE hObject,
-			      CK_ATTRIBUTE_PTR pTemplate,
-			      CK_ULONG ulCount);
+CK_RV hal_get_or_set_object_attr(uint32_t command_id,
+                                 CK_SESSION_HANDLE hSession,
+                                 CK_OBJECT_HANDLE hObject,
+                                 CK_ATTRIBUTE_PTR pTemplate,
+                                 CK_ULONG ulCount);
 
 /*!
  * \brief hal_find_objects_init
