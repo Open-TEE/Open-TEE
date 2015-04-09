@@ -413,23 +413,34 @@ CK_RV hal_crypto(uint32_t command_id,
 	} else if (!src && dst) {
 		shm.flags = TEEC_MEM_OUTPUT;
 		shm.size = safe_dst_len;
-	} else {
+	} else if (src && dst) {
 		shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
 		shm.size = src_len > safe_dst_len ? src_len : safe_dst_len;
+	} else {
+		/* Some are not sending any data */
+		shm.flags = 0;
+		shm.size = 0;
 	}
 
-	shm.buffer = calloc(1, shm.size);
-	if (!shm.buffer)
-		return CKR_HOST_MEMORY;
+	/* If flags are zero, no data is passed back or forth -> no shm needed */
+	if (shm.flags) {
+
+		shm.buffer = calloc(1, shm.size);
+		if (!shm.buffer)
+			return CKR_HOST_MEMORY;
+	}
 
 	/* Copy SRC data */
 	if (src)
 		memcpy(shm.buffer, src, src_len);
 
-	/* Register shared memory. It is used for trasfering template into TEE environment */
-	if (TEEC_RegisterSharedMemory(g_tee_context, &shm) != TEEC_SUCCESS) {
-		free(shm.buffer);
-		return CKR_GENERAL_ERROR;
+	if (shm.flags) {
+
+		/* Register shared memory. It is used for trasfering template into TEE environment*/
+		if (TEEC_RegisterSharedMemory(g_tee_context, &shm) != TEEC_SUCCESS) {
+			free(shm.buffer);
+			return CKR_GENERAL_ERROR;
+		}
 	}
 
 	/* Fill operation */
@@ -438,8 +449,13 @@ CK_RV hal_crypto(uint32_t command_id,
 	operation.params[2].value.b = safe_dst_len;
 	operation.params[1].value.a = command_id;
 	operation.params[3].value.a = hSession;
-	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_INPUT,
-						TEEC_VALUE_INOUT, TEEC_VALUE_INOUT);
+
+	if (shm.flags)
+		operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_VALUE_INPUT,
+							TEEC_VALUE_INOUT, TEEC_VALUE_INOUT);
+	else
+		operation.paramTypes = TEEC_PARAM_TYPES(TEEC_NONE, TEEC_VALUE_INPUT,
+							TEEC_VALUE_INOUT, TEEC_VALUE_INOUT);
 
 	/* Hand over execution to TEE */
 	if (TEEC_InvokeCommand(g_control_session, TEE_CRYPTO, &operation, NULL) != TEEC_SUCCESS) {
@@ -454,9 +470,12 @@ CK_RV hal_crypto(uint32_t command_id,
 	if (dst_len)
 		*dst_len = operation.params[2].value.b;
 
-	/* Shared momory was INPUT and it have served its purpose */
-	TEEC_ReleaseSharedMemory(&shm);
-	free(shm.buffer);
+	if (shm.flags) {
+
+		/* Shared momory was INPUT and it have served its purpose */
+		TEEC_ReleaseSharedMemory(&shm);
+		free(shm.buffer);
+	}
 
 	/* Crypto function return value from TEE */
 	return operation.params[3].value.a;

@@ -104,9 +104,6 @@ static CK_RV crypto_update(uint32_t command_id,
 	if (!src)
 		return CKR_ARGUMENTS_BAD;
 
-	if (command_id != TEE_DIGEST_UPDATE && (!dst || !dst_len))
-		return CKR_ARGUMENTS_BAD;
-
 	return hal_crypto(command_id, hSession, src, src_len, dst, dst_len);
 }
 /*!
@@ -127,10 +124,10 @@ static CK_RV crypto_final(uint32_t command_id,
 	if (hSession == CK_INVALID_HANDLE)
 		return CKR_SESSION_HANDLE_INVALID;
 
-	if (!dst || !dst_len)
-		return CKR_ARGUMENTS_BAD;
-
-	return hal_crypto(command_id, hSession, NULL, 0, dst, dst_len);
+	if (command_id == TEE_VERIFY_FINAL)
+		return hal_crypto(command_id, hSession, dst, *dst_len, NULL, NULL);
+	else
+		return hal_crypto(command_id, hSession, NULL, 0, dst, dst_len);
 }
 
 /*
