@@ -23,6 +23,11 @@ static CK_FUNCTION_LIST_PTR func_list;
 
 #define SIZE_OF_VEC(vec) (sizeof(vec) - 1)
 
+/* At this point these are global vars */
+CK_OBJECT_HANDLE rsa_public_obj;
+CK_OBJECT_HANDLE rsa_private_obj;
+CK_OBJECT_HANDLE aes_secret_obj;
+
 /* RSA */
 uint8_t modulus[] = "\xa8\xd6\x8a\xcd\x41\x3c\x5e\x19\x5d\x5e\xf0\x4e\x1b\x4f\xaa\xf2"
 		    "\x42\x36\x5c\xb4\x50\x19\x67\x55\xe9\x2e\x12\x15\xba\x59\x80\x2a"
@@ -70,7 +75,7 @@ uint8_t rsa_sig[] = "\x17\x50\x15\xbd\xa5\x0a\xbe\x0f\xa7\xd3\x9a\x83\x53\x88\x5
 		    "\x49\x00\x89\xca\x65\x4c\x00\x12\xfc\xe1\xba\x65\x11\x08\x97\x50";
 
 
-/* AES */
+/* AES128 */
 uint8_t aes_key[] = "\x1f\x8e\x49\x73\x95\x3f\x3f\xb0\xbd\x6b\x16\x66\x2e\x9a\x3c\x17";
 uint8_t aes_IV[] = "\x2f\xe2\xb3\x33\xce\xda\x8f\x98\xf4\xa9\x9b\x40\xd2\xcd\x34\xa8";
 uint8_t aes_msg[] = "\x45\xcf\x12\x96\x4f\xc8\x24\xab\x76\x61\x6a\xe2\xf4\xbf\x08\x22";
@@ -91,7 +96,6 @@ uint8_t sha256msg[] = "\x45\x11\x01\x25\x0e\xc6\xf2\x66\x52\x24\x9d\x59\xdc\x97\
 
 uint8_t sha256hash[] = "\x3c\x59\x3a\xa5\x39\xfd\xcd\xae\x51\x6c\xdf\x2f\x15\x00\x0f\x66"
 		       "\x34\x18\x5c\x88\xf5\x05\xb3\x97\x75\xfb\x9a\xb1\x37\xa1\x0a\xa2";
-
 
 /* Debug printing */
 static void __attribute__((unused)) pri_buf_hex_format(const char *title,
@@ -114,36 +118,34 @@ static void __attribute__((unused)) pri_buf_hex_format(const char *title,
 
 #define PRI(str, ...) printf("%s : " str "\n",  __func__, ##__VA_ARGS__);
 
+static void get_random_data(void *ptr, uint32_t len)
+{
+	FILE *urandom_fp;
+
+	urandom_fp = fopen("/dev/urandom", "r");
+	if (urandom_fp == NULL) {
+		PRI("cant open urandom");
+		exit(1); /* No return, just exit */
+	}
+
+	if (fread(ptr, 1, len, urandom_fp) != len) {
+		PRI("urandom read error");
+		exit(1); /* No return, just exit */
+	}
+
+	fclose(urandom_fp);
+}
+
 static void aes_test(CK_SESSION_HANDLE session)
 {
 	CK_MECHANISM mechanism = {CKM_AES_CBC, aes_IV, SIZE_OF_VEC(aes_IV)};
-	CK_BBOOL ck_true = CK_TRUE;
-	CK_OBJECT_CLASS obj_class = CKO_SECRET_KEY;
-	CK_OBJECT_HANDLE hKey = 0;
-	CK_MECHANISM_TYPE allow_mech = CKM_AES_CBC;
-	CK_KEY_TYPE keyType = CKK_AES;
 	CK_RV ret;
 	char cipher[SIZE_OF_VEC(aes_cipher)];
 	CK_ULONG cipher_len = SIZE_OF_VEC(aes_cipher);
 	char decrypted[SIZE_OF_VEC(aes_msg)];
 	CK_ULONG decrypted_len = SIZE_OF_VEC(aes_msg);
 
-	CK_ATTRIBUTE attrs[6] = {
-		{CKA_CLASS, &obj_class, sizeof(obj_class)},
-		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
-		{CKA_VALUE, &aes_key, SIZE_OF_VEC(aes_key)},
-		{CKA_ENCRYPT, &ck_true, sizeof(ck_true)},
-		{CKA_DECRYPT, &ck_true, sizeof(ck_true)},
-		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
-	};
-
-	ret = func_list->C_CreateObject(session, attrs, 6, &hKey);
-	if (ret != CKR_OK) {
-		PRI("Failed to create object: %lu : 0x%x", ret, (uint32_t)ret);
-		return;
-	}
-
-	ret = func_list->C_EncryptInit(session, &mechanism, hKey);
+	ret = func_list->C_EncryptInit(session, &mechanism, aes_secret_obj);
 	if (ret != CKR_OK) {
 		PRI("Failed to init encrypt: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
@@ -166,7 +168,7 @@ static void aes_test(CK_SESSION_HANDLE session)
 		return;
 	}
 
-	ret = func_list->C_DecryptInit(session, &mechanism, hKey);
+	ret = func_list->C_DecryptInit(session, &mechanism, aes_secret_obj);
 	if (ret != CKR_OK) {
 		PRI("Failed to init Decrypt: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
@@ -194,52 +196,14 @@ static void aes_test(CK_SESSION_HANDLE session)
 
 static void rsa_sign_ver(CK_SESSION_HANDLE session)
 {
-	CK_BBOOL ck_true = CK_TRUE;
-        CK_OBJECT_CLASS pri_class = CKO_PRIVATE_KEY, pub_class = CKO_PUBLIC_KEY;
-	CK_MECHANISM_TYPE allow_mech = CKM_SHA1_RSA_PKCS;
-	CK_KEY_TYPE keyType = CKK_RSA;
-        CK_OBJECT_HANDLE pri_Key = 0, pub_Key = 0;
-	CK_RV ret;
 	CK_MECHANISM mechanism = {CKM_SHA1_RSA_PKCS, NULL_PTR, 0};
+	CK_RV ret;
 
 	/* Signature bufffer */
 	char sig[SIZE_OF_VEC(rsa_sig)];
 	CK_ULONG sig_len = SIZE_OF_VEC(rsa_sig);
 
-	/* Create private key object */
-	CK_ATTRIBUTE pri_attrs[7] = {
-		{CKA_CLASS, &pri_class, sizeof(pri_class)},
-		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
-		{CKA_MODULUS, &modulus, SIZE_OF_VEC(modulus)},
-		{CKA_PRIVATE_EXPONENT, &private_exp, SIZE_OF_VEC(private_exp)},
-		{CKA_PUBLIC_EXPONENT, &public_exp, SIZE_OF_VEC(public_exp)},
-		{CKA_SIGN, &ck_true, sizeof(ck_true)},
-		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
-	};
-
-	ret = func_list->C_CreateObject(session, pri_attrs, 7, &pri_Key);
-	if (ret != CKR_OK) {
-		PRI("Failed to create RSA private object: %lu : 0x%x", ret, (uint32_t)ret);
-		return;
-	}
-
-        /* Create Public key object */
-	CK_ATTRIBUTE pub_attrs[6] = {
-                {CKA_CLASS, &pub_class, sizeof(pri_class)},
-                {CKA_KEY_TYPE, &keyType, sizeof(keyType)},
-		{CKA_MODULUS, &modulus, SIZE_OF_VEC(modulus)},
-		{CKA_PUBLIC_EXPONENT, &public_exp, SIZE_OF_VEC(public_exp)},
-                {CKA_VERIFY, &ck_true, sizeof(ck_true)},
-                {CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
-        };
-
-	ret = func_list->C_CreateObject(session, pub_attrs, 6, &pub_Key);
-        if (ret != CKR_OK) {
-		PRI("Failed to create RSA public object: %lu : 0x%x", ret, (uint32_t)ret);
-		return;
-        }
-
-        ret = func_list->C_SignInit(session, &mechanism, pri_Key);
+	ret = func_list->C_SignInit(session, &mechanism, rsa_private_obj);
 	if (ret != CKR_OK) {
 		PRI("Failed to signature init: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
@@ -264,7 +228,7 @@ static void rsa_sign_ver(CK_SESSION_HANDLE session)
 		PRI("RSA Signature OK");
 	}
 
-	ret = func_list->C_VerifyInit(session, &mechanism, pub_Key);
+	ret = func_list->C_VerifyInit(session, &mechanism, rsa_public_obj);
 	if (ret != CKR_OK) {
 		PRI("Failed to verify init: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
@@ -525,6 +489,8 @@ static void do_hash(CK_SESSION_HANDLE session)
 	CK_ULONG ulDigestLen = SIZE_OF_VEC(sha256hash);
 	CK_RV ret;
 
+	/* Re-init operation */
+	ulDigestLen = 0;
 	ret = func_list->C_DigestInit(session, &mechanism);
 	if (ret != CKR_OK) {
 		PRI("Failed to init digest mechanism %lu : 0x%x", ret, (uint32_t)ret)
@@ -534,6 +500,18 @@ static void do_hash(CK_SESSION_HANDLE session)
 	ret = func_list->C_DigestUpdate(session, sha256msg, SIZE_OF_VEC(sha256msg));
 	if (ret != CKR_OK) {
 		PRI("Failed to update digest %lu : 0x%x", ret, (uint32_t)ret)
+		return;
+	}
+
+	/* Get sha256 output size */
+	ret = func_list->C_DigestFinal(session, NULL, &ulDigestLen);
+	if (ret != CKR_OK) {
+		PRI("Failed to finalize digest %lu : 0x%x", ret, (uint32_t)ret)
+		return;
+	}
+
+	if (ulDigestLen != SIZE_OF_VEC(sha256hash)) {
+		PRI("Not expected sha256 size");
 		return;
 	}
 
@@ -553,6 +531,230 @@ static void do_hash(CK_SESSION_HANDLE session)
 		return;
 	} else {
 		PRI("SHA256 OK");
+	}
+}
+
+static void rsa_sign_ver_with_update(CK_SESSION_HANDLE session)
+{
+	CK_MECHANISM mechanism = {CKM_SHA1_RSA_PKCS, NULL_PTR, 0};
+	CK_ULONG i, update_loop_count = 2;
+	CK_RV ret;
+
+	/* Signature bufffer */
+	char sig[SIZE_OF_VEC(rsa_sig)];
+	CK_ULONG sig_len = SIZE_OF_VEC(rsa_sig);
+
+	/* Random data */
+	CK_ULONG random_data_len = 10;
+	char random_data[random_data_len];
+	get_random_data(random_data, random_data_len);
+
+	/* This test will fail if rsa_sign_ver fails! */
+
+	ret = func_list->C_SignInit(session, &mechanism, rsa_private_obj);
+	if (ret != CKR_OK) {
+		PRI("Failed to signature init: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	for (i = 0; i < update_loop_count; ++i) {
+
+		ret = func_list->C_SignUpdate(session, (CK_BYTE_PTR)random_data, random_data_len);
+		if (ret != CKR_OK) {
+			PRI("Failed to signUpdate: %lu : 0x%x", ret, (uint32_t)ret);
+			return;
+		}
+	}
+
+	ret = func_list->C_SignFinal(session, (CK_BYTE_PTR)sig, &sig_len);
+	if (ret != CKR_OK) {
+		PRI("Failed to signFinal: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	/* Signature done */
+
+	ret = func_list->C_VerifyInit(session, &mechanism, rsa_public_obj);
+	if (ret != CKR_OK) {
+		PRI("Failed to verify init: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	for (i = 0; i < update_loop_count; ++i) {
+
+		ret = func_list->C_VerifyUpdate(session, (CK_BYTE_PTR)random_data, random_data_len);
+		if (ret != CKR_OK) {
+			PRI("Failed to VerifyUpdate: %lu : 0x%x", ret, (uint32_t)ret);
+			return;
+		}
+	}
+
+	ret = func_list->C_VerifyFinal(session, (CK_BYTE_PTR)sig, sig_len);
+	if (ret == CKR_OK) {
+		PRI("OK");
+	} else if (ret == CKR_SIGNATURE_INVALID) {
+		PRI("Invalid signature");
+	} else {
+		PRI("Failed to VerifyFinal: %lu : 0x%x", ret, (uint32_t)ret);
+	}
+}
+
+static void aes_test_update(CK_SESSION_HANDLE session)
+{
+	CK_MECHANISM mechanism = {CKM_AES_CBC, aes_IV, SIZE_OF_VEC(aes_IV)};
+	uint8_t update_call_count = 5, i;
+	CK_ULONG out_block_size;
+	CK_RV ret;
+
+	/* Random data */
+	CK_ULONG random_data_len = update_call_count * SIZE_OF_VEC(aes_key);
+	uint8_t random_data[random_data_len];
+	get_random_data(random_data, random_data_len);
+
+	/* Cipher */
+	uint8_t cipher[random_data_len];
+	CK_ULONG total_cipher_len = 0;
+
+	/* Decrypt stuff */
+	uint8_t decrypted[random_data_len];
+	CK_ULONG totol_decrypted_len = 0;
+
+	ret = func_list->C_EncryptInit(session, &mechanism, aes_secret_obj);
+	if (ret != CKR_OK) {
+		PRI("Failed to init encrypt: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	for (i = 0; i < update_call_count; ++i) {
+
+		out_block_size = SIZE_OF_VEC(aes_key);
+		ret = func_list->C_EncryptUpdate(session,
+						 random_data + (i * SIZE_OF_VEC(aes_key)),
+						 SIZE_OF_VEC(aes_key),
+						 cipher + (i * SIZE_OF_VEC(aes_key)),
+						 &out_block_size);
+		if (ret != CKR_OK) {
+			PRI("Failed to init encryptUpdate: %lu : 0x%x", ret, (uint32_t)ret);
+			return;
+		}
+
+		total_cipher_len += out_block_size;
+	}
+
+	ret = func_list->C_EncryptFinal(session, NULL, 0);
+	if (ret != CKR_OK) {
+		PRI("Failed to init encryptFinal: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	if (random_data_len != total_cipher_len) {
+		PRI("Invalid size after encrypt");
+		return;
+	}
+
+	/* Enrypt done */
+
+	ret = func_list->C_DecryptInit(session, &mechanism, aes_secret_obj);
+	if (ret != CKR_OK) {
+		PRI("Failed to init Decrypt: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	for (i = 0; i < update_call_count; ++i) {
+
+		out_block_size = SIZE_OF_VEC(aes_key);
+		ret = func_list->C_DecryptUpdate(session,
+						 cipher + (i * SIZE_OF_VEC(aes_key)),
+						 SIZE_OF_VEC(aes_key),
+						 decrypted + (i * SIZE_OF_VEC(aes_key)),
+						 &out_block_size);
+		if (ret != CKR_OK) {
+			PRI("Failed to init encryptUpdate: %lu : 0x%x", ret, (uint32_t)ret);
+			return;
+		}
+
+		totol_decrypted_len += out_block_size;
+	}
+
+	ret = func_list->C_DecryptFinal(session, NULL, 0);
+	if (ret != CKR_OK) {
+		PRI("Failed to init encryptFinal: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	if (random_data_len != totol_decrypted_len) {
+		PRI("Invalid size after decrypt");
+		return;
+	}
+
+	if (memcmp(random_data, decrypted, totol_decrypted_len) != 0) {
+		PRI("decryption failure");
+		return;
+	} else {
+		PRI("Ok");
+	}
+}
+
+static void create_objects(CK_SESSION_HANDLE session)
+{
+	CK_BBOOL ck_true = CK_TRUE;
+	CK_OBJECT_CLASS obj_class = CKO_SECRET_KEY;
+	CK_MECHANISM_TYPE allow_mech = CKM_AES_CBC;
+	CK_KEY_TYPE keyType = CKK_AES;
+	CK_RV ret;
+
+	/* AES key */
+	CK_ATTRIBUTE attrs[6] = {
+		{CKA_CLASS, &obj_class, sizeof(obj_class)},
+		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
+		{CKA_VALUE, &aes_key, SIZE_OF_VEC(aes_key)},
+		{CKA_ENCRYPT, &ck_true, sizeof(ck_true)},
+		{CKA_DECRYPT, &ck_true, sizeof(ck_true)},
+		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
+	};
+
+	ret = func_list->C_CreateObject(session, attrs, 6, &aes_secret_obj);
+	if (ret != CKR_OK) {
+		PRI("Failed to create object: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+
+	/* RSA private key object */
+	obj_class = CKO_PRIVATE_KEY;
+	allow_mech = CKM_SHA1_RSA_PKCS;
+	keyType = CKK_RSA;
+	CK_ATTRIBUTE pri_attrs[7] = {
+		{CKA_CLASS, &obj_class, sizeof(obj_class)},
+		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
+		{CKA_MODULUS, &modulus, SIZE_OF_VEC(modulus)},
+		{CKA_PRIVATE_EXPONENT, &private_exp, SIZE_OF_VEC(private_exp)},
+		{CKA_PUBLIC_EXPONENT, &public_exp, SIZE_OF_VEC(public_exp)},
+		{CKA_SIGN, &ck_true, sizeof(ck_true)},
+		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
+	};
+
+	ret = func_list->C_CreateObject(session, pri_attrs, 7, &rsa_private_obj);
+	if (ret != CKR_OK) {
+		PRI("Failed to create RSA private object: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	/* RSA Public key object */
+	obj_class = CKO_PUBLIC_KEY;
+	CK_ATTRIBUTE pub_attrs[6] = {
+		{CKA_CLASS, &obj_class, sizeof(obj_class)},
+		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
+		{CKA_MODULUS, &modulus, SIZE_OF_VEC(modulus)},
+		{CKA_PUBLIC_EXPONENT, &public_exp, SIZE_OF_VEC(public_exp)},
+		{CKA_VERIFY, &ck_true, sizeof(ck_true)},
+		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
+	};
+
+	ret = func_list->C_CreateObject(session, pub_attrs, 6, &rsa_public_obj);
+	if (ret != CKR_OK) {
+		PRI("Failed to create RSA public object: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
 	}
 }
 
@@ -606,11 +808,14 @@ int main()
 	}
 
 	/* Basic smoke tests */
+	create_objects(session);
 	aes_test(session);
 	rsa_sign_ver(session);
 	get_attr_value(session);
 	find_objects(session);
 	do_hash(session);
+	aes_test_update(session);
+	rsa_sign_ver_with_update(session);
 
 	ret = func_list->C_Logout(session);
 	if (ret != CKR_OK) {
