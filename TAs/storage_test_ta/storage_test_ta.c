@@ -21,7 +21,7 @@
 #include "tee_logging.h" /* OpenTEE logging functions */
 #include "com_protocol.h"
 
-#include "ta_extern_resources.h"
+#include "ta_ctl_resources.h"
 #include "ta_internal_thread.h"
 
 #ifdef TA_PLUGIN
