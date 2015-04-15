@@ -29,6 +29,7 @@ CK_OBJECT_HANDLE rsa_private_obj;
 CK_OBJECT_HANDLE aes_secret_obj;
 CK_OBJECT_HANDLE hmac_256_trunc_obj;
 CK_OBJECT_HANDLE hmac_256_obj;
+CK_OBJECT_HANDLE get_attr_aes_temp_obj;
 
 /* RSA */
 uint8_t modulus[] = "\xa8\xd6\x8a\xcd\x41\x3c\x5e\x19\x5d\x5e\xf0\x4e\x1b\x4f\xaa\xf2"
@@ -153,8 +154,9 @@ static void __attribute__((unused)) pri_buf_hex_format(const char *title,
 }
 
 #define PRI(str, ...) printf("%s : " str "\n",  __func__, ##__VA_ARGS__);
-#define PRI_OK(str, ...) printf(" [OK] : %s : " str "\n",  __func__, ##__VA_ARGS__);
-#define PRI_FAIL(str, ...) printf("FAIL! : %s : " str "\n",  __func__, ##__VA_ARGS__);
+#define PRI_OK(str, ...)   printf(" [OK] : %s : " str "\n",  __func__, ##__VA_ARGS__);
+#define PRI_YES(str, ...)  printf(" YES? : %s : " str "\n",  __func__, ##__VA_ARGS__);
+#define PRI_FAIL(str, ...) printf("FAIL  : %s : " str "\n",  __func__, ##__VA_ARGS__);
 
 static void get_random_data(void *ptr, uint32_t len)
 {
@@ -430,7 +432,6 @@ static void get_attr_value(CK_SESSION_HANDLE session)
 	CK_MECHANISM_TYPE allow_mech = CKM_AES_CBC;
 	CK_UTF8CHAR label[] = { "New label" };
 	uint32_t label_len = sizeof(label) - 1;
-	CK_OBJECT_HANDLE obj_handle = 0;
 	CK_KEY_TYPE keyType = CKK_AES;
 	CK_BBOOL ck_true = CK_TRUE;
 	CK_RV ret;
@@ -445,41 +446,41 @@ static void get_attr_value(CK_SESSION_HANDLE session)
 		{CKA_LABEL, label, label_len}
 	};
 
-	ret = func_list->C_CreateObject(session, attrs, 7, &obj_handle);
+	ret = func_list->C_CreateObject(session, attrs, 7, &get_attr_aes_temp_obj);
 	if (ret != CKR_OK) {
-		PRI("Failed to create object: %lu : 0x%x", ret, (uint32_t)ret)
+		PRI_FAIL("Failed to create object: %lu : 0x%x", ret, (uint32_t)ret)
 		return;
 	}
 
 	/* Get label size */
 	CK_ATTRIBUTE get_label_size_template = {CKA_LABEL, NULL_PTR, 0};
-	ret = func_list->C_GetAttributeValue(session, obj_handle, &get_label_size_template, 1);
+	ret = func_list->C_GetAttributeValue(session, get_attr_aes_temp_obj, &get_label_size_template, 1);
 	if (ret != CKR_OK) {
-		PRI("failed to get label size %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("failed to get label size %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	if (get_label_size_template.ulValueLen != label_len) {
-		PRI("Wrong label size");
+		PRI_FAIL("Wrong label size");
 		return;
 	}
 
 	/* Get label */
 	CK_UTF8CHAR obj_label[20] = {0};
 	CK_ATTRIBUTE get_label_template = {CKA_LABEL, &obj_label, 20};
-	ret = func_list->C_GetAttributeValue(session, obj_handle, &get_label_template, 1);
+	ret = func_list->C_GetAttributeValue(session, get_attr_aes_temp_obj, &get_label_template, 1);
 	if (ret != CKR_OK) {
-		PRI("failed to get label %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("failed to get label %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	if (get_label_template.ulValueLen != label_len) {
-		PRI("Get wrong label size");
+		PRI_FAIL("Get wrong label size");
 		return;
 	}
 
 	if (memcmp(obj_label, label, get_label_template.ulValueLen)) {
-		PRI("Wrong label");
+		PRI_FAIL("Wrong label");
 		return;
 	}
 
@@ -490,36 +491,51 @@ static void get_attr_value(CK_SESSION_HANDLE session)
 		{CKA_KEY_TYPE, &obj_keyType, sizeof(obj_keyType)},
 		{CKA_LABEL, &obj_short_label, 2}
 	};
-	ret = func_list->C_GetAttributeValue(session, obj_handle, get_label_too_small_template, 2);
+	ret = func_list->C_GetAttributeValue(session, get_attr_aes_temp_obj, get_label_too_small_template, 2);
 	if (ret != CKR_BUFFER_TOO_SMALL) {
-		PRI("failed to get short label %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("failed to get short label %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	if (*((CK_KEY_TYPE *)get_label_too_small_template[0].pValue) != keyType) {
-		PRI("Invalid key type");
+		PRI_FAIL("Invalid key type");
 		return;
 	}
 
 	if ((CK_LONG)get_label_too_small_template[1].ulValueLen != -1) {
-		PRI("Expected -1 label size");
+		PRI_FAIL("Expected -1 label size");
 		return;
 	}
 
 	/* Invalid attribute */
 	CK_ATTRIBUTE get_invalid_attr = {CKA_SIGN, NULL_PTR, 0};
-	ret = func_list->C_GetAttributeValue(session, obj_handle, &get_invalid_attr, 1);
+	ret = func_list->C_GetAttributeValue(session, get_attr_aes_temp_obj, &get_invalid_attr, 1);
 	if (ret != CKR_ATTRIBUTE_TYPE_INVALID) {
-		PRI("failed to get invalid attribute %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("failed to get invalid attribute %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	if ((CK_LONG)get_invalid_attr.ulValueLen == -1) {
-		PRI("Should not found");
+		PRI_FAIL("Should not found");
 		return;
 	}
 
-	PRI("Get attribute function OK")
+	PRI_OK("-")
+}
+
+static int is_key_in_vector(CK_OBJECT_HANDLE *hObject,
+			CK_ULONG hObject_count,
+			CK_OBJECT_HANDLE queried_id)
+{
+	CK_ULONG i;
+
+	for (i = 0; i < hObject_count; ++i) {
+
+		if (hObject[i] == queried_id)
+			return 1;
+	}
+
+	return 0;
 }
 
 static void find_objects(CK_SESSION_HANDLE session)
@@ -532,14 +548,14 @@ static void find_objects(CK_SESSION_HANDLE session)
 	 * Note: This test result are not checked, because it depends our SS stated */
 	ret = func_list->C_FindObjectsInit(session, NULL_PTR, 0);
 	if (ret != CKR_OK) {
-		PRI("Failed to init find object %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to init find object %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	while (1) {
 		ret = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
 		if (ret != CKR_OK) {
-			PRI("Failed to find objects %lu : 0x%x", ret, (uint32_t)ret);
+			PRI_FAIL("Failed to find objects %lu : 0x%x", ret, (uint32_t)ret);
 			return;
 		}
 
@@ -553,11 +569,22 @@ static void find_objects(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_FindObjectsFinal(session);
 	if (ret != CKR_OK) {
-		PRI("Failed to finalize objects find %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to finalize objects find %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
-	PRI("Found %lu objects", total_ulObjectCount)
+	PRI_YES("Found %lu objects", total_ulObjectCount);
+
+	/* What should found is at least to this session created AES object */
+	if (!is_key_in_vector(hObject, 10, get_attr_aes_temp_obj) ||
+	    !is_key_in_vector(hObject, 10, aes_secret_obj) ||
+	    !is_key_in_vector(hObject, 10, rsa_private_obj) ||
+	    !is_key_in_vector(hObject, 10, rsa_public_obj) ||
+	    !is_key_in_vector(hObject, 10, hmac_256_obj) ||
+	    !is_key_in_vector(hObject, 10, hmac_256_trunc_obj)) {
+		PRI_FAIL("Failed to find 2 aes key that this session generated");
+		return;
+	}
 
 	/* Get AES key object */
 	CK_KEY_TYPE keyType = CKK_AES;
@@ -568,7 +595,7 @@ static void find_objects(CK_SESSION_HANDLE session)
 	};
 	ret = func_list->C_FindObjectsInit(session, aes_object, 2);
 	if (ret != CKR_OK) {
-		PRI("Failed to init find AES objects %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to init find AES objects %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -576,7 +603,7 @@ static void find_objects(CK_SESSION_HANDLE session)
 	while (1) {
 		ret = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
 		if (ret != CKR_OK) {
-			PRI("Failed to find AES objects %lu : 0x%x", ret, (uint32_t)ret);
+			PRI_FAIL("Failed to find AES objects %lu : 0x%x", ret, (uint32_t)ret);
 			return;
 		}
 
@@ -590,11 +617,18 @@ static void find_objects(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_FindObjectsFinal(session);
 	if (ret != CKR_OK) {
-		PRI("Failed to finalize AES objects find %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to finalize AES objects find %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
-	PRI("Found %lu AES key object", total_ulObjectCount)
+	PRI_YES("Found %lu AES key object", total_ulObjectCount)
+
+	/* What should found is at least to this session created AES object */
+	if (!is_key_in_vector(hObject, 10, get_attr_aes_temp_obj) ||
+	    !is_key_in_vector(hObject, 10, aes_secret_obj)) {
+		PRI_FAIL("Failed to find 2 aes key that this session generated");
+		return;
+	}
 
 	/* find object that have two common attributes */
 	CK_MECHANISM_TYPE allow_mech = CKM_SHA1_RSA_PKCS;
@@ -604,7 +638,7 @@ static void find_objects(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_FindObjectsInit(session, allow_object, 1);
 	if (ret != CKR_OK) {
-		PRI("Failed to init find object %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to init find object %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -612,7 +646,7 @@ static void find_objects(CK_SESSION_HANDLE session)
 	while (1) {
 		ret = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
 		if (ret != CKR_OK) {
-			PRI("Failed to find objects %lu : 0x%x", ret, (uint32_t)ret);
+			PRI_FAIL("Failed to find objects %lu : 0x%x", ret, (uint32_t)ret);
 			return;
 		}
 
@@ -626,11 +660,18 @@ static void find_objects(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_FindObjectsFinal(session);
 	if (ret != CKR_OK) {
-		PRI("Failed to finalize objects find %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to finalize objects find %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
-	PRI("Found %lu CKM_SHA1_RSA_PKCS allowed object", total_ulObjectCount);
+	PRI_YES("Found %lu CKM_SHA1_RSA_PKCS allowed object", total_ulObjectCount);
+
+	/* What should found is at least to this session created AES object */
+	if (!is_key_in_vector(hObject, 10, rsa_private_obj) ||
+	    !is_key_in_vector(hObject, 10, rsa_public_obj)) {
+		PRI_FAIL("Failed to find 2 aes key that this session generated");
+		return;
+	}
 
 	/* find object that have does not exist */
 	CK_BBOOL temp; /* Not neede */
@@ -640,19 +681,19 @@ static void find_objects(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_FindObjectsInit(session, not_existing_attribute, 1);
 	if (ret != CKR_OK) {
-		PRI("Failed to init find object %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to init find object %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	ret = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
 	if (ret != CKR_OK) {
-		PRI("Failed to find objects %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to find objects %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	ret = func_list->C_FindObjectsFinal(session);
 	if (ret != CKR_OK) {
-		PRI("Failed to finalize objects find %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to finalize objects find %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 	if (ulObjectCount != 0)
@@ -671,25 +712,31 @@ static void find_objects(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_FindObjectsInit(session, aes_id_attr, 3);
 	if (ret != CKR_OK) {
-		PRI("Failed to init find object %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to init find object %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	ret = func_list->C_FindObjects(session, hObject, 10, &ulObjectCount);
 	if (ret != CKR_OK) {
-		PRI("Failed to find objects %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to find objects %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	ret = func_list->C_FindObjectsFinal(session);
 	if (ret != CKR_OK) {
-		PRI("Failed to finalize objects find %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to finalize objects find %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
-	PRI("Found KEY TYPE, CKA_CLASS, CKA_ID %lu", ulObjectCount);
+	PRI_YES("Found KEY TYPE, CKA_CLASS, CKA_ID %lu", ulObjectCount);
 
-	PRI("Find object test complited (result need to verified manualy) (OK)");
+	/* What should found is at least to this session created AES object */
+	if (!is_key_in_vector(hObject, 10, aes_secret_obj)) {
+		PRI_FAIL("Failed to find 2 aes key that this session generated");
+		return;
+	}
+
+	PRI_OK("Find object test complited (result need to verified manualy)!!");
 }
 
 static void do_hash(CK_SESSION_HANDLE session)
@@ -703,31 +750,31 @@ static void do_hash(CK_SESSION_HANDLE session)
 	ulDigestLen = 0;
 	ret = func_list->C_DigestInit(session, &mechanism);
 	if (ret != CKR_OK) {
-		PRI("Failed to init digest mechanism %lu : 0x%x", ret, (uint32_t)ret)
+		PRI_FAIL("Failed to init digest mechanism %lu : 0x%x", ret, (uint32_t)ret)
 		return;
 	}
 
 	ret = func_list->C_DigestUpdate(session, sha256msg, SIZE_OF_VEC(sha256msg));
 	if (ret != CKR_OK) {
-		PRI("Failed to update digest %lu : 0x%x", ret, (uint32_t)ret)
+		PRI_FAIL("Failed to update digest %lu : 0x%x", ret, (uint32_t)ret)
 		return;
 	}
 
 	/* Get sha256 output size */
 	ret = func_list->C_DigestFinal(session, NULL, &ulDigestLen);
 	if (ret != CKR_OK) {
-		PRI("Failed to finalize digest %lu : 0x%x", ret, (uint32_t)ret)
+		PRI_FAIL("Failed to finalize digest %lu : 0x%x", ret, (uint32_t)ret)
 		return;
 	}
 
 	if (ulDigestLen != SIZE_OF_VEC(sha256hash)) {
-		PRI("Not expected sha256 size");
+		PRI_FAIL("Not expected sha256 size");
 		return;
 	}
 
 	ret = func_list->C_DigestFinal(session, digest, &ulDigestLen);
 	if (ret != CKR_OK) {
-		PRI("Failed to finalize digest %lu : 0x%x", ret, (uint32_t)ret)
+		PRI_FAIL("Failed to finalize digest %lu : 0x%x", ret, (uint32_t)ret)
 		return;
 	}
 
@@ -737,10 +784,10 @@ static void do_hash(CK_SESSION_HANDLE session)
 	}
 
 	if (memcmp(sha256hash, digest, ulDigestLen) != 0) {
-		PRI("Not expected hash");
+		PRI_FAIL("Not expected hash");
 		return;
 	} else {
-		PRI("SHA256 OK");
+		PRI_OK("-");
 	}
 }
 
@@ -766,7 +813,7 @@ static void aes_test_update(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_EncryptInit(session, &mechanism, aes_secret_obj);
 	if (ret != CKR_OK) {
-		PRI("Failed to init encrypt: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to init encrypt: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -779,7 +826,7 @@ static void aes_test_update(CK_SESSION_HANDLE session)
 						 cipher + (i * SIZE_OF_VEC(aes_key)),
 						 &out_block_size);
 		if (ret != CKR_OK) {
-			PRI("Failed to init encryptUpdate: %lu : 0x%x", ret, (uint32_t)ret);
+			PRI_FAIL("Failed to init encryptUpdate: %lu : 0x%x", ret, (uint32_t)ret);
 			return;
 		}
 
@@ -788,12 +835,12 @@ static void aes_test_update(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_EncryptFinal(session, NULL, 0);
 	if (ret != CKR_OK) {
-		PRI("Failed to init encryptFinal: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to init encryptFinal: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	if (random_data_len != total_cipher_len) {
-		PRI("Invalid size after encrypt");
+		PRI_FAIL("Invalid size after encrypt");
 		return;
 	}
 
@@ -801,7 +848,7 @@ static void aes_test_update(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_DecryptInit(session, &mechanism, aes_secret_obj);
 	if (ret != CKR_OK) {
-		PRI("Failed to init Decrypt: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to init Decrypt: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -814,7 +861,7 @@ static void aes_test_update(CK_SESSION_HANDLE session)
 						 decrypted + (i * SIZE_OF_VEC(aes_key)),
 						 &out_block_size);
 		if (ret != CKR_OK) {
-			PRI("Failed to init encryptUpdate: %lu : 0x%x", ret, (uint32_t)ret);
+			PRI_FAIL("Failed to init encryptUpdate: %lu : 0x%x", ret, (uint32_t)ret);
 			return;
 		}
 
@@ -823,20 +870,20 @@ static void aes_test_update(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_DecryptFinal(session, NULL, 0);
 	if (ret != CKR_OK) {
-		PRI("Failed to init encryptFinal: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to init encryptFinal: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	if (random_data_len != totol_decrypted_len) {
-		PRI("Invalid size after decrypt");
+		PRI_FAIL("Invalid size after decrypt");
 		return;
 	}
 
 	if (memcmp(random_data, decrypted, totol_decrypted_len) != 0) {
-		PRI("decryption failure");
+		PRI_FAIL("decryption failure");
 		return;
 	} else {
-		PRI("Ok");
+		PRI_OK("-");
 	}
 }
 
@@ -958,7 +1005,7 @@ static void general_key_attrs_test(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_GetAttributeValue(session, aes_secret_obj, always_attrs, 3);
 	if (ret != CKR_OK) {
-		PRI("Failed to get always/never attrs %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to get always/never attrs %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -977,7 +1024,7 @@ static void general_key_attrs_test(CK_SESSION_HANDLE session)
 		return;
 	}
 
-	PRI("OK");
+	PRI_OK("-");
 }
 
 static void set_obj_attr(CK_SESSION_HANDLE session)
@@ -997,7 +1044,7 @@ static void set_obj_attr(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, set_attrs, 2);
 	if (ret != CKR_OK) {
-		PRI("Failed to set new attrs %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to set new attrs %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -1010,7 +1057,7 @@ static void set_obj_attr(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, mod_attrs, 2);
 	if (ret != CKR_OK) {
-		PRI("Failed to modify existing attrs %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to modify existing attrs %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -1023,7 +1070,7 @@ static void set_obj_attr(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, ill_attrs, 2);
 	if (ret == CKR_OK) {
-		PRI("Failed this call should have fail %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed this call should have fail %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -1047,7 +1094,7 @@ static void set_obj_attr(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_GetAttributeValue(session, aes_secret_obj, confirm_attrs, 8);
 	if (ret != CKR_OK) {
-		PRI("Failed to get confirm attrs %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to get confirm attrs %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -1092,7 +1139,7 @@ static void set_obj_attr(CK_SESSION_HANDLE session)
 		return;
 	}
 
-	PRI("OK");
+	PRI_OK("-");
 }
 
 static void set_obj_attr_seccond(CK_SESSION_HANDLE session)
@@ -1112,7 +1159,7 @@ static void set_obj_attr_seccond(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, set_attrs, 2);
 	if (ret != CKR_OK) {
-		PRI("Failed to set new attrs %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to set new attrs %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -1131,7 +1178,7 @@ static void set_obj_attr_seccond(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_GetAttributeValue(session, aes_secret_obj, confirm_attrs, 8);
 	if (ret != CKR_OK) {
-		PRI("Failed to get confirm attrs %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to get confirm attrs %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -1156,7 +1203,7 @@ static void set_obj_attr_seccond(CK_SESSION_HANDLE session)
 		return;
 	}
 
-	PRI("OK");
+	PRI_OK("-");
 }
 
 static void crypto_using_not_allowed_key(CK_SESSION_HANDLE session)
@@ -1183,30 +1230,30 @@ static void crypto_using_not_allowed_key(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, mod_attrs, 2);
 	if (ret != CKR_OK) {
-		PRI("Failed to modify existing attrs %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to modify existing attrs %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	ret = func_list->C_EncryptInit(session, &mechanism, aes_secret_obj);
 	if (ret != CKR_OK) {
-		PRI("Failed to init encrypt: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to init encrypt: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	ret = func_list->C_EncryptFinal(session, NULL, 0);
 	if (ret != CKR_OK) {
-		PRI("Failed to init encryptFinal: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to init encryptFinal: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	/* DEcryption should not be still allowed */
 	ret = func_list->C_DecryptInit(session, &mechanism, aes_secret_obj);
 	if (ret == CKR_OK) {
-		PRI("Key should not be able to use for encrypt");
+		PRI_FAIL("Key should not be able to use for encrypt");
 		return;
 	}
 
-	PRI("OK");
+	PRI_OK("-");
 }
 
 static void sign_and_verify_tests(CK_SESSION_HANDLE session)
