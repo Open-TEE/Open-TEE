@@ -27,6 +27,8 @@ static CK_FUNCTION_LIST_PTR func_list;
 CK_OBJECT_HANDLE rsa_public_obj;
 CK_OBJECT_HANDLE rsa_private_obj;
 CK_OBJECT_HANDLE aes_secret_obj;
+CK_OBJECT_HANDLE hmac_256_trunc_obj;
+CK_OBJECT_HANDLE hmac_256_obj;
 
 /* RSA */
 uint8_t modulus[] = "\xa8\xd6\x8a\xcd\x41\x3c\x5e\x19\x5d\x5e\xf0\x4e\x1b\x4f\xaa\xf2"
@@ -97,6 +99,40 @@ uint8_t sha256msg[] = "\x45\x11\x01\x25\x0e\xc6\xf2\x66\x52\x24\x9d\x59\xdc\x97\
 uint8_t sha256hash[] = "\x3c\x59\x3a\xa5\x39\xfd\xcd\xae\x51\x6c\xdf\x2f\x15\x00\x0f\x66"
 		       "\x34\x18\x5c\x88\xf5\x05\xb3\x97\x75\xfb\x9a\xb1\x37\xa1\x0a\xa2";
 
+/* HMACSHA256 (truncated mac) */
+uint8_t hmacsha256key_trunc[] = "\x6f\x35\x62\x8d\x65\x81\x34\x35\x53\x4b\x5d\x67\xfb\xdb\x54\xcb"
+				"\x33\x40\x3d\x04\xe8\x43\x10\x3e\x63\x99\xf8\x06\xcb\x5d\xf9\x5f"
+				"\xeb\xbd\xd6\x12\x36\xf3\x32\x45";
+
+uint8_t hmacsha256msg_trunc[] = "\x75\x2c\xff\x52\xe4\xb9\x07\x68\x55\x8e\x53\x69\xe7\x5d\x97\xc6"
+				"\x96\x43\x50\x9a\x5e\x59\x04\xe0\xa3\x86\xcb\xe4\xd0\x97\x0e\xf7"
+				"\x3f\x91\x8f\x67\x59\x45\xa9\xae\xfe\x26\xda\xea\x27\x58\x7e\x8d"
+				"\xc9\x09\xdd\x56\xfd\x04\x68\x80\x5f\x83\x40\x39\xb3\x45\xf8\x55"
+				"\xcf\xe1\x9c\x44\xb5\x5a\xf2\x41\xff\xf3\xff\xcd\x80\x45\xcd\x5c"
+				"\x28\x8e\x6c\x4e\x28\x4c\x37\x20\x57\x0b\x58\xe4\xd4\x7b\x8f\xee"
+				"\xed\xc5\x2f\xd1\x40\x1f\x69\x8a\x20\x9f\xcc\xfa\x3b\x4c\x0d\x9a"
+				"\x79\x7b\x04\x6a\x27\x59\xf8\x2a\x54\xc4\x1c\xcd\x7b\x5f\x59\x2b";
+
+uint8_t hmacsha256mac_trunc[] = "\x05\xd1\x24\x3e\x64\x65\xed\x96\x20\xc9\xae\xc1\xc3\x51\xa1\x86";
+
+/* HMACSHA256 */
+uint8_t hmacsha256key[] = "\xc1\xd6\x08\x14\x37\x6a\xae\x39\xc4\x11\x12\x46\x35\x34\x85\x95"
+			  "\x8f\x95\x55\x8f\xa3\x8f\xfc\x14\xe4\xa0\x98\x1d\x76\x24\x9b\x9f"
+			  "\x87\x63\xc4\xb3\xe2\xce\x4e\xf5";
+
+uint8_t hmacsha256msg[] = "\x97\xd2\x9a\xc5\xed\xe9\x4c\x0a\x50\x71\xe0\x09\x5e\x61\x02\x12"
+			  "\x3d\x17\x26\x13\x2f\x9d\xc1\x02\x67\x2a\xb8\x7b\x1c\xec\x18\xab"
+			  "\xdb\x04\x09\x6c\x21\xd3\xfd\xb1\x29\x74\x2d\x25\x03\x89\x46\x0f"
+			  "\xe6\x3b\x5f\x79\xc7\x7c\x2f\x91\x2a\x8f\x7d\x4f\x39\xcb\xd7\x58"
+			  "\x13\x9c\x87\x23\x66\xca\xc3\x5a\x40\xfe\x24\x83\x22\x82\x5a\xdf"
+			  "\x57\x48\x1d\x92\x83\x2e\x66\x05\x7f\x80\xe0\x89\x64\xbe\x99\x3d"
+			  "\xe6\xa0\xfe\x31\xe4\x58\x06\xcb\x3c\x17\xad\x6a\xe4\xd2\xa4\x4a"
+			  "\x37\x46\x47\xa8\x8c\x3a\xcf\x26\x0d\x04\xc9\x70\xc7\x4e\xc7\x20";
+
+uint8_t hmacsha256mac[] = "\x50\xdb\x0e\xcb\x5b\x31\x52\x4a\x69\x14\x26\x49\x30\xab\xcc\xae"
+			  "\x0d\xa0\x7f\x01\xa2\xbb\xb9\x40\x82\x07\x15\x6f\x8e\x8a\x34\x0c";
+
+
 /* Debug printing */
 static void __attribute__((unused)) pri_buf_hex_format(const char *title,
 						       const unsigned char *buf,
@@ -117,6 +153,8 @@ static void __attribute__((unused)) pri_buf_hex_format(const char *title,
 }
 
 #define PRI(str, ...) printf("%s : " str "\n",  __func__, ##__VA_ARGS__);
+#define PRI_OK(str, ...) printf(" [OK] : %s : " str "\n",  __func__, ##__VA_ARGS__);
+#define PRI_FAIL(str, ...) printf("FAIL! : %s : " str "\n",  __func__, ##__VA_ARGS__);
 
 static void get_random_data(void *ptr, uint32_t len)
 {
@@ -147,101 +185,236 @@ static void aes_test(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_EncryptInit(session, &mechanism, aes_secret_obj);
 	if (ret != CKR_OK) {
-		PRI("Failed to init encrypt: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to init encrypt: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	ret = func_list->C_Encrypt(session, (CK_BYTE_PTR)aes_msg, SIZE_OF_VEC(aes_msg),
 				   (CK_BYTE_PTR)cipher, &cipher_len);
 	if (ret != CKR_OK) {
-		PRI("Failed to encrypt: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to encrypt: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	if (cipher_len != SIZE_OF_VEC(aes_key)) {
-		PRI("Invalid size after encryption");
+		PRI_FAIL("Invalid size after encryption");
 		return;
 	}
 
 	if (memcmp(aes_cipher, cipher, cipher_len) != 0) {
-		PRI("Not expexted encryption result");
+		PRI_FAIL("Not expexted encryption result");
 		return;
 	}
 
 	ret = func_list->C_DecryptInit(session, &mechanism, aes_secret_obj);
 	if (ret != CKR_OK) {
-		PRI("Failed to init Decrypt: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to init Decrypt: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	ret = func_list->C_Decrypt(session, (CK_BYTE_PTR)cipher, cipher_len,
 				   (CK_BYTE_PTR)decrypted, &decrypted_len);
 	if (ret != CKR_OK) {
-		PRI("Failed to Decrypt: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to Decrypt: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
 	if (decrypted_len != SIZE_OF_VEC(aes_msg)) {
-		PRI("Invalid size after decrypt");
+		PRI_FAIL("Invalid size after decrypt");
 		return;
 	}
 
 	if (memcmp(aes_msg, decrypted, decrypted_len) != 0) {
-		PRI("decryption failure");
-		return;
+		PRI_FAIL("decryption failure");
 	} else {
-		PRI("Ok");
+		PRI_OK("-");
 	}
 }
 
-static void rsa_sign_ver(CK_SESSION_HANDLE session)
+static void sign_and_verify(CK_SESSION_HANDLE session,
+			    CK_MECHANISM *mechanism)
 {
-	CK_MECHANISM mechanism = {CKM_SHA1_RSA_PKCS, NULL_PTR, 0};
+	CK_BYTE_PTR msg, expected_sig;
+	CK_ULONG sig_len = 0, msg_len = 0, expected_sig_len = 0;
+	CK_OBJECT_HANDLE sign_key, verify_key;
+	char sig[512]; /* Avoiding malloc and reserving enough big buffer for all signatures */
+	char *mech_type;
 	CK_RV ret;
 
 	/* Signature bufffer */
-	char sig[SIZE_OF_VEC(rsa_sig)];
-	CK_ULONG sig_len = SIZE_OF_VEC(rsa_sig);
+	if (mechanism->mechanism == CKM_SHA1_RSA_PKCS) {
+		expected_sig = rsa_sig;
+		expected_sig_len = SIZE_OF_VEC(rsa_sig);
+		sig_len = SIZE_OF_VEC(rsa_sig); /* Signature buffer length */
+		msg = rsa_msg;
+		msg_len = SIZE_OF_VEC(rsa_msg);
+		sign_key = rsa_private_obj;
+		verify_key = rsa_public_obj;
+		mech_type = "CKM_SHA1_RSA_PKCS";
 
-	ret = func_list->C_SignInit(session, &mechanism, rsa_private_obj);
+	} else if (mechanism->mechanism == CKM_SHA256_HMAC) {
+		expected_sig = hmacsha256mac;
+		expected_sig_len = SIZE_OF_VEC(hmacsha256mac);
+		sig_len = SIZE_OF_VEC(hmacsha256mac); /* Signature buffer length */
+		msg = hmacsha256msg;
+		msg_len = SIZE_OF_VEC(hmacsha256msg);
+		sign_key = hmac_256_obj;
+		verify_key = hmac_256_obj;
+		mech_type = "CKM_SHA256_HMAC";
+
+	} else if (mechanism->mechanism == CKM_SHA256_HMAC_GENERAL) {
+		expected_sig = hmacsha256mac_trunc;
+		expected_sig_len = SIZE_OF_VEC(hmacsha256mac_trunc);
+		sig_len = SIZE_OF_VEC(hmacsha256mac_trunc); /* Signature buffer length */
+		msg = hmacsha256msg_trunc;
+		msg_len = SIZE_OF_VEC(hmacsha256msg_trunc);
+		sign_key = hmac_256_trunc_obj;
+		verify_key = hmac_256_trunc_obj;
+		mech_type = "CKM_SHA256_HMAC_GENERAL";
+
+	} else {
+		PRI_FAIL("Mechanism unknow");
+		return;
+	}
+
+	ret = func_list->C_SignInit(session, mechanism, sign_key);
 	if (ret != CKR_OK) {
-		PRI("Failed to signature init: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("%s : Sign init: %lu : 0x%x", mech_type, ret, (uint32_t)ret);
 		return;
 	}
 
-	ret = func_list->C_Sign(session, (CK_BYTE_PTR)rsa_msg, SIZE_OF_VEC(rsa_msg),
-				(CK_BYTE_PTR)sig, &sig_len);
+	ret = func_list->C_Sign(session, msg, msg_len, (CK_BYTE_PTR)sig, &sig_len);
 	if (ret != CKR_OK) {
-		PRI("Failed to sign: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("%s : Sign: %lu : 0x%x", mech_type, ret, (uint32_t)ret);
 		return;
 	}
 
-	if (SIZE_OF_VEC(rsa_sig) != sig_len) {
-		PRI("RSA Invalid size after signature : %lu", sig_len);
+	if (expected_sig_len != sig_len) {
+		PRI_FAIL("%s : Invalid size after signature: %lu", mech_type, sig_len);
 		return;
 	}
 
-	if (memcmp(rsa_sig, sig, sig_len) != 0) {
-		PRI("RSA Not expected signature");
+	if (memcmp(expected_sig, sig, sig_len) != 0) {
+		PRI_FAIL("%s : Not expected signature", mech_type);
 		return;
 	} else {
-		PRI("RSA Signature OK");
+		PRI_OK("%s : Signature OK", mech_type);
 	}
 
-	ret = func_list->C_VerifyInit(session, &mechanism, rsa_public_obj);
+	ret = func_list->C_VerifyInit(session, mechanism, verify_key);
 	if (ret != CKR_OK) {
-		PRI("Failed to verify init: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("%s : Verify init: %lu : 0x%x", mech_type, ret, (uint32_t)ret);
 		return;
 	}
 
-	ret = func_list->C_Verify(session, (CK_BYTE_PTR)rsa_msg, SIZE_OF_VEC(rsa_msg),
-				  (CK_BYTE_PTR)sig, sig_len);
+	ret = func_list->C_Verify(session, msg, msg_len, (CK_BYTE_PTR)sig, sig_len);
 	if (ret == CKR_OK) {
-		PRI("RSA Verified OK");
+		PRI_OK("%s : Verified OK", mech_type);
 	} else if (ret == CKR_SIGNATURE_INVALID) {
-		PRI("RSA Invalid signature");
+		PRI_FAIL("%s :Invalid signature", mech_type);
 	} else {
-		PRI("RSA Failed to verify: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("%s : Verify : %lu : 0x%x", mech_type, ret, (uint32_t)ret);
+	}
+}
+
+static void sign_and_verify_with_update(CK_SESSION_HANDLE session,
+					CK_MECHANISM *mechanism)
+{
+	//CK_MECHANISM mechanism = {CKM_SHA1_RSA_PKCS, NULL_PTR, 0};
+	CK_ULONG i, update_loop_count = 2;
+
+	CK_ULONG sig_len = 0, expected_sig_len = 0;
+	CK_OBJECT_HANDLE sign_key, verify_key;
+	char sig[512]; /* Avoiding malloc and reserving enough big buffer for all signatures */
+	char *mech_type;
+	CK_RV ret;
+
+	/* Random data */
+	CK_ULONG random_data_len = 10;
+	char random_data[random_data_len];
+	get_random_data(random_data, random_data_len);
+
+	/* Signature bufffer */
+	if (mechanism->mechanism == CKM_SHA1_RSA_PKCS) {
+		expected_sig_len = SIZE_OF_VEC(rsa_sig);
+		sig_len = SIZE_OF_VEC(rsa_sig); /* Signature buffer length */
+		sign_key = rsa_private_obj;
+		verify_key = rsa_public_obj;
+		mech_type = "CKM_SHA1_RSA_PKCS";
+
+	} else if (mechanism->mechanism == CKM_SHA256_HMAC) {
+		expected_sig_len = SIZE_OF_VEC(hmacsha256mac);
+		sig_len = SIZE_OF_VEC(hmacsha256mac); /* Signature buffer length */
+		sign_key = hmac_256_obj;
+		verify_key = hmac_256_obj;
+		mech_type = "CKM_SHA256_HMAC";
+
+	} else if (mechanism->mechanism == CKM_SHA256_HMAC_GENERAL) {
+		expected_sig_len = SIZE_OF_VEC(hmacsha256mac_trunc);
+		sig_len = SIZE_OF_VEC(hmacsha256mac_trunc); /* Signature buffer length */
+		sign_key = hmac_256_trunc_obj;
+		verify_key = hmac_256_trunc_obj;
+		mech_type = "CKM_SHA256_HMAC_GENERAL";
+
+	} else {
+		PRI_FAIL("Mechanism unknow");
+		return;
+	}
+
+
+	/* This test will fail if rsa_sign_ver fails! */
+
+	ret = func_list->C_SignInit(session, mechanism, sign_key);
+	if (ret != CKR_OK) {
+		PRI_FAIL("%s : Sign init: %lu : 0x%x", mech_type, ret, (uint32_t)ret);
+		return;
+	}
+
+	for (i = 0; i < update_loop_count; ++i) {
+
+		ret = func_list->C_SignUpdate(session, (CK_BYTE_PTR)random_data, random_data_len);
+		if (ret != CKR_OK) {
+			PRI_FAIL("%s : signUpdate: %lu : 0x%x", mech_type, ret, (uint32_t)ret);
+			return;
+		}
+	}
+
+	ret = func_list->C_SignFinal(session, (CK_BYTE_PTR)sig, &sig_len);
+	if (ret != CKR_OK) {
+		PRI_FAIL("%s : signFinal: %lu : 0x%x", mech_type, ret, (uint32_t)ret);
+		return;
+	}
+
+	/* Signature done */
+	if (expected_sig_len != sig_len) {
+		PRI_FAIL("%s : Invalid size of signature: %lu", mech_type, sig_len);
+		return;
+	}
+
+	/* Verify */
+
+	ret = func_list->C_VerifyInit(session, mechanism, verify_key);
+	if (ret != CKR_OK) {
+		PRI_FAIL("%s : Verify init: %lu : 0x%x", mech_type, ret, (uint32_t)ret);
+		return;
+	}
+
+	for (i = 0; i < update_loop_count; ++i) {
+
+		ret = func_list->C_VerifyUpdate(session, (CK_BYTE_PTR)random_data, random_data_len);
+		if (ret != CKR_OK) {
+			PRI_FAIL("%s : VerifyUpdate: %lu : 0x%x", mech_type, ret, (uint32_t)ret);
+			return;
+		}
+	}
+
+	ret = func_list->C_VerifyFinal(session, (CK_BYTE_PTR)sig, sig_len);
+	if (ret == CKR_OK) {
+		PRI_OK("%s : Verified OK", mech_type);
+	} else if (ret == CKR_SIGNATURE_INVALID) {
+		PRI_FAIL("%s :Invalid signature", mech_type);
+	} else {
+		PRI_FAIL("%s : Verify : %lu : 0x%x", mech_type, ret, (uint32_t)ret);
 	}
 }
 
@@ -477,7 +650,7 @@ static void find_objects(CK_SESSION_HANDLE session)
 		return;
 	}
 	if (ulObjectCount != 0)
-		PRI("FAIL: Object with this attribute should not be found!!");
+		PRI_FAIL("Object with this attribute should not be found!!");
 
 	/* Find aes key: KEY TYPE, CKA_CLASS, CKA_ID */
 	keyType = CKK_AES;
@@ -553,7 +726,7 @@ static void do_hash(CK_SESSION_HANDLE session)
 	}
 
 	if (ulDigestLen != SIZE_OF_VEC(sha256hash)) {
-		PRI("FAIL: Not expected sha256 size");
+		PRI_FAIL("Not expected sha256 size");
 		return;
 	}
 
@@ -562,71 +735,6 @@ static void do_hash(CK_SESSION_HANDLE session)
 		return;
 	} else {
 		PRI("SHA256 OK");
-	}
-}
-
-static void rsa_sign_ver_with_update(CK_SESSION_HANDLE session)
-{
-	CK_MECHANISM mechanism = {CKM_SHA1_RSA_PKCS, NULL_PTR, 0};
-	CK_ULONG i, update_loop_count = 2;
-	CK_RV ret;
-
-	/* Signature bufffer */
-	char sig[SIZE_OF_VEC(rsa_sig)];
-	CK_ULONG sig_len = SIZE_OF_VEC(rsa_sig);
-
-	/* Random data */
-	CK_ULONG random_data_len = 10;
-	char random_data[random_data_len];
-	get_random_data(random_data, random_data_len);
-
-	/* This test will fail if rsa_sign_ver fails! */
-
-	ret = func_list->C_SignInit(session, &mechanism, rsa_private_obj);
-	if (ret != CKR_OK) {
-		PRI("Failed to signature init: %lu : 0x%x", ret, (uint32_t)ret);
-		return;
-	}
-
-	for (i = 0; i < update_loop_count; ++i) {
-
-		ret = func_list->C_SignUpdate(session, (CK_BYTE_PTR)random_data, random_data_len);
-		if (ret != CKR_OK) {
-			PRI("Failed to signUpdate: %lu : 0x%x", ret, (uint32_t)ret);
-			return;
-		}
-	}
-
-	ret = func_list->C_SignFinal(session, (CK_BYTE_PTR)sig, &sig_len);
-	if (ret != CKR_OK) {
-		PRI("Failed to signFinal: %lu : 0x%x", ret, (uint32_t)ret);
-		return;
-	}
-
-	/* Signature done */
-
-	ret = func_list->C_VerifyInit(session, &mechanism, rsa_public_obj);
-	if (ret != CKR_OK) {
-		PRI("Failed to verify init: %lu : 0x%x", ret, (uint32_t)ret);
-		return;
-	}
-
-	for (i = 0; i < update_loop_count; ++i) {
-
-		ret = func_list->C_VerifyUpdate(session, (CK_BYTE_PTR)random_data, random_data_len);
-		if (ret != CKR_OK) {
-			PRI("Failed to VerifyUpdate: %lu : 0x%x", ret, (uint32_t)ret);
-			return;
-		}
-	}
-
-	ret = func_list->C_VerifyFinal(session, (CK_BYTE_PTR)sig, sig_len);
-	if (ret == CKR_OK) {
-		PRI("OK");
-	} else if (ret == CKR_SIGNATURE_INVALID) {
-		PRI("Invalid signature");
-	} else {
-		PRI("Failed to VerifyFinal: %lu : 0x%x", ret, (uint32_t)ret);
 	}
 }
 
@@ -748,7 +856,7 @@ static void create_objects(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_CreateObject(session, attrs, 7, &aes_secret_obj);
 	if (ret != CKR_OK) {
-		PRI("Failed to create object: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to create AES object: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -768,7 +876,7 @@ static void create_objects(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_CreateObject(session, pri_attrs, 7, &rsa_private_obj);
 	if (ret != CKR_OK) {
-		PRI("Failed to create RSA private object: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to create RSA private object: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
@@ -785,11 +893,49 @@ static void create_objects(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_CreateObject(session, pub_attrs, 6, &rsa_public_obj);
 	if (ret != CKR_OK) {
-		PRI("Failed to create RSA public object: %lu : 0x%x", ret, (uint32_t)ret);
+		PRI_FAIL("Failed to create RSA public object: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
-	PRI("OK")
+	/* HMACsha256 */
+	obj_class = CKO_PUBLIC_KEY;
+	allow_mech = CKM_SHA256_HMAC;
+	keyType = CKK_GENERIC_SECRET;
+	CK_ATTRIBUTE hmac256[6] = {
+		{CKA_CLASS, &obj_class, sizeof(obj_class)},
+		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
+		{CKA_VALUE, &hmacsha256key, SIZE_OF_VEC(hmacsha256key)},
+		{CKA_SIGN, &ck_true, sizeof(ck_true)},
+		{CKA_VERIFY, &ck_true, sizeof(ck_true)},
+		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
+	};
+
+	ret = func_list->C_CreateObject(session, hmac256, 6, &hmac_256_obj);
+	if (ret != CKR_OK) {
+		PRI_FAIL("Failed to create HMACsha256 object: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	/* HMACsha256_trunc */
+	obj_class = CKO_SECRET_KEY;
+	allow_mech = CKM_SHA256_HMAC;
+	keyType = CKK_GENERIC_SECRET;
+	CK_ATTRIBUTE hmac256_trunc[6] = {
+		{CKA_CLASS, &obj_class, sizeof(obj_class)},
+		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
+		{CKA_VALUE, &hmacsha256key_trunc, SIZE_OF_VEC(hmacsha256key_trunc)},
+		{CKA_SIGN, &ck_true, sizeof(ck_true)},
+		{CKA_VERIFY, &ck_true, sizeof(ck_true)},
+		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
+	};
+
+	ret = func_list->C_CreateObject(session, hmac256_trunc, 6, &hmac_256_trunc_obj);
+	if (ret != CKR_OK) {
+		PRI_FAIL("Failed to create HMACsha256_trunc object: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	PRI_OK("-")
 }
 
 static void general_key_attrs_test(CK_SESSION_HANDLE session)
@@ -811,17 +957,17 @@ static void general_key_attrs_test(CK_SESSION_HANDLE session)
 	}
 
 	if ((CK_LONG)always_attrs[0].ulValueLen == -1 || ck_bbool_sens != CK_TRUE) {
-		PRI("FAIL: aes key is always been sensitive");
+		PRI_FAIL("aes key is always been sensitive");
 		return;
 	}
 
 	if ((CK_LONG)always_attrs[1].ulValueLen == -1 ||ck_bbool_extr != CK_TRUE) {
-		PRI("FAIL: aes key is nver been extractable");
+		PRI_FAIL("aes key is nver been extractable");
 		return;
 	}
 
 	if ((CK_LONG)always_attrs[2].ulValueLen == -1 ||ck_bbool_local != CK_FALSE) {
-		PRI("FAIL: aes key is not generated by TEE");
+		PRI_FAIL("aes key is not generated by TEE");
 		return;
 	}
 
@@ -901,42 +1047,42 @@ static void set_obj_attr(CK_SESSION_HANDLE session)
 
 
 	if ((CK_LONG)confirm_attrs[0].ulValueLen == -1 || ck_bbool_always_sens != CK_FALSE) {
-		PRI("FAIL: aes key is NOT always been sensitive");
+		PRI_FAIL("aes key is NOT always been sensitive");
 		return;
 	}
 
 	if ((CK_LONG)confirm_attrs[1].ulValueLen == -1 || ck_bbool_never_extr != CK_FALSE) {
-		PRI("FAIL: aes key is HAS been extractable");
+		PRI_FAIL("aes key is HAS been extractable");
 		return;
 	}
 
 	if ((CK_LONG)confirm_attrs[2].ulValueLen == -1 || ck_bbool_local != CK_FALSE) {
-		PRI("FAIL: aes key is not generated by TEE");
+		PRI_FAIL("aes key is not generated by TEE");
 		return;
 	}
 
 	if ((CK_LONG)confirm_attrs[3].ulValueLen == -1 || ck_bbool_sens != CK_FALSE) {
-		PRI("FAIL: aes key is NOT sensitive");
+		PRI_FAIL("aes key is NOT sensitive");
 		return;
 	}
 
 	if ((CK_LONG)confirm_attrs[4].ulValueLen == -1 || ck_bbool_extr != CK_FALSE) {
-		PRI("FAIL: aes key IS extractable");
+		PRI_FAIL("aes key IS extractable");
 		return;
 	}
 
 	if ((CK_LONG)confirm_attrs[5].ulValueLen == -1 || ck_bool_enc != CK_FALSE) {
-		PRI("FAIL: aes key can't use with encrypt");
+		PRI_FAIL("aes key can't use with encrypt");
 		return;
 	}
 
 	if ((CK_LONG)confirm_attrs[6].ulValueLen == -1 || ck_bbool_dec != CK_FALSE) {
-		PRI("FAIL: aes key can't use with decrypt");
+		PRI_FAIL("aes key can't use with decrypt");
 		return;
 	}
 
 	if ((CK_LONG)confirm_attrs[7].ulValueLen == -1 || keyType != CKK_AES) {
-		PRI("FAIL: Not aes key??");
+		PRI_FAIL("Not aes key??");
 		return;
 	}
 
@@ -985,22 +1131,22 @@ static void set_obj_attr_seccond(CK_SESSION_HANDLE session)
 
 
 	if ((CK_LONG)confirm_attrs[0].ulValueLen == -1 || ck_bbool_always_sens != CK_FALSE) {
-		PRI("FAIL: aes key is NOT always been sensitive");
+		PRI_FAIL("aes key is NOT always been sensitive");
 		return;
 	}
 
 	if ((CK_LONG)confirm_attrs[1].ulValueLen == -1 || ck_bbool_never_extr != CK_FALSE) {
-		PRI("FAIL: aes key is HAS been extractable");
+		PRI_FAIL("aes key is HAS been extractable");
 		return;
 	}
 
 	if ((CK_LONG)confirm_attrs[3].ulValueLen == -1 || ck_bbool_sens != CK_TRUE) {
-		PRI("FAIL: aes key is sensitive");
+		PRI_FAIL("aes key is sensitive");
 		return;
 	}
 
 	if ((CK_LONG)confirm_attrs[4].ulValueLen == -1 || ck_bbool_extr != CK_FALSE) {
-		PRI("FAIL: aes key IS extractable");
+		PRI_FAIL("aes key IS extractable");
 		return;
 	}
 
@@ -1057,6 +1203,25 @@ static void crypto_using_not_allowed_key(CK_SESSION_HANDLE session)
 	PRI("OK");
 }
 
+static void sign_and_verify_tests(CK_SESSION_HANDLE session)
+{
+	CK_MECHANISM mechanism = {0, NULL_PTR, 0}; /* Default vals */
+
+	/* RSA sign verify in on go */
+	mechanism.mechanism = CKM_SHA1_RSA_PKCS;
+	sign_and_verify(session, &mechanism);
+	sign_and_verify_with_update(session, &mechanism);
+
+	/* HMACSHA256 sign verify in on go */
+	mechanism.mechanism = CKM_SHA256_HMAC;
+	sign_and_verify(session, &mechanism);
+	sign_and_verify_with_update(session, &mechanism);
+
+	/* HMACSHA256 (trunc) sign verify in on go */
+	mechanism.mechanism = CKM_SHA256_HMAC_GENERAL;
+	sign_and_verify(session, &mechanism);
+	sign_and_verify_with_update(session, &mechanism);
+}
 
 int main()
 {
@@ -1066,6 +1231,10 @@ int main()
 	CK_SLOT_ID available_slots[1];
 	CK_ULONG num_slots = 1;
 	char pin[8] = "12345678";
+
+	printf("\nSTART: pkcs11 test app\n");
+
+	printf("Initializing: ");
 
 	ret = C_GetFunctionList(&func_list);
 	if (ret != CKR_OK || func_list == NULL) {
@@ -1085,8 +1254,8 @@ int main()
 		return 0;
 	}
 
-	PRI("Version : Major %d: Minor %d",
-	       info.cryptokiVersion.major, info.cryptokiVersion.minor);
+	//PRI("Version : Major %d: Minor %d",
+	       //info.cryptokiVersion.major, info.cryptokiVersion.minor);
 
 	ret = func_list->C_GetSlotList(1, available_slots, &num_slots);
 	if (ret != CKR_OK) {
@@ -1107,20 +1276,26 @@ int main()
 		return 0;
 	}
 
+	printf("Ok\n");
+
+	printf("----Begin-with-test-cases----\n");
+
 	/* Basic smoke tests */
 	create_objects(session);
 	aes_test(session);
-	rsa_sign_ver(session);
+	sign_and_verify_tests(session);
 	get_attr_value(session);
 	find_objects(session);
 	do_hash(session);
 	aes_test_update(session);
-	rsa_sign_ver_with_update(session);
 	general_key_attrs_test(session);
 	set_obj_attr(session);
 	set_obj_attr_seccond(session);
 	crypto_using_not_allowed_key(session);
 
+	printf("----Test-has-reached-end----\n");
+
+	printf("Closing up: ");
 
 	ret = func_list->C_Logout(session);
 	if (ret != CKR_OK) {
@@ -1135,6 +1310,10 @@ int main()
 		PRI("Failed to Finalize the library: %ld", ret);
 		return 0;
 	}
+
+	printf("Ok\n");
+
+	printf("END: usr study app\n\n");
 
 	return 0;
 }
