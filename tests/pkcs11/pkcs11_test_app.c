@@ -234,6 +234,7 @@ static void aes_test(CK_SESSION_HANDLE session)
 static void sign_and_verify(CK_SESSION_HANDLE session,
 			    CK_MECHANISM *mechanism)
 {
+	CK_MAC_GENERAL_PARAMS hmac_genera_param;
 	CK_BYTE_PTR msg, expected_sig;
 	CK_ULONG sig_len = 0, msg_len = 0, expected_sig_len = 0;
 	CK_OBJECT_HANDLE sign_key, verify_key;
@@ -271,6 +272,9 @@ static void sign_and_verify(CK_SESSION_HANDLE session,
 		sign_key = hmac_256_trunc_obj;
 		verify_key = hmac_256_trunc_obj;
 		mech_type = "CKM_SHA256_HMAC_GENERAL";
+		mechanism->pParameter = &hmac_genera_param;
+		*(CK_MAC_GENERAL_PARAMS *)mechanism->pParameter = SIZE_OF_VEC(hmacsha256mac_trunc);
+		mechanism->ulParameterLen = sizeof(CK_MAC_GENERAL_PARAMS);
 
 	} else {
 		PRI_FAIL("Mechanism unknow");
@@ -320,9 +324,8 @@ static void sign_and_verify(CK_SESSION_HANDLE session,
 static void sign_and_verify_with_update(CK_SESSION_HANDLE session,
 					CK_MECHANISM *mechanism)
 {
-	//CK_MECHANISM mechanism = {CKM_SHA1_RSA_PKCS, NULL_PTR, 0};
 	CK_ULONG i, update_loop_count = 2;
-
+	CK_MAC_GENERAL_PARAMS hmac_genera_param;
 	CK_ULONG sig_len = 0, expected_sig_len = 0;
 	CK_OBJECT_HANDLE sign_key, verify_key;
 	char sig[512]; /* Avoiding malloc and reserving enough big buffer for all signatures */
@@ -355,6 +358,9 @@ static void sign_and_verify_with_update(CK_SESSION_HANDLE session,
 		sign_key = hmac_256_trunc_obj;
 		verify_key = hmac_256_trunc_obj;
 		mech_type = "CKM_SHA256_HMAC_GENERAL";
+		mechanism->pParameter = &hmac_genera_param;
+		*(CK_MAC_GENERAL_PARAMS *)mechanism->pParameter = SIZE_OF_VEC(hmacsha256mac_trunc);
+		mechanism->ulParameterLen = sizeof(CK_MAC_GENERAL_PARAMS);
 
 	} else {
 		PRI_FAIL("Mechanism unknow");
@@ -898,7 +904,7 @@ static void create_objects(CK_SESSION_HANDLE session)
 	}
 
 	/* HMACsha256 */
-	obj_class = CKO_PUBLIC_KEY;
+	obj_class = CKO_SECRET_KEY;
 	allow_mech = CKM_SHA256_HMAC;
 	keyType = CKK_GENERIC_SECRET;
 	CK_ATTRIBUTE hmac256[6] = {
@@ -918,7 +924,7 @@ static void create_objects(CK_SESSION_HANDLE session)
 
 	/* HMACsha256_trunc */
 	obj_class = CKO_SECRET_KEY;
-	allow_mech = CKM_SHA256_HMAC;
+	allow_mech = CKM_SHA256_HMAC_GENERAL;
 	keyType = CKK_GENERIC_SECRET;
 	CK_ATTRIBUTE hmac256_trunc[6] = {
 		{CKA_CLASS, &obj_class, sizeof(obj_class)},
