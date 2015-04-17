@@ -226,14 +226,14 @@ static void encrypt_and_decrypt(CK_SESSION_HANDLE session,
 
 	ret = func_list->C_EncryptInit(session, mechanism, encrypt_key);
 	if (ret != CKR_OK) {
-		PRI_FAIL("%s : Failed to init encrypt: %lu : 0x%x", mech_type, ret, (uint32_t)ret);
+		PRI_FAIL("%s : EncryptInit(): %lu : 0x%x", mech_type, ret, (uint32_t)ret);
 		goto out;
 	}
 
 	ret = func_list->C_Encrypt(session, (CK_BYTE_PTR)msg, msg_len,
 				   (CK_BYTE_PTR)cipher, &cipher_len);
 	if (ret != CKR_OK) {
-		PRI_FAIL("%s : Failed to encrypt: %lu : 0x%x", mech_type, ret, (uint32_t)ret);
+		PRI_FAIL("%s : Encrypt(): %lu : 0x%x", mech_type, ret, (uint32_t)ret);
 		goto out;
 	}
 
@@ -249,14 +249,14 @@ static void encrypt_and_decrypt(CK_SESSION_HANDLE session,
 
 	ret = func_list->C_DecryptInit(session, mechanism, decrypt_key);
 	if (ret != CKR_OK) {
-		PRI_FAIL("%s : Failed to init Decrypt: %lu : 0x%x", mech_type, ret, (uint32_t)ret);
+		PRI_FAIL("%s : DecryptInit(): %lu : 0x%x", mech_type, ret, (uint32_t)ret);
 		goto out;
 	}
 
 	ret = func_list->C_Decrypt(session, (CK_BYTE_PTR)cipher, cipher_len,
 				   (CK_BYTE_PTR)decrypted, &decrypted_len);
 	if (ret != CKR_OK) {
-		PRI_FAIL("%s : Failed to Decrypt: %lu : 0x%x", mech_type, ret, (uint32_t)ret);
+		PRI_FAIL("%s : Decrypt(): %lu : 0x%x", mech_type, ret, (uint32_t)ret);
 		goto out;
 	}
 
@@ -267,12 +267,13 @@ static void encrypt_and_decrypt(CK_SESSION_HANDLE session,
 
 	if (memcmp(msg, decrypted, decrypted_len) != 0) {
 		PRI_FAIL("%s : decryption failure", mech_type);
+		goto out;
 	}
+
+	PRI_OK("%s : -", mech_type)
 out:
 	free(cipher);
 	free(decrypted);
-
-	PRI_OK("%s : OK", mech_type)
 }
 
 static void sign_and_verify(CK_SESSION_HANDLE session,
@@ -902,23 +903,23 @@ static void create_objects(CK_SESSION_HANDLE session)
 {
 	CK_BBOOL ck_true = CK_TRUE;
 	CK_OBJECT_CLASS obj_class = CKO_SECRET_KEY;
-	CK_MECHANISM_TYPE allow_mech = CKM_AES_CBC;
 	CK_KEY_TYPE keyType = CKK_AES;
 	char *aes_id = "aes_id";
 	CK_RV ret;
 
 	/* AES key */
-	CK_ATTRIBUTE attrs[7] = {
+	CK_MECHANISM_TYPE aes_allow_mech = CKM_AES_CBC;
+	CK_ATTRIBUTE aes_attrs[7] = {
 		{CKA_CLASS, &obj_class, sizeof(obj_class)},
 		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
 		{CKA_VALUE, &aes_key, SIZE_OF_VEC(aes_key)},
 		{CKA_ENCRYPT, &ck_true, sizeof(ck_true)},
 		{CKA_DECRYPT, &ck_true, sizeof(ck_true)},
-		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)},
+		{CKA_ALLOWED_MECHANISMS, &aes_allow_mech, sizeof(aes_allow_mech)},
 		{CKA_ID, &aes_id, sizeof(aes_id)}
 	};
 
-	ret = func_list->C_CreateObject(session, attrs, 7, &aes_secret_obj);
+	ret = func_list->C_CreateObject(session, aes_attrs, 7, &aes_secret_obj);
 	if (ret != CKR_OK) {
 		PRI_FAIL("Failed to create AES object: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
@@ -926,36 +927,45 @@ static void create_objects(CK_SESSION_HANDLE session)
 
 	/* RSA private key object */
 	obj_class = CKO_PRIVATE_KEY;
-	allow_mech = CKM_SHA1_RSA_PKCS;
 	keyType = CKK_RSA;
-	CK_ATTRIBUTE pri_attrs[7] = {
+	CK_MECHANISM_TYPE rsa_allow_mech[2] = {CKM_SHA1_RSA_PKCS, CKM_RSA_PKCS};
+	CK_ATTRIBUTE pri_attrs[8] = {
 		{CKA_CLASS, &obj_class, sizeof(obj_class)},
 		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
 		{CKA_MODULUS, &modulus, SIZE_OF_VEC(modulus)},
 		{CKA_PRIVATE_EXPONENT, &private_exp, SIZE_OF_VEC(private_exp)},
 		{CKA_PUBLIC_EXPONENT, &public_exp, SIZE_OF_VEC(public_exp)},
 		{CKA_SIGN, &ck_true, sizeof(ck_true)},
-		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
+		{CKA_DECRYPT, &ck_true, sizeof(ck_true)},
+		{CKA_ALLOWED_MECHANISMS, &rsa_allow_mech, sizeof(rsa_allow_mech)}
 	};
 
-	ret = func_list->C_CreateObject(session, pri_attrs, 7, &rsa_private_obj);
+	ret = func_list->C_CreateObject(session, pri_attrs, 8, &rsa_private_obj);
 	if (ret != CKR_OK) {
 		PRI_FAIL("Failed to create RSA private object: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
 	}
 
+	/* Public object can be created without login */
+	ret = func_list->C_Logout(session);
+	if (ret != CKR_OK) {
+		PRI_FAIL("Failed to logout: 0x%x", (uint32_t)ret);
+		return;
+	}
+
 	/* RSA Public key object */
 	obj_class = CKO_PUBLIC_KEY;
-	CK_ATTRIBUTE pub_attrs[6] = {
+	CK_ATTRIBUTE pub_attrs[7] = {
 		{CKA_CLASS, &obj_class, sizeof(obj_class)},
 		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
 		{CKA_MODULUS, &modulus, SIZE_OF_VEC(modulus)},
 		{CKA_PUBLIC_EXPONENT, &public_exp, SIZE_OF_VEC(public_exp)},
 		{CKA_VERIFY, &ck_true, sizeof(ck_true)},
-		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
+		{CKA_ENCRYPT, &ck_true, sizeof(ck_true)},
+		{CKA_ALLOWED_MECHANISMS, &rsa_allow_mech, sizeof(rsa_allow_mech)}
 	};
 
-	ret = func_list->C_CreateObject(session, pub_attrs, 6, &rsa_public_obj);
+	ret = func_list->C_CreateObject(session, pub_attrs, 7, &rsa_public_obj);
 	if (ret != CKR_OK) {
 		PRI_FAIL("Failed to create RSA public object: %lu : 0x%x", ret, (uint32_t)ret);
 		return;
@@ -963,7 +973,7 @@ static void create_objects(CK_SESSION_HANDLE session)
 
 	/* HMACsha256 */
 	obj_class = CKO_SECRET_KEY;
-	allow_mech = CKM_SHA256_HMAC;
+	CK_MECHANISM_TYPE hmac_allow_mech = CKM_SHA256_HMAC;
 	keyType = CKK_GENERIC_SECRET;
 	CK_ATTRIBUTE hmac256[6] = {
 		{CKA_CLASS, &obj_class, sizeof(obj_class)},
@@ -971,8 +981,20 @@ static void create_objects(CK_SESSION_HANDLE session)
 		{CKA_VALUE, &hmacsha256key, SIZE_OF_VEC(hmacsha256key)},
 		{CKA_SIGN, &ck_true, sizeof(ck_true)},
 		{CKA_VERIFY, &ck_true, sizeof(ck_true)},
-		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
+		{CKA_ALLOWED_MECHANISMS, &hmac_allow_mech, sizeof(hmac_allow_mech)}
 	};
+
+	ret = func_list->C_CreateObject(session, hmac256, 6, &hmac_256_obj);
+	if (ret == CKR_OK) {
+		PRI_FAIL("Should fail, because session is not logged in");
+		return;
+	}
+
+	ret = func_list->C_Login(session, CKU_USER, (CK_BYTE_PTR)user_pin, sizeof(user_pin));
+	if (ret != CKR_OK) {
+		PRI_ABORT("Failed to login: 0x%x", (uint32_t)ret);
+		exit(1);
+	}
 
 	ret = func_list->C_CreateObject(session, hmac256, 6, &hmac_256_obj);
 	if (ret != CKR_OK) {
@@ -982,7 +1004,7 @@ static void create_objects(CK_SESSION_HANDLE session)
 
 	/* HMACsha256_trunc */
 	obj_class = CKO_SECRET_KEY;
-	allow_mech = CKM_SHA256_HMAC_GENERAL;
+	hmac_allow_mech = CKM_SHA256_HMAC_GENERAL;
 	keyType = CKK_GENERIC_SECRET;
 	CK_ATTRIBUTE hmac256_trunc[6] = {
 		{CKA_CLASS, &obj_class, sizeof(obj_class)},
@@ -990,7 +1012,7 @@ static void create_objects(CK_SESSION_HANDLE session)
 		{CKA_VALUE, &hmacsha256key_trunc, SIZE_OF_VEC(hmacsha256key_trunc)},
 		{CKA_SIGN, &ck_true, sizeof(ck_true)},
 		{CKA_VERIFY, &ck_true, sizeof(ck_true)},
-		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
+		{CKA_ALLOWED_MECHANISMS, &hmac_allow_mech, sizeof(hmac_allow_mech)}
 	};
 
 	ret = func_list->C_CreateObject(session, hmac256_trunc, 6, &hmac_256_trunc_obj);
@@ -1264,6 +1286,40 @@ static void crypto_using_not_allowed_key(CK_SESSION_HANDLE session)
 		return;
 	}
 
+	/* Logout and use RSA keys */
+	ret = func_list->C_Logout(session);
+	if (ret != CKR_OK) {
+		PRI_FAIL("Failed to logout: 0x%x", (uint32_t)ret);
+		return;
+	}
+
+	mechanism.mechanism = CKM_SHA1_RSA_PKCS;
+	mechanism.pParameter = NULL_PTR;
+	mechanism.ulParameterLen = 0;
+	ret = func_list->C_SignInit(session, &mechanism, rsa_private_obj);
+	if (ret == CKR_OK) {
+		PRI_FAIL("Private should not be availible if session logget out!");
+		return;
+	}
+
+	ret = func_list->C_VerifyInit(session, &mechanism, rsa_public_obj);
+	if (ret != CKR_OK) {
+		PRI_FAIL("VerifyInit: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	ret = func_list->C_VerifyFinal(session, NULL, 0);
+	if (ret != CKR_OK) {
+		PRI_FAIL("VerifyFinal: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	ret = func_list->C_Login(session, CKU_USER, (CK_BYTE_PTR)user_pin, sizeof(user_pin));
+	if (ret != CKR_OK) {
+		PRI_ABORT("Failed to login: 0x%x", (uint32_t)ret);
+		exit(1);
+	}
+
 	PRI_OK("-");
 }
 
@@ -1321,7 +1377,7 @@ static void destroy_objects(CK_SESSION_HANDLE session)
 
 	ret = func_list->C_DestroyObject(session, hmac_256_trunc_obj);
 	if (ret != CKR_OK) {
-		PRI_FAIL("Failed to remove hmac256_trunc key");
+		PRI_FAIL("Failed to remove hmac256_trunc key: 0x%x", (uint32_t)ret);
 		return;
 	}
 
@@ -1331,16 +1387,17 @@ static void destroy_objects(CK_SESSION_HANDLE session)
 	if (find_object(session, &hObject, &ulObjectCount, NULL_PTR, 0))
 		return;
 	else
-		PRI_YES("Found %lu objects", ulObjectCount);
+		PRI_YES("Found %lu objects after destroy", ulObjectCount);
 
 	/* What should found is at least to this session created AES object */
 	if (!is_key_in_vector(hObject, ulObjectCount, get_attr_aes_temp_obj) ||
 	    !is_key_in_vector(hObject, ulObjectCount, aes_secret_obj) ||
 	    !is_key_in_vector(hObject, ulObjectCount, rsa_private_obj) ||
-	    !is_key_in_vector(hObject, ulObjectCount, rsa_public_obj))
+	    !is_key_in_vector(hObject, ulObjectCount, rsa_public_obj)) {
 		PRI_FAIL("Did not find all session object of this session");
-
-	PRI_OK("-");
+	} else {
+		PRI_OK("-");
+	}
 }
 
 static void encrypt_decrypt_tests(CK_SESSION_HANDLE session)
