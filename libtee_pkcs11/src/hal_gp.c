@@ -703,7 +703,20 @@ out:
 
 CK_RV hal_logout(CK_SESSION_HANDLE hSession)
 {
-	return send_single_value(hSession, TEE_LOGOUT_SESSION);
+	TEEC_Operation operation = {0};
+
+	if (!is_lib_initialized())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_NONE,
+						TEEC_NONE, TEEC_VALUE_OUTPUT);
+	operation.params[0].value.a = hSession;
+
+	if(TEE_SUCCESS !=
+	   TEEC_InvokeCommand(g_control_session, TEE_LOGOUT_SESSION, &operation, NULL))
+		return CKR_GENERAL_ERROR;
+
+	return CKR_OK;
 }
 
 CK_RV hal_init_pin(CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen)
