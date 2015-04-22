@@ -1418,6 +1418,28 @@ static void encrypt_decrypt_tests(CK_SESSION_HANDLE session)
 	encrypt_and_decrypt(session, &mechanism);
 }
 
+static void token_object(CK_SESSION_HANDLE session)
+{
+	CK_BBOOL ck_bool = 0;
+	CK_ATTRIBUTE get_cka_token = {CKA_TOKEN, &ck_bool, sizeof(CK_BBOOL)};
+	CK_RV ret;
+
+	/* All session created object are session object. Lets test one */
+
+	ret = func_list->C_GetAttributeValue(session, aes_secret_obj, &get_cka_token, 1);
+	if (ret != CKR_OK) {
+		PRI_FAIL("Failed to get CKA_TOKEN value %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	if (*(CK_BBOOL *)get_cka_token.pValue != CK_FALSE) {
+		PRI_FAIL("AES object should be by default as a session object");
+		return;
+	}
+
+	PRI_OK("-");
+}
+
 int main()
 {
 	CK_SESSION_HANDLE session;
@@ -1485,7 +1507,8 @@ int main()
 	set_obj_attr(session);
 	set_obj_attr_seccond(session);
 	crypto_using_not_allowed_key(session);
-	destroy_objects(session);
+	token_object(session);
+	destroy_objects(session); /* Run this test as a last one */
 
 	printf("----Test-has-reached-end----\n");
 
