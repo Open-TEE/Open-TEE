@@ -418,6 +418,8 @@ CK_RV hal_crypto(uint32_t command_id,
 		shm.size = src_len > safe_dst_len ? src_len : safe_dst_len;
 	} else {
 		/* Some are not sending any data */
+		src_len = 0;
+		safe_dst_len = 0;
 		shm.flags = 0;
 		shm.size = 0;
 	}
