@@ -27,14 +27,14 @@ SET_TA_PROPERTIES(
 
 TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
-	OT_LOG(LOG_ERR, "Calling the create entry point");
+	OT_LOG(LOG_INFO, "Calling the create entry point");
 
 	return TEE_SUCCESS;
 }
 
 void TA_EXPORT TA_DestroyEntryPoint(void)
 {
-	OT_LOG(LOG_ERR, "Calling the Destroy entry point");
+	OT_LOG(LOG_INFO, "Calling the Destroy entry point");
 }
 
 TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
@@ -45,17 +45,18 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 	sessionContext = sessionContext;
 	uint8_t *mem_data = (uint8_t *)(params[1].memref.buffer);
 
-	OT_LOG(LOG_ERR, "Calling the Open session entry point");
+	OT_LOG(LOG_INFO, "Calling the Open session entry point");
 
-	OT_LOG(LOG_ERR, "param value is %d", params[0].value.a);
+	OT_LOG(LOG_INFO, "param value is %d", params[0].value.a);
 
-	OT_LOG(LOG_ERR, "param mem data size is %zu", params[1].memref.size);
+	OT_LOG(LOG_INFO, "param mem data size is %zu", params[1].memref.size);
 
 	if (params[1].memref.buffer == NULL)
-		OT_LOG(LOG_ERR, "NULL ???????????????");
+		OT_LOG(LOG_INFO, "NULL ???????????????");
 
+	mem_data[26] = 0;
+	OT_LOG(LOG_INFO, "Mem value : %s", (char *)mem_data);
 	for (i = 0; i < 20; i++) {
-		OT_LOG(LOG_ERR, "Mem value : %c", mem_data[i]);
 		/* return some data to the user */
 		mem_data[i] = 'y';
 	}
@@ -67,18 +68,37 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 {
 	sessionContext = sessionContext;
 
-	OT_LOG(LOG_ERR, "Calling the Close session entry point");
+	OT_LOG(LOG_INFO, "Calling the Close session entry point");
 }
 
 TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t commandID,
 						uint32_t paramTypes, TEE_Param params[4])
 {
+	int i;
+	uint8_t *mem_data[3];
+
+	for (i = 0; i < 3; i++)
+		mem_data[i] = (uint8_t *)(params[1+i].memref.buffer);
+
 	sessionContext = sessionContext;
 	commandID = commandID;
 	paramTypes = paramTypes;
-	params = params;
 
-	OT_LOG(LOG_ERR, "Calling the Invoke command entry point");
+	if (commandID == 0) {
+		OT_LOG(LOG_INFO, "Calling the Invoke command entry point");
 
+	} else if (commandID == 1) {
+		if (params[1].memref.buffer == NULL) {
+			OT_LOG(LOG_INFO, "NULL ???????????????");
+			return TEEC_ERROR_BAD_PARAMETERS;
+		}
+
+		for (i = 0; i < 20; i++) {
+			/* return some data to the user */
+			mem_data[0][i] |= 1;
+			mem_data[1][i] |= 4;
+			mem_data[2][i] |= 8;
+		}
+	}
 	return TEE_SUCCESS;
 }
