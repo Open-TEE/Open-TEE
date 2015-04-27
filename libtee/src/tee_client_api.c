@@ -30,7 +30,11 @@
 #include "tee_logging.h"
 
 /* TODO fix this to point to the correct location */
+#ifdef ANDROID
+const char *sock_path = "/data/open_tee_sock";
+#else
 const char *sock_path = "/tmp/open_tee_sock";
+#endif
 
 /* Mutex is used when write function occur to FD which is connected to TEE */
 pthread_mutex_t fd_write_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -144,7 +148,8 @@ static int send_msg(int fd, void *msg, int msg_len, pthread_mutex_t mutex)
 		return -1;
 	}
 
-	ret = com_send_msg(fd, msg, msg_len);
+	/* CAs don't send FDs */
+	ret = com_send_msg(fd, msg, msg_len, NULL, 0);
 
 	if (pthread_mutex_unlock(&mutex))
 		OT_LOG(LOG_ERR, "Failed to unlock mutex");
@@ -174,7 +179,9 @@ static void free_shm_and_from_manager(struct shared_mem_internal *shm_internal)
 
 	/* Remove the memory mapped region and the shared memory */
 	munmap(shm_internal->reg_address, shm_internal->org_size);
+#ifndef ANDROID
 	shm_unlink(shm_internal->shm_uuid);
+#endif
 }
 
 /*!
@@ -190,7 +197,7 @@ static TEEC_Result get_shm_from_manager_and_map_region(struct shared_mem_interna
 	struct com_msg_open_shm_region *recv_msg = NULL;
 	struct com_msg_open_shm_region open_shm;
 	TEEC_Result result = TEEC_SUCCESS;
-	int fd, com_ret;
+	int fds[4], fd_count = 0, com_ret;
 
 	/* Zero size is special case */
 	if (!shm_internal->org_size)
@@ -218,7 +225,7 @@ static TEEC_Result get_shm_from_manager_and_map_region(struct shared_mem_interna
 	}
 
 	/* Wait for answer */
-	com_ret = com_recv_msg(ctx_internal.sockfd, (void **)(&recv_msg), NULL);
+	com_ret = com_recv_msg(ctx_internal.sockfd, (void **)(&recv_msg), NULL, fds, &fd_count);
 
 	if (pthread_mutex_unlock(&ctx_internal.mutex))
 		OT_LOG(LOG_ERR, "Failed to unlock mutex"); /* No action */
@@ -230,6 +237,11 @@ static TEEC_Result get_shm_from_manager_and_map_region(struct shared_mem_interna
 
 	} else if (com_ret > 0) {
 		OT_LOG(LOG_ERR, "Received bad message, discarding");
+		return TEEC_ERROR_COMMUNICATION;
+	}
+
+	if (fd_count != 1) {
+		OT_LOG(LOG_ERR, "incorrect amount of file descriptors attached to message");
 		return TEEC_ERROR_COMMUNICATION;
 	}
 
@@ -251,35 +263,20 @@ static TEEC_Result get_shm_from_manager_and_map_region(struct shared_mem_interna
 
 	memcpy(shm_internal->shm_uuid, recv_msg->name, SHM_MEM_NAME_LEN);
 
-	fd = shm_open(shm_internal->shm_uuid, (O_RDWR | O_RDONLY), 0);
-	if (fd == -1) {
-		OT_LOG(LOG_ERR, "Failed to open the shared memory area");
-		result = TEEC_ERROR_GENERIC;
-		goto release_shm_1;
-	}
-
 	/* mmap does not allow for the size to be zero, however the TEEC API allows it, so map a
 	 * size of 1 byte, though it will probably be mapped to a page */
 	shm_internal->reg_address = mmap(NULL, shm_internal->org_size,
-					 (PROT_WRITE | PROT_READ), MAP_SHARED, fd, 0);
+					 (PROT_WRITE | PROT_READ), MAP_SHARED,
+					 fds[0], 0);
 	if (shm_internal->reg_address == MAP_FAILED) {
 		OT_LOG(LOG_ERR, "Failed to MMAP");
 		result = TEEC_ERROR_OUT_OF_MEMORY;
-		goto release_shm_2;
+		goto err_ret;
 	}
 
-	/* We have finished with the file handle as it has been mapped so don't leak it */
-	close(fd);
-	free(recv_msg);
-	return result;
-
-release_shm_2:
-	close(fd);
-
-release_shm_1:
-	free_shm_and_from_manager(shm_internal);
-
+	close(fds[0]);
 err_ret:
+
 	free(recv_msg);
 	return result;
 }
@@ -635,7 +632,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	}
 
 	/* Wait for answer */
-	com_ret = com_recv_msg(ctx_internal.sockfd, (void **)(&recv_msg), NULL);
+	com_ret = com_recv_msg(ctx_internal.sockfd, (void **)(&recv_msg), NULL, NULL, NULL);
 
 	if (pthread_mutex_unlock(&ctx_internal.mutex))
 		OT_LOG(LOG_ERR, "Failed to unlock mutex"); /* No action */
@@ -832,7 +829,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 		operation->started = TEE_OPERATION_STARTED;
 
 	/* Wait for answer */
-	com_ret = com_recv_msg(ctx_internal.sockfd, (void **)(&recv_msg), NULL);
+	com_ret = com_recv_msg(ctx_internal.sockfd, (void **)(&recv_msg), NULL, NULL, NULL);
 
 	/* Received message -> operation returned from TEE */
 	if (operation)
@@ -1029,7 +1026,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 		operation->started = TEE_OPERATION_STARTED;
 
 	/* Wait for answer */
-	com_ret = com_recv_msg(session_internal->sockfd, (void **)(&recv_msg), NULL);
+	com_ret = com_recv_msg(session_internal->sockfd, (void **)(&recv_msg), NULL, NULL, NULL);
 
 	/* Received message -> operation returned from TEE */
 	if (operation)

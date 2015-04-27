@@ -44,6 +44,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 
 #include "tee_shared_data_types.h"
 
@@ -82,6 +83,8 @@ struct com_msg_hdr {
 	uint64_t sess_id;
 	uint8_t msg_name;
 	uint8_t msg_type;
+	int shareable_fd[4];
+	int shareable_fd_count;
 } __attribute__((aligned));
 
 /*
@@ -296,6 +299,24 @@ struct com_msg_manager_termination {
 */
 
 /*!
+ * \brief send_fd
+ * Send a file descriptor over a socket to another process
+ * \param sockfd The socket to use for transport
+ * \param fd_to_send The fd to be sent
+ * \return 0 on success, -1 othersie
+ */
+int send_fd(int sockfd, int *fd_table_to_send, int fd_count, struct iovec *aiov, int aiovlen);
+
+/*!
+ * \brief recv_fd
+ * receive a file descriptior from another process over a socket
+ * \param sockfd The socket connected to the other process
+ * \param recvd_fd The fd to receive
+ * \return 0 on success, -1 otherwise
+ */
+int recv_fd(int sockfd, int *recvd_fd, int *fd_count, struct iovec *aiov, int aiovlen);
+
+/*!
  * \brief com_recv_msg
  * Read message from socket and malloc space for message. Function strip transport info and
  * verifys message. If function is interrupted by EINTR, function recall read function.
@@ -305,7 +326,7 @@ struct com_msg_manager_termination {
  * \return 0 on success. -1 on fd error. 1 if message was partial or corrupted.
  * No space malloced, if return value is no 0
  */
-int com_recv_msg(int sockfd, void **msg, int *msg_len);
+int com_recv_msg(int sockfd, void **msg, int *msg_len, int *shareable_fd, int *shareable_fd_count);
 
 /*!
  * \brief com_send_msg
@@ -315,7 +336,7 @@ int com_recv_msg(int sockfd, void **msg, int *msg_len);
  * \param msg_len
  * \return
  */
-int com_send_msg(int sockfd, void *msg, int msg_len);
+int com_send_msg(int sockfd, void *msg, int msg_len, int *shareable_fd, int shareable_fd_count);
 
 /*
  * Get-functions for accessing protocol base functionality.

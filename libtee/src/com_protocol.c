@@ -23,6 +23,15 @@
 #include <sys/uio.h>
 #include <zlib.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+
+struct control_fd {
+	struct cmsghdr header;
+	int fd[4];
+};
+
+
 #include "com_protocol.h"
 #include "tee_logging.h"
 
@@ -37,13 +46,104 @@ struct com_transport_info {
 	uint32_t data_len; /* data_len: user message length */
 } __attribute__((aligned));
 
-static int read_iov_element(int fd, struct iovec *iov)
+
+int send_fd(int sockfd, int *fd_table_to_send, int fd_count, struct iovec *aiov, int aiovlen)
+{
+	struct msghdr msg_head;
+	struct iovec iov;
+	struct control_fd anc_load;
+	char dummy = 'T';
+
+	memset(&msg_head, 0, sizeof(struct msghdr));
+
+	if (aiov == NULL) {
+		iov.iov_base = &dummy;
+		iov.iov_len = sizeof(char);
+
+		/* add 1 iov buffer to the header */
+		msg_head.msg_iov = &iov;
+		msg_head.msg_iovlen = 1;
+	} else {
+		msg_head.msg_iov = aiov;
+		msg_head.msg_iovlen = aiovlen;
+	}
+
+	if (fd_count > 0) {
+		anc_load.header.cmsg_type = SCM_RIGHTS;
+		anc_load.header.cmsg_len = CMSG_LEN(sizeof(int)*fd_count);
+		anc_load.header.cmsg_level = SOL_SOCKET;
+
+		msg_head.msg_control = &anc_load;
+		msg_head.msg_controllen = CMSG_SPACE(sizeof(int)*fd_count);
+		memcpy(CMSG_DATA(CMSG_FIRSTHDR(&msg_head)),
+		       fd_table_to_send, sizeof(int)*fd_count);
+	}
+
+	return sendmsg(sockfd, &msg_head, 0);
+}
+
+int recv_fd(int sockfd, int *recv_fd_table, int *fd_count, struct iovec *aiov, int aiovlen)
+{
+	struct msghdr msg_head = {0};
+	struct iovec iov;
+	struct control_fd anc_load;
+	char dummy;
+	int ret = 0, count;
+	struct cmsghdr *recv_cont;
+
+	memset(&anc_load, 0, sizeof(anc_load));
+
+	if (aiov == NULL) {
+		iov.iov_base = &dummy;
+		iov.iov_len = sizeof(char);
+
+		/* add 1 iov buffer to the header */
+		msg_head.msg_iov = &iov;
+		msg_head.msg_iovlen = 1;
+	} else {
+		msg_head.msg_iov = aiov;
+		msg_head.msg_iovlen = aiovlen;
+	}
+
+
+	msg_head.msg_name = NULL;
+	msg_head.msg_namelen = 0;
+	msg_head.msg_control = &anc_load;
+	msg_head.msg_controllen = CMSG_SPACE(sizeof(int)*4);
+
+	ret = recvmsg(sockfd, &msg_head, 0);
+	if (ret == -1)
+		return -1;
+
+	if (anc_load.header.cmsg_type == SCM_RIGHTS && recv_fd_table) {
+
+		recv_cont = CMSG_FIRSTHDR(&msg_head);
+		if (recv_cont == NULL)
+			return -1;
+
+		count = (recv_cont->cmsg_len - CMSG_LEN(0)) / sizeof(int);
+		if (count <= 0)
+			return -1;
+
+		memcpy(recv_fd_table, CMSG_DATA(recv_cont), sizeof(int)*count);
+		if (fd_count)
+			*fd_count = count;
+	}
+	return ret;
+}
+
+
+static int read_iov_element(int fd, struct iovec *iov, int *temp_fd, int *temp_fd_count)
 {
 	int read_bytes = 0;
 
 	while (1) {
 
-		read_bytes = readv(fd, iov, 1);
+		if (temp_fd)
+			read_bytes = recv_fd(fd, temp_fd, temp_fd_count, iov, 1);
+		else
+			read_bytes = readv(fd, iov, 1);
+
 		if (read_bytes == -1) {
 
 			if (errno == EINTR)
@@ -96,7 +196,7 @@ static int wind_fd_next_start(int fd)
 	return 1; /* This function should only call in com_recv_msg function */
 }
 
-int com_recv_msg(int sockfd, void **msg, int *msg_len)
+int com_recv_msg(int sockfd, void **msg, int *msg_len, int *shareable_fd, int *shareable_fd_count)
 {
 	struct iovec iov[ELEMENTS_IN_MESSAGE];
 	int ret;
@@ -115,7 +215,7 @@ int com_recv_msg(int sockfd, void **msg, int *msg_len)
 	iov[0].iov_len = sizeof(struct com_transport_info);
 
 	/* Read transport capsule */
-	if (read_iov_element(sockfd, &iov[0]) == -1) {
+	if (read_iov_element(sockfd, &iov[0], shareable_fd, shareable_fd_count) == -1) {
 		OT_LOG(LOG_ERR, "Problem with reading transport capsule");
 		ret = -1;
 		goto err;
@@ -139,7 +239,7 @@ int com_recv_msg(int sockfd, void **msg, int *msg_len)
 	iov[1].iov_base = *msg;
 	iov[1].iov_len = com_recv_trans_info.data_len;
 
-	if (read_iov_element(sockfd, &iov[1]) == -1) {
+	if (read_iov_element(sockfd, &iov[1], NULL, NULL) == -1) {
 		OT_LOG(LOG_ERR, "Problem with reading msg");
 		ret = -1;
 		goto err;
@@ -165,7 +265,8 @@ err:
 	return ret;
 }
 
-int com_send_msg(int sockfd, void *msg, int msg_len)
+int com_send_msg(int sockfd, void *msg, int msg_len,
+		 int *shareable_fd, int shareable_fd_count)
 {
 	struct iovec iov[ELEMENTS_IN_MESSAGE] = { {0} };
 	int bytes_write;
@@ -190,7 +291,9 @@ int com_send_msg(int sockfd, void *msg, int msg_len)
 	/* Send message */
 	while (1) {
 
-		bytes_write = writev(sockfd, iov, ELEMENTS_IN_MESSAGE);
+		bytes_write = send_fd(sockfd, shareable_fd, shareable_fd_count,
+				      iov, ELEMENTS_IN_MESSAGE);
+
 		if (bytes_write == -1) {
 			if (errno == EINTR)
 				continue;
