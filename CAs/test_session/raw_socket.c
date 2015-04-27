@@ -10,7 +10,11 @@
 #include <stdlib.h>
 
 // TODO fis this to point to the real path
+#ifdef ANDROID
+const char *sock_path = "/data/open_tee_sock";
+#else
 const char *sock_path = "/tmp/open_tee_sock";
+#endif
 
 int main(void)
 {
