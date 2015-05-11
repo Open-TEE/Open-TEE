@@ -21,4 +21,8 @@ LOCAL_EXPORT_C_INCLUDE_DIRS := \
 
 LOCAL_C_FLAGS := -DANDROID -lz -DOT_LOGGING
 
+ifeq ($(TARGET_ARCH),arm)
+LOCAL_LDFLAGS := -Wl,--hash-style=sysv
+endif
+
 include $(BUILD_SHARED_LIBRARY)
