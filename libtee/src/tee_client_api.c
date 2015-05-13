@@ -221,6 +221,10 @@ static TEEC_Result get_shm_from_manager_and_map_region(struct shared_mem_interna
 	if (send_msg(ctx_internal.sockfd, &open_shm, sizeof(struct com_msg_open_shm_region),
 		     fd_write_mutex) != sizeof(struct com_msg_open_shm_region)) {
 		OT_LOG(LOG_ERR, "Failed to send message TEE");
+
+		/* release the mutex to avoid hang */
+		if (pthread_mutex_unlock(&ctx_internal.mutex))
+			OT_LOG(LOG_ERR, "Failed to unlock mutex");
 		return TEEC_ERROR_COMMUNICATION;
 	}
 
