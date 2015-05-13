@@ -350,9 +350,7 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 
 	TEE_GetSystemTime(&account_created);
 
-	TEE_AllocateOperation(&digest_handler, TEE_ALG_SHA256, TEE_MODE_DIGEST, 0);
-
-	return TEE_SUCCESS;
+	return TEE_AllocateOperation(&digest_handler, TEE_ALG_SHA256, TEE_MODE_DIGEST, 0);
 }
 
 void TA_EXPORT TA_DestroyEntryPoint(void)

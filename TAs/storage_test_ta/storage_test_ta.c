@@ -67,7 +67,7 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 {
 	/* Parameter type is not needed */
 	paramTypes = paramTypes;
-	params[0] = params[0];
+	params = params;
 	sessionContext = sessionContext;
 
 	/* Run one round of testcases */
