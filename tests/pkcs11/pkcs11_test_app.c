@@ -588,7 +588,7 @@ static int find_object(CK_SESSION_HANDLE session,
 		       CK_ULONG find_template_count)
 {
 	CK_OBJECT_HANDLE *found_objects, *realloc_found_objects;
-	uint16_t i = 0, object_fetcs_count = 10,
+	uint32_t i = 0, object_fetcs_count = 10,
 			block_size = sizeof(CK_OBJECT_HANDLE) * object_fetcs_count;
 	CK_ULONG ulObjectCount;
 	CK_RV ret;
@@ -605,6 +605,7 @@ static int find_object(CK_SESSION_HANDLE session,
 	ret = func_list->C_FindObjectsInit(session, find_template, find_template_count);
 	if (ret != CKR_OK) {
 		PRI_FAIL("Failed to init find object %lu : 0x%x", ret, (uint32_t)ret);
+		free(found_objects);
 		return 1;
 	}
 
@@ -613,6 +614,7 @@ static int find_object(CK_SESSION_HANDLE session,
 					       object_fetcs_count, &ulObjectCount);
 		if (ret != CKR_OK) {
 			PRI_FAIL("Failed to find objects %lu : 0x%x", ret, (uint32_t)ret);
+			free(found_objects);
 			return 1;
 		}
 
@@ -638,6 +640,7 @@ static int find_object(CK_SESSION_HANDLE session,
 	ret = func_list->C_FindObjectsFinal(session);
 	if (ret != CKR_OK) {
 		PRI_FAIL("Failed to finalize objects find %lu : 0x%x", ret, (uint32_t)ret);
+		free(found_objects);
 		return 1;
 	}
 
