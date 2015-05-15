@@ -13,10 +13,10 @@ LOCAL_C_INCLUDES    :=  \
 
 LOCAL_SHARED_LIBRARIES := libdl libtee
 
-include $(BUILD_EXECUTABLE)
-
 ifeq ($(TARGET_ARCH),arm)
 LOCAL_LDFLAGS := -Wl,--hash-style=sysv
 endif
+
+include $(BUILD_EXECUTABLE)
 
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
