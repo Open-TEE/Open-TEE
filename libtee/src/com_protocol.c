@@ -49,12 +49,12 @@ struct com_transport_info {
 
 int send_fd(int sockfd, int *fd_table_to_send, int fd_count, struct iovec *aiov, int aiovlen)
 {
-	struct msghdr msg_head;
-	struct iovec iov;
+	struct msghdr msg_head = {0};
+	struct iovec iov = {0};
 	struct control_fd anc_load;
 	char dummy = 'T';
 
-	memset(&msg_head, 0, sizeof(struct msghdr));
+	memset(&anc_load, 0, sizeof(struct control_fd));
 
 	if (aiov == NULL) {
 		iov.iov_base = &dummy;
@@ -88,7 +88,8 @@ int recv_fd(int sockfd, int *recv_fd_table, int *fd_count, struct iovec *aiov, i
 	struct iovec iov;
 	struct control_fd anc_load;
 	char dummy;
-	int ret = 0, count;
+	int ret = 0;
+	int count;
 	struct cmsghdr *recv_cont;
 
 	memset(&anc_load, 0, sizeof(anc_load));
@@ -121,7 +122,7 @@ int recv_fd(int sockfd, int *recv_fd_table, int *fd_count, struct iovec *aiov, i
 		if (recv_cont == NULL)
 			return -1;
 
-		count = (recv_cont->cmsg_len - CMSG_LEN(0)) / sizeof(int);
+		count = (int)(recv_cont->cmsg_len - CMSG_LEN(0)) / sizeof(int);
 		if (count <= 0)
 			return -1;
 

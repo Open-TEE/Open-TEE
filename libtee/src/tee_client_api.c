@@ -406,11 +406,11 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 		}
 
 		/* assign the name of the shared memory and its size area to
-				 * the operation that is being passed.  This will allow us
-				 * to open the same segment in the TA side
-				 */
-		strncpy(internal_op->params[i].param.memref.shm_area,
-			internal_imp->shm_uuid, SHM_MEM_NAME_LEN);
+		 * the operation that is being passed.  This will allow us
+		 * to open the same segment in the TA side
+		 */
+		memcpy(internal_op->params[i].param.memref.shm_area,
+		       internal_imp->shm_uuid, SHM_MEM_NAME_LEN);
 
 		internal_op->params[i].param.memref.size = mem_source->size;
 	}
