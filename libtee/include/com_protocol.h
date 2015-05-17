@@ -48,6 +48,12 @@
 
 #include "tee_shared_data_types.h"
 
+#ifdef ANDROID
+#define WELL_KNOWN_PUBLIC_SOCK_PATH "/data/local/tmp/open_tee_sock"
+#else
+#define WELL_KNOWN_PUBLIC_SOCK_PATH "/tmp/open_tee_sock"
+#endif
+
 /* clang-format off */
 /* Communication protocol message names */
 #define COM_MSG_NAME_RESERVED			0x00 /* Zero is reserved */
