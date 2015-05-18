@@ -29,13 +29,6 @@
 #include "tee_client_api.h"
 #include "tee_logging.h"
 
-/* TODO fix this to point to the correct location */
-#ifdef ANDROID
-const char *sock_path = "/data/open_tee_sock";
-#else
-const char *sock_path = "/tmp/open_tee_sock";
-#endif
-
 /* Mutex is used when write function occur to FD which is connected to TEE */
 pthread_mutex_t fd_write_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -606,7 +599,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	}
 
 	memset(&sock_addr, 0, sizeof(struct sockaddr_un));
-	strncpy(sock_addr.sun_path, sock_path, sizeof(sock_addr.sun_path) - 1);
+	strncpy(sock_addr.sun_path, WELL_KNOWN_PUBLIC_SOCK_PATH, sizeof(sock_addr.sun_path) - 1);
 	sock_addr.sun_family = AF_UNIX;
 
 	if (connect(ctx_internal.sockfd,
