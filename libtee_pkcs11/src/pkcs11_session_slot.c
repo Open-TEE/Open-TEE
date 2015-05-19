@@ -25,15 +25,13 @@
 #define TEE_SLOT_ID 0
 /* The number of supported slots */
 #define SLOT_COUNT 1
-/* try 16 as the default number of mecahnisms */
-#define MECHANISM_COUNT 16
 
 static CK_SLOT_INFO g_slot_info;
 
 /* a list of all mechanisms supported by the TEE */
 struct mechanisms *g_supported_mechanisms;
 CK_MECHANISM_TYPE_PTR g_mechanism_types;
-uint32_t g_mechanism_count = MECHANISM_COUNT;
+uint32_t g_mechanism_count;
 
 /*
  * 11.5 SLOT AND TOKEN MANAGEMENT
@@ -139,7 +137,7 @@ CK_RV C_GetMechanismList(CK_SLOT_ID slotID,
 			 CK_ULONG_PTR pulCount)
 {
 	CK_RV ret = 0;
-	uint32_t size;
+	uint32_t size = 0;
 	uint32_t i;
 
 	if (slotID != TEE_SLOT_ID)
@@ -148,51 +146,37 @@ CK_RV C_GetMechanismList(CK_SLOT_ID slotID,
 	if (g_mechanism_types != NULL)
 		return populate_user_mechanism_list(pMechanismList, pulCount);
 
+	/* this first call is used just to get the size required to store the actual list
+	 * we must get a too small buffer size or else there is a real error
+	 */
+	ret = hal_get_info(TEE_GET_MECHANISM_LIST, g_supported_mechanisms, &size);
+	if (ret != CKR_BUFFER_TOO_SMALL)
+		return ret;
 
-	/* if we get here we have to retrieve the info from the TA */
 
-	g_supported_mechanisms = calloc(g_mechanism_count, sizeof(struct mechanisms));
+	g_supported_mechanisms = calloc(1, size);
 	if (g_supported_mechanisms == NULL)
 		return CKR_HOST_MEMORY;
 
-	do {
-		size = g_mechanism_count * sizeof(struct mechanisms);
-		ret = hal_get_info(TEE_GET_MECHANISM_LIST, g_supported_mechanisms, &size);
+	/* this second call retrievs the actual list of mechanisms */
+	ret = hal_get_info(TEE_GET_MECHANISM_LIST, g_supported_mechanisms, &size);
+	if (ret != CKR_OK)
+		goto err_out;
 
-		if (ret == CKR_BUFFER_TOO_SMALL) {
-			g_mechanism_count *= 2; /* increase space for the mechanisms and retry */
+	/* store the actual number of mechanisms */
+	g_mechanism_count = size / sizeof(struct mechanisms);
 
-			struct mechanisms *tmp = realloc(g_supported_mechanisms, g_mechanism_count);
-			if (tmp == NULL) {
-				ret = CKR_HOST_MEMORY;
-				goto err_out;
-			}
+	g_mechanism_types = calloc(g_mechanism_count, sizeof(CK_MECHANISM_TYPE));
+	if (g_mechanism_types == NULL) {
+		ret = CKR_HOST_MEMORY;
+		goto err_out;
+	}
 
-			g_supported_mechanisms = tmp;
-			continue; /* back to the top and try again */
+	/* extract all the supported types */
+	for (i = 0; i < g_mechanism_count; i++)
+		g_mechanism_types[i] = g_supported_mechanisms[i].algo;
 
-		} else if (ret == CKR_OK) {
-			/* get the actual number of mechanisms */
-			g_mechanism_count = size / sizeof(struct mechanisms);
-			g_mechanism_types = calloc(g_mechanism_count, sizeof(CK_MECHANISM_TYPE));
-			if (g_mechanism_types == NULL) {
-				ret = CKR_HOST_MEMORY;
-				goto err_out;
-			}
-
-			/* extract all the supported types */
-			for (i = 0; i < g_mechanism_count; i++)
-				g_mechanism_types[i] = g_supported_mechanisms[i].algo;
-
-			ret = populate_user_mechanism_list(pMechanismList, pulCount);
-
-			break; /* we have gotten what we want */
-		} else {
-			goto err_out; /* some other error */
-		}
-	} while (1);
-
-	return ret;
+	return populate_user_mechanism_list(pMechanismList, pulCount);
 
 err_out:
 	free(g_supported_mechanisms);
@@ -201,7 +185,7 @@ err_out:
 	free(g_mechanism_types);
 	g_mechanism_types = NULL;
 
-	g_mechanism_count = MECHANISM_COUNT;
+	g_mechanism_count = 0;
 	return ret;
 }
 
@@ -214,6 +198,9 @@ CK_RV C_GetMechanismInfo(CK_SLOT_ID slotID, CK_MECHANISM_TYPE type, CK_MECHANISM
 
 	if (slotID != TEE_SLOT_ID)
 		return CKR_SLOT_ID_INVALID;
+
+	if (g_supported_mechanisms == NULL)
+		return CKR_MECHANISM_PARAM_INVALID;
 
 	for (i = 0; i < g_mechanism_count; i++) {
 		if (g_supported_mechanisms[i].algo == type) {
