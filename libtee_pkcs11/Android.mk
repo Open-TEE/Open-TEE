@@ -2,13 +2,8 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-ifeq ($(BUILD_WITH_SECURITY_FRAMEWORK), chaabi_token)
-local_shared_libraries := libdx_cc7
-local_c_flags := -DDX_CC_HOST -DDX_CC54_SUPPORTED
-else
 local_shared_libraries := libtee
 local_c_flags :=
-endif #build for chaabi token
 
 local_src_files :=                          \
                 src/hal_gp.c                \
