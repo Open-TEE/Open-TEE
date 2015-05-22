@@ -14,8 +14,6 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include <openssl/rand.h>
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -119,8 +117,8 @@ static void __attribute__((unused)) pri_and_cmp_attr(TEE_ObjectHandle obj1, TEE_
 			else
 				cmp_len = obj2->attrs[i].content.ref.length;
 
-			if (!bcmp(obj1->attrs[i].content.ref.buffer,
-				  obj2->attrs[i].content.ref.buffer, cmp_len)) {
+			if (!memcmp(obj1->attrs[i].content.ref.buffer,
+				    obj2->attrs[i].content.ref.buffer, cmp_len)) {
 				priiintf("Same1\n");
 			} else {
 				priiintf("NO\n");
@@ -215,7 +213,7 @@ static void gen_rsa_key_pair_and_save_read()
 	data = malloc(data_len);
 	if (data == NULL)
 		goto err;
-	RAND_bytes(data, data_len);
+	memset(data, 0x83, data_len);
 
 	ret = TEE_AllocateTransientObject(TEE_TYPE_RSA_KEYPAIR, key_size, &handler);
 
@@ -347,7 +345,7 @@ static void popu_rsa_pub_key()
 	params[0].content.ref.buffer = TEE_Malloc(KEY_IN_BYTES(key_size), 0);
 	if (params[0].content.ref.buffer == NULL)
 		goto err;
-	RAND_bytes(params[0].content.ref.buffer, KEY_IN_BYTES(key_size));
+	memset(params[0].content.ref.buffer, 0x84, KEY_IN_BYTES(key_size));
 	params[0].content.ref.length = KEY_IN_BYTES(key_size);
 
 	// pub exp
@@ -355,7 +353,7 @@ static void popu_rsa_pub_key()
 	params[1].content.ref.buffer = TEE_Malloc(KEY_IN_BYTES(key_size), 0);
 	if (params[1].content.ref.buffer == NULL)
 		goto err;
-	RAND_bytes(params[1].content.ref.buffer, KEY_IN_BYTES(key_size));
+	memset(params[1].content.ref.buffer, 0x85, KEY_IN_BYTES(key_size));
 	params[1].content.ref.length = KEY_IN_BYTES(key_size);
 
 	ret = TEE_PopulateTransientObject(rsa_pubkey, params, param_count);
@@ -395,7 +393,7 @@ static void data_stream_write_read()
 		goto err;
 
 	/* gen random data */
-	RAND_bytes(write_data, data_size);
+	memset(write_data, 0x86, data_size);
 
 	ret = TEE_AllocateTransientObject(TEE_TYPE_RSA_KEYPAIR, key_size, &handler);
 
@@ -507,12 +505,12 @@ static void pure_data_obj_and_truncate_and_write()
 	init_data = malloc(init_data_len);
 	if (init_data == NULL)
 		goto err;
-	RAND_bytes(init_data, init_data_len);
+	memset(init_data, 0x87, init_data_len);
 
 	write_data = calloc(1, write_data_size);
 	if (write_data == NULL)
 		goto err;
-	RAND_bytes(write_data, write_data_size);
+	memset(write_data, 0x88, write_data_size);
 
 	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)objID, objID_len, flags, NULL,
 					 init_data, init_data_len, &handler);
@@ -554,14 +552,14 @@ static void gen_rand_per_data_obj(TEE_ObjectHandle *gen_obj, size_t data_len)
 		priiintf("Fail: gen_rand_data_obj(inti_data mem)\n");
 		goto err;
 	}
-	RAND_bytes(init_data, data_len);
+	memset(init_data, 0x89, data_len);
 
 	ID = malloc(ID_len);
 	if (ID == NULL) {
 		priiintf("Fail: gen_rand_data_obj(inti_data mem)\n");
 		goto err;
 	}
-	RAND_bytes(ID, ID_len);
+	memset(ID, 0x90, ID_len);
 
 	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)ID, ID_len, flags, NULL,
 					 init_data, data_len, gen_obj);
@@ -591,14 +589,14 @@ static void gen_RSA_per_obj_with_data(TEE_ObjectHandle *gen_obj, size_t data_len
 		priiintf("Fail: gen_rand_data_obj(inti_data mem)\n");
 		goto err;
 	}
-	RAND_bytes(init_data, data_len);
+	memset(init_data, 0x91, data_len);
 
 	ID = malloc(ID_len);
 	if (ID == NULL) {
 		priiintf("Fail: gen_rand_data_obj(ID mem)\n");
 		goto err;
 	}
-	RAND_bytes(ID, ID_len);
+	memset(ID, 0x92, ID_len);
 
 	ret = TEE_AllocateTransientObject(TEE_TYPE_RSA_KEYPAIR, key_size, &handler);
 	if (ret != TEE_SUCCESS) {
@@ -746,7 +744,7 @@ static void rename_per_obj_and_enum_and_open_renameObj()
 		priiintf("Fail: malloc ID\n");
 		goto err;
 	}
-	RAND_bytes(new_ID, new_ID_len);
+	memset(new_ID, 0x93, new_ID_len);
 
 	gen_rand_per_data_obj(&object, 20);
 	if (object == NULL) {
