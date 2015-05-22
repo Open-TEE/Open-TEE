@@ -15,8 +15,6 @@
 *****************************************************************************/
 
 
-#include <openssl/rand.h>
-
 #include "tee_internal_api.h" /* TA envrionment */
 #include "tee_logging.h" /* OpenTEE logging functions */
 #include "com_protocol.h"
@@ -105,7 +103,7 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t c
 
 				payload.size = count;
 				payload.data = TEE_Malloc(payload.size, 0);
-				RAND_bytes(payload.data, payload.size);
+				memset(payload.data, 0x77, payload.size);
 
 				if (payload.data) {
 
