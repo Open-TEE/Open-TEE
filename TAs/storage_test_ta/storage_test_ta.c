@@ -103,7 +103,7 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t c
 
 				payload.size = count;
 				payload.data = TEE_Malloc(payload.size, 0);
-				memset(payload.data, 0x77, payload.size);
+				TEE_MemFill(payload.data, 0x77, payload.size);
 
 				if (payload.data) {
 
