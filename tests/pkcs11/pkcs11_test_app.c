@@ -1575,6 +1575,68 @@ static void hash_tests(CK_SESSION_HANDLE session)
 	hash_update(session, &mechanism);
 }
 
+static int initialize_token(CK_SLOT_ID slot_id)
+{
+	CK_SESSION_HANDLE session;
+	CK_TOKEN_INFO token_info;
+	CK_RV ret;
+	char password[8] = "12345678";
+	char label[] = "TEE_TOKEN1";
+
+	memset(&token_info, 0, sizeof(token_info));
+
+	ret = func_list->C_GetTokenInfo(slot_id, &token_info);
+	if (ret != CKR_OK) {
+		PRI("Failed to read the token info: %ld\n", ret);
+		return -1;
+	}
+
+	/* see if we have a label assigned to the token, if so then no need to initialize it */
+	if (token_info.label[0] != ' ' && token_info.label[0] != '\0')
+		return 0;
+
+	printf("Initializing TOKEN:\n");
+
+	ret = func_list->C_InitToken(slot_id, (CK_BYTE_PTR)password,
+				     sizeof(password), (CK_BYTE_PTR)label);
+	if (ret != CKR_OK) {
+		PRI("Failed to initialize the token");
+		return -1;
+	}
+
+	/* Next open a session and login as the SO user, to set the normal user passowrd */
+	ret = func_list->C_OpenSession(slot_id, CKF_RW_SESSION | CKF_SERIAL_SESSION,
+				       NULL, NULL, &session);
+	if (ret != CKR_OK) {
+		PRI("Failed to Open session the library: 0x%x", (uint32_t)ret);
+		return -1;
+	}
+
+	ret = func_list->C_Login(session, CKU_SO, (CK_BYTE_PTR)password, sizeof(password));
+	if (ret != CKR_OK) {
+		PRI("Failed to login as SO: 0x%x", (uint32_t)ret);
+		goto err1;
+	}
+
+	ret = func_list->C_InitPIN(session, (CK_BYTE_PTR)user_pin, sizeof(user_pin));
+	if (ret != CKR_OK) {
+		PRI("Failed to initialize the user's pin: 0x%x", (uint32_t)ret);
+		goto err2;
+	}
+
+err2:
+	func_list->C_Logout(session);
+err1:
+	func_list->C_CloseSession(slot_id);
+
+	if (ret == CKR_OK)
+		printf("TOKEN initialized : OK!!\n");
+	else
+		printf("Failed to Initialize TOKEN\n");
+
+	return ret;
+}
+
 int main()
 {
 	CK_SESSION_HANDLE session;
@@ -1585,7 +1647,7 @@ int main()
 
 	printf("\nSTART: pkcs11 test app\n");
 
-	printf("Initializing: ");
+	printf("Initializing:\n");
 
 	ret = C_GetFunctionList(&func_list);
 	if (ret != CKR_OK || func_list == NULL) {
@@ -1613,6 +1675,10 @@ int main()
 		PRI("Failed to get the available slots: %ld", ret);
 		return 0;
 	}
+
+	ret = initialize_token(available_slots[0]);
+	if (ret != CKR_OK)
+		return 0;
 
 	ret = func_list->C_OpenSession(available_slots[0], CKF_RW_SESSION | CKF_SERIAL_SESSION,
 				       NULL, NULL, &session);
