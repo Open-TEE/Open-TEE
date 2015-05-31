@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Open-TEE Security Extension</title>
+    <style>
+      .container {
+        position: relative;
+      }
+      body {
+        min-width: 357px;
+        overflow-x: hidden;
+      }
+      section {
+        margin-left: 150px;
+      }
+      img {
+        margin: 5px;
+        border: 2px solid black;
+        vertical-align: middle;
+        width: 75px;
+        height: 75px;
+      }
+      nav {
+        position: absolute;
+        left: 0px;
+        top: 100px;
+        width: 100px;
+      }
+      header {
+        position: absolute;
+        left: 0px;
+        top: 0px;
+        width: 100px;
+        height: 100px;
+        padding: 5px;
+      }
+      mode-specific-msg {
+        border-style: solid;
+        border-width: 5px;
+        padding: 5px;
+        height: 100px;
+      }
+      input {
+        padding: 5px;
+      }
+      response {
+        padding: 5px;
+      }
+      responsebox {
+        padding: 2px;
+
+      }
+    </style>
+
+    <script src="tee_plugin.js"></script>
+    <script src="tee_crypto.js"></script>
+    <script src="tee_eventhandler.js"></script>
+    <script src="tee_messaging.js"></script>
+  </head>
+  <body>
+
+    <header>
+      <p>Logo Here or something</p>
+    </header>
+
+    <nav>
+      <button id='connect-button'>Connect</button>
+      <button id='mode-select-decrypt'>Decrypt mode</button>
+      <button id='mode-select-test'>Test mode</button>
+      <button id='mode-select-encrypt'>Encrypt mode</button>
+      <button id='mode-select-addkey'>Add key mode</button>
+    </nav>
+    <section id='mode-specific-msg'></section>
+    <section id='input'>
+      <p>Input area</p>
+      <input id='mode-specific-input' type='text' />
+      <br>
+      <textarea id='mode-specific-inputbox' cols="80" rows="10"></textarea>
+      <button id='send-message-button'>Send</button>
+      <hr>
+    </section>
+    <section id='response'>
+      <p>Response area</p>
+      <textarea id='responsebox' cols="80" rows="10" readonly></textarea>
+    </section>
+    <section id='mode-specific-output'>
+      <p>Output area</p>
+      <textarea id='mode-specific-outputbox' cols="80" rows="10" readonly></textarea>
+    </section>
+  </body>
+</html>
