@@ -12,7 +12,7 @@ LOCAL_SRC_FILES := storage_test.c \
 		../../emulator/manager/ext_storage_stream_api_posix.c \
 		../../emulator/common/tee_list.c
 
-LOCAL_CFLAGS :=  -rdynamic -DANDROID -DOT_LOGGING
+LOCAL_CFLAGS :=  -rdynamic -DANDROID -DOT_LOGGING -g -O0
 
 LOCAL_SHARED_LIBRARIES := libc libdl libInternalApi
 
