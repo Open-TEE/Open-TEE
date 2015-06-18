@@ -15,7 +15,7 @@ DynamicLibrary {
     cpp.includePaths: ["../include"]
 
     destinationDirectory: './TAs'
-    cpp.defines: ["TA_PLUGIN"]
+    cpp.defines: ["TA_PLUGIN","_FORTIFY_SOURCE=2"]
 
     files: ["ta_conn_test_app.c", "../include/tee_ta_properties.h"]
 }
