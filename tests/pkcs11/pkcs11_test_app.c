@@ -185,9 +185,9 @@ static void encrypt_and_decrypt(CK_SESSION_HANDLE session,
 				CK_MECHANISM *mechanism)
 {
 	CK_BYTE_PTR msg, expected_cipher;
-	CK_ULONG msg_len = 0, expected_cipher_len = 0;
+	CK_ULONG msg_len = 0, expected_cipher_len = 0, cipher_len = 0, decrypted_len = 0;
 	CK_OBJECT_HANDLE encrypt_key, decrypt_key;
-	char *mech_type;
+	char *mech_type, *cipher, *decrypted;
 	CK_RV ret;
 
 	/* Signature bufffer */
@@ -214,10 +214,10 @@ static void encrypt_and_decrypt(CK_SESSION_HANDLE session,
 		return;
 	}
 
-	CK_ULONG cipher_len = expected_cipher_len;
-	char *cipher = calloc(1, expected_cipher_len);
-	CK_ULONG decrypted_len = msg_len;
-	char *decrypted = calloc(1, decrypted_len);
+	cipher_len = expected_cipher_len;
+	cipher = calloc(1, expected_cipher_len);
+	decrypted_len = msg_len;
+	decrypted = calloc(1, decrypted_len);
 
 	if (cipher == NULL || decrypted == NULL) {
 		PRI_FAIL("%s : Out of memory", mech_type)
@@ -653,6 +653,7 @@ static void get_attr_value(CK_SESSION_HANDLE session)
 	CK_BBOOL ck_true = CK_TRUE;
 	CK_RV ret;
 
+	/* get_attr_aes_temp_obj object attrs */
 	CK_ATTRIBUTE attrs[7] = {
 		{CKA_CLASS, &obj_class, sizeof(obj_class)},
 		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
@@ -663,6 +664,24 @@ static void get_attr_value(CK_SESSION_HANDLE session)
 		{CKA_LABEL, label, label_len}
 	};
 
+	/* Get label size */
+	CK_ATTRIBUTE get_label_size_template = {CKA_LABEL, NULL_PTR, 0};
+
+	/* Get label */
+	CK_UTF8CHAR obj_label[20] = {0};
+	CK_ATTRIBUTE get_label_template = {CKA_LABEL, &obj_label, 20};
+
+	/* Invalid size */
+	CK_KEY_TYPE obj_keyType;
+	CK_UTF8CHAR obj_short_label[2];
+	CK_ATTRIBUTE get_label_too_small_template[2] = {
+		{CKA_KEY_TYPE, &obj_keyType, sizeof(obj_keyType)},
+		{CKA_LABEL, &obj_short_label, 2}
+	};
+
+	/* Invalid attribute */
+	CK_ATTRIBUTE get_invalid_attr = {CKA_SIGN, NULL_PTR, 0};
+
 	ret = func_list->C_CreateObject(session, attrs, 7, &get_attr_aes_temp_obj);
 	if (ret != CKR_OK) {
 		PRI_FAIL("Failed to create object: %lu : 0x%x", ret, (uint32_t)ret)
@@ -670,7 +689,6 @@ static void get_attr_value(CK_SESSION_HANDLE session)
 	}
 
 	/* Get label size */
-	CK_ATTRIBUTE get_label_size_template = {CKA_LABEL, NULL_PTR, 0};
 	ret = func_list->C_GetAttributeValue(session, get_attr_aes_temp_obj, &get_label_size_template, 1);
 	if (ret != CKR_OK) {
 		PRI_FAIL("failed to get label size %lu : 0x%x", ret, (uint32_t)ret);
@@ -683,8 +701,6 @@ static void get_attr_value(CK_SESSION_HANDLE session)
 	}
 
 	/* Get label */
-	CK_UTF8CHAR obj_label[20] = {0};
-	CK_ATTRIBUTE get_label_template = {CKA_LABEL, &obj_label, 20};
 	ret = func_list->C_GetAttributeValue(session, get_attr_aes_temp_obj, &get_label_template, 1);
 	if (ret != CKR_OK) {
 		PRI_FAIL("failed to get label %lu : 0x%x", ret, (uint32_t)ret);
@@ -702,12 +718,6 @@ static void get_attr_value(CK_SESSION_HANDLE session)
 	}
 
 	/* Invalid size */
-	CK_KEY_TYPE obj_keyType;
-	CK_UTF8CHAR obj_short_label[2];
-	CK_ATTRIBUTE get_label_too_small_template[2] = {
-		{CKA_KEY_TYPE, &obj_keyType, sizeof(obj_keyType)},
-		{CKA_LABEL, &obj_short_label, 2}
-	};
 	ret = func_list->C_GetAttributeValue(session, get_attr_aes_temp_obj, get_label_too_small_template, 2);
 	if (ret != CKR_BUFFER_TOO_SMALL) {
 		PRI_FAIL("failed to get short label %lu : 0x%x", ret, (uint32_t)ret);
@@ -725,7 +735,6 @@ static void get_attr_value(CK_SESSION_HANDLE session)
 	}
 
 	/* Invalid attribute */
-	CK_ATTRIBUTE get_invalid_attr = {CKA_SIGN, NULL_PTR, 0};
 	ret = func_list->C_GetAttributeValue(session, get_attr_aes_temp_obj, &get_invalid_attr, 1);
 	if (ret != CKR_ATTRIBUTE_TYPE_INVALID) {
 		PRI_FAIL("failed to get invalid attribute %lu : 0x%x", ret, (uint32_t)ret);
@@ -831,6 +840,37 @@ static void find_objects(CK_SESSION_HANDLE session)
 	CK_OBJECT_HANDLE *hObject;
 	CK_ULONG ulObjectCount;
 
+	/* Get AES key object */
+	CK_KEY_TYPE keyType = CKK_AES;
+	CK_OBJECT_CLASS obj_class = CKO_SECRET_KEY;
+	CK_ATTRIBUTE aes_object[2] = {
+		{CKA_CLASS, &obj_class, sizeof(obj_class)},
+		{CKA_KEY_TYPE, &keyType, sizeof(keyType)}
+	};
+
+	/* find object that have two common attributes */
+	CK_MECHANISM_TYPE allow_mech = CKM_SHA1_RSA_PKCS;
+	CK_ATTRIBUTE allow_object[1] = {
+		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
+	};
+
+	/* find object that have does not exist */
+	CK_BBOOL temp; /* Not neede */
+	CK_ATTRIBUTE not_existing_attribute[1] = {
+		{CKA_OTP_LENGTH, &temp, sizeof(temp)}
+	};
+
+	/* Find aes key: KEY TYPE, CKA_CLASS, CKA_ID */
+	char *aes_id = "aes_id";
+	CK_ATTRIBUTE aes_id_attr[3] = {
+		{CKA_CLASS, &obj_class, sizeof(obj_class)},
+		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
+		{CKA_ID, &aes_id, sizeof(aes_id)}
+	};
+
+
+
+
 	/* Find all objects
 	 * Note: This test result are not checked, because it depends our SS stated */
 	if (find_object(session, &hObject, &ulObjectCount, NULL_PTR, 0))
@@ -851,12 +891,6 @@ static void find_objects(CK_SESSION_HANDLE session)
 
 
 	/* Get AES key object */
-	CK_KEY_TYPE keyType = CKK_AES;
-	CK_OBJECT_CLASS obj_class = CKO_SECRET_KEY;
-	CK_ATTRIBUTE aes_object[2] = {
-		{CKA_CLASS, &obj_class, sizeof(obj_class)},
-		{CKA_KEY_TYPE, &keyType, sizeof(keyType)}
-	};
 	if (find_object(session, &hObject, &ulObjectCount, aes_object, 2))
 		return;
 	else
@@ -871,11 +905,6 @@ static void find_objects(CK_SESSION_HANDLE session)
 
 
 	/* find object that have two common attributes */
-	CK_MECHANISM_TYPE allow_mech = CKM_SHA1_RSA_PKCS;
-	CK_ATTRIBUTE allow_object[1] = {
-		{CKA_ALLOWED_MECHANISMS, &allow_mech, sizeof(allow_mech)}
-	};
-
 	if (find_object(session, &hObject, &ulObjectCount, allow_object, 1))
 		return;
 	else
@@ -890,11 +919,6 @@ static void find_objects(CK_SESSION_HANDLE session)
 
 
 	/* find object that have does not exist */
-	CK_BBOOL temp; /* Not neede */
-	CK_ATTRIBUTE not_existing_attribute[1] = {
-		{CKA_OTP_LENGTH, &temp, sizeof(temp)}
-	};
-
 	if (find_object(session, &hObject, &ulObjectCount, not_existing_attribute, 1))
 		return;
 
@@ -903,16 +927,6 @@ static void find_objects(CK_SESSION_HANDLE session)
 
 
 	/* Find aes key: KEY TYPE, CKA_CLASS, CKA_ID */
-	keyType = CKK_AES;
-	obj_class = CKO_SECRET_KEY;
-	char *aes_id = "aes_id";
-
-	CK_ATTRIBUTE aes_id_attr[3] = {
-		{CKA_CLASS, &obj_class, sizeof(obj_class)},
-		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
-		{CKA_ID, &aes_id, sizeof(aes_id)}
-	};
-
 	if (find_object(session, &hObject, &ulObjectCount, aes_id_attr, 3))
 		return;
 	else
@@ -938,7 +952,6 @@ static void aes_test_update(CK_SESSION_HANDLE session)
 	/* Random data */
 	CK_ULONG random_data_len = update_call_count * SIZE_OF_VEC(aes_key);
 	uint8_t random_data[random_data_len];
-	get_random_data(random_data, random_data_len);
 
 	/* Cipher */
 	uint8_t cipher[random_data_len];
@@ -947,6 +960,8 @@ static void aes_test_update(CK_SESSION_HANDLE session)
 	/* Decrypt stuff */
 	uint8_t decrypted[random_data_len];
 	CK_ULONG totol_decrypted_len = 0;
+
+	get_random_data(random_data, random_data_len);
 
 	ret = func_list->C_EncryptInit(session, &mechanism, aes_secret_obj);
 	if (ret != CKR_OK) {
@@ -1027,16 +1042,21 @@ static void aes_test_update(CK_SESSION_HANDLE session)
 static void create_objects(CK_SESSION_HANDLE session)
 {
 	CK_BBOOL ck_true = CK_TRUE;
-	CK_OBJECT_CLASS obj_class = CKO_SECRET_KEY;
-	CK_KEY_TYPE keyType = CKK_AES;
+	CK_OBJECT_CLASS obj_class_secret = CKO_SECRET_KEY,
+			obj_class_private = CKO_PRIVATE_KEY, obj_class_public = CKO_PUBLIC_KEY;;
+	CK_KEY_TYPE keyType_aes = CKK_AES, keyType_rsa = CKK_RSA,
+			keyType_gen_secret = CKK_GENERIC_SECRET;;
 	char *aes_id = "aes_id";
 	CK_RV ret;
+	CK_MECHANISM_TYPE hmac_allow_mech = CKM_SHA256_HMAC,
+			hmac_allow_mech_general = CKM_SHA256_HMAC_GENERAL,
+			rsa_allow_mech[2] = {CKM_SHA1_RSA_PKCS, CKM_RSA_PKCS},
+			aes_allow_mech = CKM_AES_CBC;
 
 	/* AES key */
-	CK_MECHANISM_TYPE aes_allow_mech = CKM_AES_CBC;
 	CK_ATTRIBUTE aes_attrs[7] = {
-		{CKA_CLASS, &obj_class, sizeof(obj_class)},
-		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
+		{CKA_CLASS, &obj_class_secret, sizeof(obj_class_secret)},
+		{CKA_KEY_TYPE, &keyType_aes, sizeof(keyType_aes)},
 		{CKA_VALUE, &aes_key, SIZE_OF_VEC(aes_key)},
 		{CKA_ENCRYPT, &ck_true, sizeof(ck_true)},
 		{CKA_DECRYPT, &ck_true, sizeof(ck_true)},
@@ -1044,19 +1064,10 @@ static void create_objects(CK_SESSION_HANDLE session)
 		{CKA_ID, &aes_id, sizeof(aes_id)}
 	};
 
-	ret = func_list->C_CreateObject(session, aes_attrs, 7, &aes_secret_obj);
-	if (ret != CKR_OK) {
-		PRI_FAIL("Failed to create AES object: %lu : 0x%x", ret, (uint32_t)ret);
-		return;
-	}
-
 	/* RSA private key object */
-	obj_class = CKO_PRIVATE_KEY;
-	keyType = CKK_RSA;
-	CK_MECHANISM_TYPE rsa_allow_mech[2] = {CKM_SHA1_RSA_PKCS, CKM_RSA_PKCS};
 	CK_ATTRIBUTE pri_attrs[8] = {
-		{CKA_CLASS, &obj_class, sizeof(obj_class)},
-		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
+		{CKA_CLASS, &obj_class_private, sizeof(obj_class_private)},
+		{CKA_KEY_TYPE, &keyType_rsa, sizeof(keyType_rsa)},
 		{CKA_MODULUS, &modulus, SIZE_OF_VEC(modulus)},
 		{CKA_PRIVATE_EXPONENT, &private_exp, SIZE_OF_VEC(private_exp)},
 		{CKA_PUBLIC_EXPONENT, &public_exp, SIZE_OF_VEC(public_exp)},
@@ -1065,6 +1076,46 @@ static void create_objects(CK_SESSION_HANDLE session)
 		{CKA_ALLOWED_MECHANISMS, &rsa_allow_mech, sizeof(rsa_allow_mech)}
 	};
 
+	/* RSA Public key object */
+	CK_ATTRIBUTE pub_attrs[7] = {
+		{CKA_CLASS, &obj_class_public, sizeof(obj_class_public)},
+		{CKA_KEY_TYPE, &keyType_rsa, sizeof(keyType_rsa)},
+		{CKA_MODULUS, &modulus, SIZE_OF_VEC(modulus)},
+		{CKA_PUBLIC_EXPONENT, &public_exp, SIZE_OF_VEC(public_exp)},
+		{CKA_VERIFY, &ck_true, sizeof(ck_true)},
+		{CKA_ENCRYPT, &ck_true, sizeof(ck_true)},
+		{CKA_ALLOWED_MECHANISMS, &rsa_allow_mech, sizeof(rsa_allow_mech)}
+	};
+
+	/* HMACsha256 */
+	CK_ATTRIBUTE hmac256[6] = {
+		{CKA_CLASS, &obj_class_secret, sizeof(obj_class_secret)},
+		{CKA_KEY_TYPE, &keyType_gen_secret, sizeof(keyType_gen_secret)},
+		{CKA_VALUE, &hmacsha256key, SIZE_OF_VEC(hmacsha256key)},
+		{CKA_SIGN, &ck_true, sizeof(ck_true)},
+		{CKA_VERIFY, &ck_true, sizeof(ck_true)},
+		{CKA_ALLOWED_MECHANISMS, &hmac_allow_mech, sizeof(hmac_allow_mech)}
+	};
+
+	/* HMACsha256_trunc */
+	CK_ATTRIBUTE hmac256_trunc[6] = {
+		{CKA_CLASS, &obj_class_secret, sizeof(obj_class_secret)},
+		{CKA_KEY_TYPE, &keyType_gen_secret, sizeof(keyType_gen_secret)},
+		{CKA_VALUE, &hmacsha256key_trunc, SIZE_OF_VEC(hmacsha256key_trunc)},
+		{CKA_SIGN, &ck_true, sizeof(ck_true)},
+		{CKA_VERIFY, &ck_true, sizeof(ck_true)},
+		{CKA_ALLOWED_MECHANISMS, &hmac_allow_mech_general, sizeof(hmac_allow_mech_general)}
+	};
+
+
+	/* AES key */
+	ret = func_list->C_CreateObject(session, aes_attrs, 7, &aes_secret_obj);
+	if (ret != CKR_OK) {
+		PRI_FAIL("Failed to create AES object: %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+	/* RSA private key object */
 	ret = func_list->C_CreateObject(session, pri_attrs, 8, &rsa_private_obj);
 	if (ret != CKR_OK) {
 		PRI_FAIL("Failed to create RSA private object: %lu : 0x%x", ret, (uint32_t)ret);
@@ -1079,17 +1130,6 @@ static void create_objects(CK_SESSION_HANDLE session)
 	}
 
 	/* RSA Public key object */
-	obj_class = CKO_PUBLIC_KEY;
-	CK_ATTRIBUTE pub_attrs[7] = {
-		{CKA_CLASS, &obj_class, sizeof(obj_class)},
-		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
-		{CKA_MODULUS, &modulus, SIZE_OF_VEC(modulus)},
-		{CKA_PUBLIC_EXPONENT, &public_exp, SIZE_OF_VEC(public_exp)},
-		{CKA_VERIFY, &ck_true, sizeof(ck_true)},
-		{CKA_ENCRYPT, &ck_true, sizeof(ck_true)},
-		{CKA_ALLOWED_MECHANISMS, &rsa_allow_mech, sizeof(rsa_allow_mech)}
-	};
-
 	ret = func_list->C_CreateObject(session, pub_attrs, 7, &rsa_public_obj);
 	if (ret != CKR_OK) {
 		PRI_FAIL("Failed to create RSA public object: %lu : 0x%x", ret, (uint32_t)ret);
@@ -1097,18 +1137,6 @@ static void create_objects(CK_SESSION_HANDLE session)
 	}
 
 	/* HMACsha256 */
-	obj_class = CKO_SECRET_KEY;
-	CK_MECHANISM_TYPE hmac_allow_mech = CKM_SHA256_HMAC;
-	keyType = CKK_GENERIC_SECRET;
-	CK_ATTRIBUTE hmac256[6] = {
-		{CKA_CLASS, &obj_class, sizeof(obj_class)},
-		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
-		{CKA_VALUE, &hmacsha256key, SIZE_OF_VEC(hmacsha256key)},
-		{CKA_SIGN, &ck_true, sizeof(ck_true)},
-		{CKA_VERIFY, &ck_true, sizeof(ck_true)},
-		{CKA_ALLOWED_MECHANISMS, &hmac_allow_mech, sizeof(hmac_allow_mech)}
-	};
-
 	ret = func_list->C_CreateObject(session, hmac256, 6, &hmac_256_obj);
 	if (ret == CKR_OK) {
 		PRI_FAIL("Should fail, because session is not logged in");
@@ -1128,18 +1156,6 @@ static void create_objects(CK_SESSION_HANDLE session)
 	}
 
 	/* HMACsha256_trunc */
-	obj_class = CKO_SECRET_KEY;
-	hmac_allow_mech = CKM_SHA256_HMAC_GENERAL;
-	keyType = CKK_GENERIC_SECRET;
-	CK_ATTRIBUTE hmac256_trunc[6] = {
-		{CKA_CLASS, &obj_class, sizeof(obj_class)},
-		{CKA_KEY_TYPE, &keyType, sizeof(keyType)},
-		{CKA_VALUE, &hmacsha256key_trunc, SIZE_OF_VEC(hmacsha256key_trunc)},
-		{CKA_SIGN, &ck_true, sizeof(ck_true)},
-		{CKA_VERIFY, &ck_true, sizeof(ck_true)},
-		{CKA_ALLOWED_MECHANISMS, &hmac_allow_mech, sizeof(hmac_allow_mech)}
-	};
-
 	ret = func_list->C_CreateObject(session, hmac256_trunc, 6, &hmac_256_trunc_obj);
 	if (ret != CKR_OK) {
 		PRI_FAIL("Failed to create HMACsha256_trunc object: %lu : 0x%x", ret, (uint32_t)ret);
@@ -1187,25 +1203,17 @@ static void general_key_attrs_test(CK_SESSION_HANDLE session)
 
 static void set_obj_attr(CK_SESSION_HANDLE session)
 {
+	CK_BBOOL ck_bbool_always_sens = 0, ck_bbool_never_extr = 0, ck_bbool_local = 0,
+			ck_bbool_sens = 0, ck_bbool_extr = 0, ck_bool_enc = 0,
+			ck_bbool_dec = 0, ck_true = CK_TRUE, ck_false = CK_FALSE;
 	CK_KEY_TYPE keyType = CKK_DES;
-	CK_BBOOL ck_true = CK_TRUE;
-	CK_BBOOL ck_false = CK_FALSE;
 	CK_RV ret;
 
-	/* Setting AES global key */
-
-	/* Setting new attributes */
+	/* Setting AES global key: Setting new attributes */
 	CK_ATTRIBUTE set_attrs[2] = {
 		{CKA_SENSITIVE, &ck_false, sizeof(CK_BBOOL)},
 		{CKA_EXTRACTABLE, &ck_false, sizeof(CK_BBOOL)}
 	};
-
-	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, set_attrs, 2);
-	if (ret != CKR_OK) {
-		PRI_FAIL("Failed to set new attrs %lu : 0x%x", ret, (uint32_t)ret);
-		return;
-	}
-
 
 	/* Modify existing */
 	CK_ATTRIBUTE mod_attrs[2] = {
@@ -1213,32 +1221,13 @@ static void set_obj_attr(CK_SESSION_HANDLE session)
 		{CKA_DECRYPT, &ck_false, sizeof(CK_BBOOL)}
 	};
 
-	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, mod_attrs, 2);
-	if (ret != CKR_OK) {
-		PRI_FAIL("Failed to modify existing attrs %lu : 0x%x", ret, (uint32_t)ret);
-		return;
-	}
-
-
 	/* Trying to set illegal attr */
 	CK_ATTRIBUTE ill_attrs[2] = {
 		{CKA_ENCRYPT, &ck_true, sizeof(CK_BBOOL)},
 		{CKA_KEY_TYPE, &keyType, sizeof(CK_KEY_TYPE)}
 	};
 
-	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, ill_attrs, 2);
-	if (ret == CKR_OK) {
-		PRI_FAIL("Failed this call should have fail %lu : 0x%x", ret, (uint32_t)ret);
-		return;
-	}
-
-
-	/* Confirm result */
-	CK_BBOOL ck_bbool_always_sens = 0, ck_bbool_never_extr = 0, ck_bbool_local = 0,
-			ck_bbool_sens = 0, ck_bbool_extr = 0, ck_bool_enc = 0,
-			ck_bbool_dec = 0;
-
-	/* Make sure that ALWAYS SENSITIVE and extractable is true */
+	/*  Confirm result: Make sure that ALWAYS SENSITIVE and extractable is true */
 	CK_ATTRIBUTE confirm_attrs[8] = {
 		{CKA_ALWAYS_SENSITIVE, &ck_bbool_always_sens, sizeof(CK_BBOOL)},
 		{CKA_NEVER_EXTRACTABLE, &ck_bbool_never_extr, sizeof(CK_BBOOL)},
@@ -1250,6 +1239,33 @@ static void set_obj_attr(CK_SESSION_HANDLE session)
 		{CKA_KEY_TYPE, &keyType, sizeof(CK_KEY_TYPE)},
 	};
 
+
+
+	/* Setting AES global key */
+	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, set_attrs, 2);
+	if (ret != CKR_OK) {
+		PRI_FAIL("Failed to set new attrs %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+
+	/* Modify existing */
+	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, mod_attrs, 2);
+	if (ret != CKR_OK) {
+		PRI_FAIL("Failed to modify existing attrs %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+
+	/* Trying to set illegal attr */
+	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, ill_attrs, 2);
+	if (ret == CKR_OK) {
+		PRI_FAIL("Failed this call should have fail %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+
+	/*  Confirm result: Make sure that ALWAYS SENSITIVE and extractable is true */
 	ret = func_list->C_GetAttributeValue(session, aes_secret_obj, confirm_attrs, 8);
 	if (ret != CKR_OK) {
 		PRI_FAIL("Failed to get confirm attrs %lu : 0x%x", ret, (uint32_t)ret);
@@ -1302,8 +1318,9 @@ static void set_obj_attr(CK_SESSION_HANDLE session)
 
 static void set_obj_attr_seccond(CK_SESSION_HANDLE session)
 {
-	CK_BBOOL ck_true = CK_TRUE;
-	CK_BBOOL ck_false = CK_FALSE;
+	CK_BBOOL ck_bbool_always_sens = 0, ck_bbool_never_extr = 0,
+			ck_bbool_sens = 0, ck_bbool_extr = 0,
+			ck_true = CK_TRUE, ck_false = CK_FALSE;
 	CK_RV ret;
 
 	/* Setting AES global key. Point of this test is to set
@@ -1315,18 +1332,10 @@ static void set_obj_attr_seccond(CK_SESSION_HANDLE session)
 		{CKA_EXTRACTABLE, &ck_false, sizeof(CK_BBOOL)}
 	};
 
-	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, set_attrs, 2);
-	if (ret != CKR_OK) {
-		PRI_FAIL("Failed to set new attrs %lu : 0x%x", ret, (uint32_t)ret);
-		return;
-	}
+	/*  */
 
 
-	/* Confirm result */
-	CK_BBOOL ck_bbool_always_sens = 0, ck_bbool_never_extr = 0,
-			ck_bbool_sens = 0, ck_bbool_extr = 0;
-
-	/* Make sure that ALWAYS SENSITIVE and extractable is true */
+	/* Confirm result: Make sure that ALWAYS SENSITIVE and extractable is true */
 	CK_ATTRIBUTE confirm_attrs[8] = {
 		{CKA_ALWAYS_SENSITIVE, &ck_bbool_always_sens, sizeof(CK_BBOOL)},
 		{CKA_NEVER_EXTRACTABLE, &ck_bbool_never_extr, sizeof(CK_BBOOL)},
@@ -1334,6 +1343,14 @@ static void set_obj_attr_seccond(CK_SESSION_HANDLE session)
 		{CKA_EXTRACTABLE, &ck_bbool_extr, sizeof(CK_BBOOL)},
 	};
 
+	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, set_attrs, 2);
+	if (ret != CKR_OK) {
+		PRI_FAIL("Failed to set new attrs %lu : 0x%x", ret, (uint32_t)ret);
+		return;
+	}
+
+
+	/* Confirm result: Make sure that ALWAYS SENSITIVE and extractable is true */
 	ret = func_list->C_GetAttributeValue(session, aes_secret_obj, confirm_attrs, 8);
 	if (ret != CKR_OK) {
 		PRI_FAIL("Failed to get confirm attrs %lu : 0x%x", ret, (uint32_t)ret);
@@ -1372,20 +1389,19 @@ static void crypto_using_not_allowed_key(CK_SESSION_HANDLE session)
 	CK_BBOOL ck_false = CK_FALSE;
 	CK_RV ret;
 
+	/* Set key allow to enc/dec: Modify existing */
+	CK_ATTRIBUTE mod_attrs[2] = {
+		{CKA_ENCRYPT, &ck_true, sizeof(CK_BBOOL)},
+		{CKA_DECRYPT, &ck_false, sizeof(CK_BBOOL)}
+	};
+
 	ret = func_list->C_EncryptInit(session, &mechanism, aes_secret_obj);
 	if (ret == CKR_OK) {
 		PRI_FAIL("Key should not be able to use for encrypt");
 		return;
 	}
 
-	/* Set key allow to enc/dec */
-
-	/* Modify existing */
-	CK_ATTRIBUTE mod_attrs[2] = {
-		{CKA_ENCRYPT, &ck_true, sizeof(CK_BBOOL)},
-		{CKA_DECRYPT, &ck_false, sizeof(CK_BBOOL)}
-	};
-
+	/* Set key allow to enc/dec: Modify existing */
 	ret = func_list->C_SetAttributeValue(session, aes_secret_obj, mod_attrs, 2);
 	if (ret != CKR_OK) {
 		PRI_FAIL("Failed to modify existing attrs %lu : 0x%x", ret, (uint32_t)ret);
