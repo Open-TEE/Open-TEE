@@ -73,6 +73,7 @@ CK_FUNCTION_LIST g_function_list = {
 	.C_DigestInit  =			C_DigestInit,
 	.C_Digest  =				C_Digest,
 	.C_DigestUpdate  =			C_DigestUpdate,
+	.C_DigestKey  =				C_DigestKey,
 	.C_DigestFinal  =			C_DigestFinal,
 	.C_SignInit  =				C_SignInit,
 	.C_Sign  =				C_Sign,
