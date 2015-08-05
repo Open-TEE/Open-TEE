@@ -599,7 +599,11 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	}
 
 	memset(&sock_addr, 0, sizeof(struct sockaddr_un));
-	strncpy(sock_addr.sun_path, WELL_KNOWN_PUBLIC_SOCK_PATH, sizeof(sock_addr.sun_path) - 1);
+	/* Try to get socket path from environment variable, otherwise fallback to hardcoded one. */
+	char *known_socket_path = getenv("OPENTEE_SOCKET_FILE_PATH");
+	if (known_socket_path == NULL)
+		known_socket_path = WELL_KNOWN_PUBLIC_SOCK_PATH;
+	strncpy(sock_addr.sun_path, known_socket_path, sizeof(sock_addr.sun_path) - 1);
 	sock_addr.sun_family = AF_UNIX;
 
 	if (connect(ctx_internal.sockfd,
