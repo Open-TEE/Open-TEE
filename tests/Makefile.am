@@ -9,6 +9,9 @@ AM_CFLAGS = -Wall -Wextra -Werror
 # Test executables
 check_PROGRAMS =
 
+# Shared libraries
+lib_LTLIBRARIES  =
+
 # Tests run during 'make check'
 TESTS = $(check_PROGRAMS)
 

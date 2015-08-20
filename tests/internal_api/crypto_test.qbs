@@ -2,16 +2,16 @@ import qbs
 
 CppApplication {
     name: "crypto_test"
-    type: "application"
+    type: "dynamiclibrary"
+
+    Depends { name: "InternalApi" }
 
     destinationDirectory: '.'
 
-    cpp.debugInformation: true
-
     cpp.defines: ["OT_LOGGING"]
 
-    Depends { name: "InternalApi" }
-    Depends { name: "OpenSSL" }
-
-    files: ["crypto_test.c"]
+    files: ["crypto_test.c",
+            "crypto_test.h",
+            "../../libtee/include/tee_logging.h"
+    ]
 }

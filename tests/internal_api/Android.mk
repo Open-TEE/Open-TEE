@@ -1,33 +1,26 @@
 LOCAL_PATH := $(call my-dir)
 
 ############################################################
-# Storage tests binary
+# Storage tests library
 ############################################################
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := storage_test
+LOCAL_MODULE := libStorageTest
 LOCAL_MODULE_TAGS := optional
-LOCAL_SRC_FILES := storage_test.c \
-		../../emulator/manager/opentee_manager_storage_api.c \
-		../../emulator/manager/ext_storage_stream_api_posix.c \
-		../../emulator/common/tee_list.c
-
+LOCAL_SRC_FILES := storage_test.c
 LOCAL_CFLAGS :=  -rdynamic -DANDROID -DOT_LOGGING -g -O0
-
 LOCAL_SHARED_LIBRARIES := libc libdl libInternalApi
-
-include $(BUILD_EXECUTABLE)
+include $(BUILD_SHARED_LIBRARY)
 
 ############################################################
 # Crypto tests
 ############################################################
-#include $(CLEAR_VARS)
+include $(CLEAR_VARS)
 
-#LOCAL_MODULE := crypto_test
-#LOCAL_MODULE_TAGS := optional
-#LOCAL_SRC_FILES := crypto_test.c
-#LOCAL_CFLAGS := -DANDROID -DOT_LOGGING
+LOCAL_MODULE := crypto_test
+LOCAL_MODULE_TAGS := optional
+LOCAL_SRC_FILES := crypto_test.c
+LOCAL_CFLAGS := -DANDROID -DOT_LOGGING
+LOCAL_SHARED_LIBRARIES := libc libdl libInternalApi
+include $(BUILD_SHARED_LIBRARY)
 
-#LOCAL_SHARED_LIBRARIES := libc libdl libInternalApi
-
-#include $(BUILD_EXECUTABLE)
