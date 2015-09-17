@@ -1118,6 +1118,7 @@ void TEEC_RequestCancellation(TEEC_Operation *operation)
 
 	cancel_msg.msg_hdr.msg_name = COM_MSG_NAME_REQUEST_CANCEL;
 	cancel_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
+	cancel_msg.operation_id = ctx_internal.operation_id;
 
 	send_msg(ctx_internal.sockfd, &cancel_msg,
 		 sizeof(struct com_msg_request_cancellation), fd_write_mutex);
