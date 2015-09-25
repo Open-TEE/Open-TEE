@@ -2,7 +2,10 @@
 
 ta_LTLIBRARIES += libta_conn_test.la
 
-libta_conn_test_la_SOURCES = \
+libta_conn_test_la_includes = \
+        include/tee_ta_properties.h
+
+libta_conn_test_la_SOURCES = ${libta_conn_test_la_includes} \
 	ta_conn_test_app/ta_conn_test_app.c
 
 libta_conn_test_la_CFLAGS = ${AM_CFLAGS} \
@@ -10,6 +13,3 @@ libta_conn_test_la_CFLAGS = ${AM_CFLAGS} \
         -iquote $(top_srcdir)/../emulator/include
 
 libta_conn_test_la_LDFLAGS = ${AM_LDFLAGS}
-
-libta_conn_test_la_LIBADD =\
-        ../libtee/libtee.la

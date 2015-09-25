@@ -3,6 +3,7 @@
 ta_LTLIBRARIES += libuser_study.la
 
 libuser_study_la_includes = \
+        include/tee_ta_properties.h \
 	usr_study_ta/usr_study_ta_ctrl.h
 
 libuser_study_la_SOURCES = ${libLauncherApi_la_includes} \
@@ -13,6 +14,3 @@ libuser_study_la_CFLAGS = ${AM_CFLAGS} \
         -iquote $(top_srcdir)/../emulator/include
 
 libuser_study_la_LDFLAGS = ${AM_LDFLAGS}
-
-libuser_study_la_LIBADD =\
-        ../libtee/libtee.la

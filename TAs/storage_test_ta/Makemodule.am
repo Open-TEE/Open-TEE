@@ -2,17 +2,18 @@
 
 ta_LTLIBRARIES += libstorage_test.la
 
-libstorage_test_la_SOURCES = \
+libstorage_test_la_includes = \
+	include/tee_ta_properties.h
+
+libstorage_test_la_SOURCES = $(libstorage_test_la_includes) \
 	storage_test_ta/storage_test_ta.c\
 	../tests/internal_api/storage_test.c
 
 libstorage_test_la_CFLAGS = ${AM_CFLAGS} \
+	-DTA_STORAGE_TEST \
 	-iquote $(top_srcdir)/include \
 	-iquote $(top_srcdir)/../emulator/include\
 	-iquote $(top_srcdir)/../emulator/launcher\
 	-iquote $(top_srcdir)/../emulator/internal_api
 
 libstorage_test_la_LDFLAGS = ${AM_LDFLAGS}
-
-libstorage_test_la_LIBADD =\
-        ../libtee/libtee.la
