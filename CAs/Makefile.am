@@ -16,5 +16,4 @@ lib_LTLIBRARIES  =
 include conn_test_app/Makemodule.am
 include example_sha1_ca/Makemodule.am
 include storage_test_ca/Makemodule.am
-include test_session/Makemodule.am
 include usr_study_ca/Makemodule.am
