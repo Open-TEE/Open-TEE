@@ -10,6 +10,10 @@ AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.
 AC_PROG_CC
+
+# Don't build static libraries of TAs
+AC_ENABLE_SHARED(yes)
+AC_ENABLE_STATIC(no)
 LT_INIT
 
 # Created configuration files
