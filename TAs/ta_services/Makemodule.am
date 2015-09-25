@@ -1,6 +1,6 @@
 # example TA
 
-lib_LTLIBRARIES += libta_services.la
+ta_LTLIBRARIES += libta_services.la
 
 libta_services_la_SOURCES = \
 	ta_services/ta_services.c

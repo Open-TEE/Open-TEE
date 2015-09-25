@@ -1,6 +1,6 @@
 # example TA
 
-lib_LTLIBRARIES += libta_conn_test.la
+ta_LTLIBRARIES += libta_conn_test.la
 
 libta_conn_test_la_SOURCES = \
 	ta_conn_test_app/ta_conn_test_app.c

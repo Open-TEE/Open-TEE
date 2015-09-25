@@ -1,6 +1,6 @@
 # example digest TA
 
-lib_LTLIBRARIES += libexample_digest.la
+ta_LTLIBRARIES += libexample_digest.la
 
 libexample_digest_la_SOURCES = \
 	example_digest_ta/example_digest_ta.c

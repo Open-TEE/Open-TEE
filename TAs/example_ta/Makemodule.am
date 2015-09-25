@@ -1,6 +1,6 @@
 # example TA
 
-lib_LTLIBRARIES += libexample_ta.la
+ta_LTLIBRARIES += libexample_ta.la
 
 libexample_ta_la_SOURCES = \
 	example_ta/example_ta.c

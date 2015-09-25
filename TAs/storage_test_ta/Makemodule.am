@@ -1,6 +1,6 @@
 # storate test TA
 
-lib_LTLIBRARIES += libstorage_test.la
+ta_LTLIBRARIES += libstorage_test.la
 
 libstorage_test_la_SOURCES = \
 	storage_test_ta/storage_test_ta.c\

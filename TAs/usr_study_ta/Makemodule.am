@@ -1,6 +1,6 @@
 # user study TA
 
-lib_LTLIBRARIES += libuser_study.la
+ta_LTLIBRARIES += libuser_study.la
 
 libuser_study_la_includes = \
 	usr_study_ta/usr_study_ta_ctrl.h
