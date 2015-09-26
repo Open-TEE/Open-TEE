@@ -12,6 +12,9 @@ lib_LTLIBRARIES  =
 # Public header files
 include_HEADERS =
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libtee.pc
+
 # Include module-specific Makefiles
 include src/Makemodule.am
 include include/Makemodule.am

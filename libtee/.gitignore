@@ -47,3 +47,5 @@ stamp-h1
 .libs
 
 *.qbs.user
+
+libtee.pc

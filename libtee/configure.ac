@@ -20,6 +20,6 @@ AC_CHECK_LIB([z], [crc32])
 AC_CHECK_LIB([rt], [shm_open])
 
 # Created configuration files
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile libtee.pc])
 
 AC_OUTPUT
