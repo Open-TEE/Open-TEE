@@ -923,7 +923,7 @@ static uint32_t read_key_and_do_crypto()
 	}
 
 	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)objID, objID_len,
-					 (uint32_t)NULL, rsa_keypair, NULL, 0,
+					 0, rsa_keypair, NULL, 0,
 					 (TEE_ObjectHandle *)NULL);
 	if (ret != TEE_SUCCESS) {
 		PRI_FAIL("Create persisten object failed : 0x%x", ret);

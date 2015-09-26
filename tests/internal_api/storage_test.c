@@ -102,7 +102,7 @@ static uint32_t popu_rsa_pub_key()
 	params = (TEE_Attribute *)TEE_Malloc(param_count * sizeof(TEE_Attribute), 0);
 	if (params == NULL) {
 		PRI_FAIL("Out of memory");
-		return;
+		return fn_ret;
 	}
 	params[0].content.ref.buffer = TEE_Malloc(KEY_IN_BYTES(key_size), 0);
 	params[1].content.ref.buffer = TEE_Malloc(KEY_IN_BYTES(key_size), 0);
@@ -451,13 +451,12 @@ static uint32_t multiple_writes()
 
 	TEE_Result ret;
 	TEE_ObjectHandle key = (TEE_ObjectHandle)NULL, object = (TEE_ObjectHandle)NULL;
-	size_t key_size = 256;
 	char objID[] = "96c5d1b260704de30fedaf67e5b9227613abebe6172a2b4e949d84b8e561e2fb";
 	size_t objID_len = 64;
 	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META | TEE_DATA_FLAG_OVERWRITE |
 			 TEE_DATA_FLAG_ACCESS_READ | TEE_DATA_FLAG_ACCESS_WRITE;
 	char write_data[50] = {0}, read_data[100] = {0};
-	size_t write_data_len = 50, read_data_buf = 100;
+	size_t write_data_len = 50;
 	uint32_t read_bytes = 0, write_count = 3, i = 0, fn_ret = 1; /* Initialized error return */
 	TEE_ObjectInfo info;
 
@@ -571,13 +570,12 @@ static uint32_t persisten_object_write_and_read()
 
 	TEE_Result ret;
 	TEE_ObjectHandle object = (TEE_ObjectHandle)NULL;
-	size_t key_size = 256;
 	char objID[] = "96c5d1b260704de30fedaf67e5b9227613abebff172a2b4e949d84b8e561e2fb";
 	size_t objID_len = 64;
 	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META | TEE_DATA_FLAG_OVERWRITE |
 			 TEE_DATA_FLAG_ACCESS_READ | TEE_DATA_FLAG_ACCESS_WRITE;
 	char write_data[50] = {0}, read_data[100] = {0};
-	size_t write_data_len = 50, read_data_buf = 100;
+	size_t write_data_len = 50;
 	uint32_t read_bytes = 0, write_count = 3, i = 0, fn_ret = 1; /* Initialized error return */
 	TEE_ObjectInfo info;
 
@@ -688,7 +686,7 @@ static uint32_t persisten_object_init_data()
 	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META | TEE_DATA_FLAG_OVERWRITE |
 			 TEE_DATA_FLAG_ACCESS_READ | TEE_DATA_FLAG_ACCESS_WRITE;
 	char write_data[50] = {0}, read_data[100] = {0};
-	size_t write_data_len = 20, read_data_len = 100;
+	size_t write_data_len = 20;
 	uint32_t read_bytes = 0, fn_ret = 1; /* Initialized error return */
 	TEE_ObjectInfo info;
 
