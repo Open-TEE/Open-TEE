@@ -13,7 +13,8 @@ pkcs11_test_CFLAGS = ${AM_CFLAGS} \
 	-iquote $(top_srcdir)/../emulator/include\
 	-I$(top_srcdir)/../libtee_pkcs11/include
 
-pkcs11_test_LDFLAGS = ${AM_LDFLAGS} \
-	-ltee_pkcs11
+pkcs11_test_LDFLAGS = ${AM_LDFLAGS}
 
-pkcs11_test_LDADD = ../emulator/libInternalApi.la
+pkcs11_test_LDADD = \
+	../libtee_pkcs11/libtee_pkcs11.la \
+	../libtee/libtee.la
