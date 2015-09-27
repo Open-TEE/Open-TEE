@@ -26,3 +26,5 @@ libtee_pkcs11_la_CFLAGS = ${AM_CFLAGS} \
 libtee_pkcs11_la_LDFLAGS = ${AM_LDFLAGS} \
 	-version-info 0:0:0
 
+libtee_pkcs11_la_LIBADD = ../libtee/libtee.la
+
