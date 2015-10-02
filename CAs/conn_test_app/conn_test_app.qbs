@@ -14,5 +14,7 @@ CppApplication {
     consoleApplication: true
     destinationDirectory: '.'
 
-    files: ['conn_test_app.c']
+    files: ['conn_test_app.c',
+            'conn_test_ctl.h'
+    ]
 }
