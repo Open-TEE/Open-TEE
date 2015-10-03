@@ -1,0 +1,21 @@
+# libomnishare shared library
+
+lib_LTLIBRARIES += libomnishare.la
+
+libomnishare_la_includes = \
+	include/omnishare.h
+
+# Target specific variables
+libomnishare_la_SOURCES = \
+	src/omnishare.c
+
+libomnishare_la_CFLAGS = ${AM_CFLAGS} \
+	-iquote $(top_srcdir)/include \
+	-iquote $(top_srcdir)/src \
+	-iquote $(top_srcdir)/../libtee/include
+
+
+libomnishare_la_LDFLAGS = ${AM_LDFLAGS} \
+	-version-info 0:0:0
+
+libomnishare_la_LIBADD = ../libtee/libtee.la

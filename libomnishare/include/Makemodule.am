@@ -1,0 +1,4 @@
+# Public header files
+
+include_HEADERS += \
+	include/omnishare.h
