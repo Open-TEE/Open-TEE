@@ -1,0 +1,15 @@
+# OmniShare TA
+
+ta_LTLIBRARIES += libomnishare_ta.la
+
+libomnishare_ta_la_includes = \
+        include/tee_ta_properties.h
+
+libomnishare_ta_la_SOURCES = ${libomnishare_ta_la_includes} \
+	omnishare_ta/omnishare_ta.c \
+
+libomnishare_ta_la_CFLAGS = ${AM_CFLAGS} \
+        -iquote $(top_srcdir)/include \
+        -iquote $(top_srcdir)/../emulator/include
+
+libomnishare_ta_la_LDFLAGS = ${AM_LDFLAGS}
