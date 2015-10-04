@@ -12,6 +12,9 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_CC
 LT_INIT
 
+# Ensure fuse available for omnishare
+PKG_CHECK_MODULES(FUSE, libfuse-dev >= 2.9)
+
 # Created configuration files
 AC_CONFIG_FILES([Makefile])
 

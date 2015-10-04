@@ -4,7 +4,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 # Additional C compiler flags
-AM_CFLAGS = -Wall -Wextra -D _GNU_SOURCE
+AM_CFLAGS = -Wall -Wextra -D_GNU_SOURCE
 
 # Executables
 bin_PROGRAMS =
@@ -16,3 +16,4 @@ lib_LTLIBRARIES  =
 include conn_test_app/Makemodule.am
 include example_sha1_ca/Makemodule.am
 include usr_study_ca/Makemodule.am
+include omnishare_fuse/Makemodule.am
