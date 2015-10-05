@@ -3,7 +3,9 @@
 ta_LTLIBRARIES += libta_conn_test.la
 
 libta_conn_test_la_includes = \
-        include/tee_ta_properties.h \
+	../tests/internal_api/storage_test.h \
+	../tests/internal_api/crypto_test.h \
+	include/tee_ta_properties.h \
 	conn_test_ctl.h \
 	crypto_test.h \
 	storage_test.h
@@ -12,8 +14,12 @@ libta_conn_test_la_SOURCES = ${libta_conn_test_la_includes} \
 	ta_conn_test_app/ta_conn_test_app.c
 
 libta_conn_test_la_CFLAGS = ${AM_CFLAGS} \
-        -iquote $(top_srcdir)/include \
-        -iquote $(top_srcdir)/../emulator/include \
-        -iquote $(top_srcdir)/../tests/internal_api
+	-iquote $(top_srcdir)/include \
+	-iquote $(top_srcdir)/../emulator/include \
+	-iquote $(top_srcdir)/../tests/internal_api
 
 libta_conn_test_la_LDFLAGS = ${AM_LDFLAGS}
+
+libta_conn_test_la_LIBADD = \
+	../tests/libCryptoTest.la \
+	../tests/libStorageTest.la
