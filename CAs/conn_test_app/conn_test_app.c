@@ -257,7 +257,7 @@ static int full_treatment_test()
 		PRI("TEEC_InitializeContext failed: 0x%x", ret);
 		goto end_1;
 	} else {
-		PRIn("initiliazed");
+		PRIn("initialized");
 	}
 
 	/*

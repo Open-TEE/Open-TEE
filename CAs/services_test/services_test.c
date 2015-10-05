@@ -99,7 +99,7 @@ int main()
 		printf("TEEC_InitializeContext failed: 0x%x\n", ret);
 		goto end_1;
 	} else {
-		printf("initiliazed\n");
+		printf("initialized\n");
 	}
 
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_NONE, TEEC_NONE, TEEC_NONE, TEEC_NONE);

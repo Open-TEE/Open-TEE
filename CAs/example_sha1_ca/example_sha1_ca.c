@@ -72,7 +72,7 @@ int main()
 		printf("TEEC_InitializeContext failed: 0x%x\n", ret);
 		goto end_1;
 	} else {
-		printf("initiliazed\n");
+		printf("initialized\n");
 	}
 
 	/* Open session is expecting HASH algorithm */
