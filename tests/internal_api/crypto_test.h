@@ -17,7 +17,7 @@
 #ifndef __CRYPTO_TEST_H__
 #define __CRYPTO_TEST_H__
 
-#include "../include/tee_internal_api.h"
+#include "tee_internal_api.h"
 
 uint32_t crypto_test(uint32_t loop_count);
 
