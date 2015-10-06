@@ -581,6 +581,17 @@ static uint32_t persisten_object_write_and_read()
 
 	TEE_GenerateRandom(write_data, write_data_len);
 
+        ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, objID, objID_len, flags, &object);
+        if (ret == TEE_SUCCESS) {
+                PRI_FAIL("Open session should fail, because object is not existing");
+                goto err;
+	} else if (ret == TEE_ERROR_ITEM_NOT_FOUND) {
+		/* OK */
+	} else {
+		PRI_FAIL("TEE_OpenPersistentObject : 0x%x", ret);
+		goto err;
+	}
+
 	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)objID, objID_len, flags,
 					 (TEE_ObjectHandle)NULL, NULL, 0, &object);
 	if (ret != TEE_SUCCESS) {
@@ -813,6 +824,7 @@ static uint32_t overwrite_persisten()
 		/* OK */
 	} else {
 		PRI_FAIL("Create random error : 0x%x", ret);
+		goto err;
 	}
 
 	/* Open and update counter */
