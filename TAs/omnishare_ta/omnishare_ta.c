@@ -62,7 +62,7 @@ static TEE_ObjectHandle oms_AES_key_object;
 #define BYTES2BITS(bytes)	(bytes * 8)
 
 /* This is defining the key sizes of omnishare. */
-#define OMS_RSA_MODULU_SIZE	128
+#define OMS_RSA_MODULO_SIZE	128
 #define OMS_AES_SIZE		32
 #define OMS_AES_IV_SIZE		16
 
@@ -93,12 +93,12 @@ SET_TA_PROPERTIES(
 
 /*
  *
- * Omnishare spesific functions
+ * Omnishare specific functions
  *
  */
 
 /*!
- * \brief warp_oms_RSA_operation
+ * \brief wrap_oms_RSA_operation
  * Function is using OmniShare TA specific key for executing RSA operation.
  * \param mode Supported mode are TEE_MODE_ENCRYPT and TEE_MODE_DECRYPT
  * \param in_data Input data
@@ -118,7 +118,7 @@ static TEE_Result wrap_oms_RSA_operation(TEE_OperationMode mode,/*TEE_OperationM
 
 	/* Allocating RSA operation. TEE_AllocateOperation: TEE Core API p-140 */
 	tee_rv = TEE_AllocateOperation(&rsa_operation, TEE_ALG_RSAES_PKCS1_V1_5,
-				       mode, BYTES2BITS(OMS_RSA_MODULU_SIZE));
+				       mode, BYTES2BITS(OMS_RSA_MODULO_SIZE));
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_AllocateOperation failed: 0x%x", tee_rv);
 		goto err;
@@ -634,9 +634,9 @@ static TEE_Result create_root_key(uint32_t paramTypes,
 
 	/* Check if the output buffer at index zero is big enough.
 	 * If is not big enough, return TEE_ERROR_SHORT_BUFFER error code and required size */
-	if (OMS_RSA_MODULU_SIZE > params[0].memref.size) {
+	if (OMS_RSA_MODULO_SIZE > params[0].memref.size) {
 		OT_LOG(LOG_ERR, "Output buffer is too short");
-		params[0].memref.size = OMS_RSA_MODULU_SIZE;
+		params[0].memref.size = OMS_RSA_MODULO_SIZE;
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
@@ -659,14 +659,14 @@ static TEE_Result create_root_key(uint32_t paramTypes,
  */
 static TEE_Result set_oms_aes_key(TEE_Param *params) /* TEE_Param: TEE Core API p-36 */
 {
-	uint32_t aes_key_size = OMS_RSA_MODULU_SIZE;
-	uint8_t aes_key[OMS_RSA_MODULU_SIZE];
+	uint32_t aes_key_size = OMS_RSA_MODULO_SIZE;
+	uint8_t aes_key[OMS_RSA_MODULO_SIZE];
 	TEE_Attribute tee_aes_attr = {0}; /* TEE_Attribute: TEE Core API p-92 */
 	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
 
 	/* Expected input buffer should be at least as big as omnishare RSA modulo.
 	 * Input buffer is at index zero */
-	if (OMS_RSA_MODULU_SIZE > params[0].memref.size) {
+	if (OMS_RSA_MODULO_SIZE > params[0].memref.size) {
 		OT_LOG(LOG_ERR, "RSA decrypted AES key is wrong sized");
 		return TEE_ERROR_GENERIC;
 	}
@@ -753,7 +753,7 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 	 * generate key is accepting only transient objects
 	 * TEE_AllocateTransientObject: TEE Core API p-102 */
 	tee_rv = TEE_AllocateTransientObject(TEE_TYPE_RSA_KEYPAIR,
-					     BYTES2BITS(OMS_RSA_MODULU_SIZE), &rsa_keypair);
+					     BYTES2BITS(OMS_RSA_MODULO_SIZE), &rsa_keypair);
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_AllocateTransientObject failed: 0x%x", tee_rv);
 		goto out;
@@ -761,7 +761,7 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 
 	/* Generating the key.
 	 * TEE_GenerateKey: TEE Core API p-114 */
-	tee_rv = TEE_GenerateKey(rsa_keypair, BYTES2BITS(OMS_RSA_MODULU_SIZE), NULL, 0);
+	tee_rv = TEE_GenerateKey(rsa_keypair, BYTES2BITS(OMS_RSA_MODULO_SIZE), NULL, 0);
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_GenerateKey failed: 0x%x", tee_rv);
 		goto out;
