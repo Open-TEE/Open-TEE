@@ -67,7 +67,7 @@ static TEE_ObjectHandle oms_AES_key_object;
 #define OMS_AES_IV_SIZE		16
 
 /* Corresponding IV vector. For simplicity sake, the IV vector in every AES operation is kept
- * as a zero and this with AES CTR mode is very very unsecure */
+ * as a zero and this with AES CTR mode is very very unsecure, Very bad. */
 static uint8_t oms_aes_iv[OMS_AES_IV_SIZE];
 
 
@@ -177,6 +177,8 @@ err:
  */
 static TEE_Result wrap_aes_operation(TEE_ObjectHandle key, /* Opaque handle */
 				     TEE_OperationMode mode, /* TEE_OperationMode: TEECoreAPIp-138*/
+				     void *IV,
+				     uint32_t IV_len,
 				     void *in_data,
 				     uint32_t in_data_len,
 				     void *out_data,
@@ -200,10 +202,9 @@ static TEE_Result wrap_aes_operation(TEE_ObjectHandle key, /* Opaque handle */
 		goto err;
 	}
 
-	/* Initing cipher operation. AES CTS mode is using IV vector, but for simplicity sake
-	 * this omnishare implementation is using vector that is always zero. Very bad.
+	/* Initing cipher operation.
 	 * TEE_CipherInit: TEE Core API p-155 */
-	TEE_CipherInit(aes_operation, oms_aes_iv, OMS_AES_IV_SIZE);
+	TEE_CipherInit(aes_operation, IV, IV_len);
 
 	/* Omnishare TA is supporting only small files and therefore there is no need for
 	 * "pipeline" style encrypting or decrypting. The do final can do it in one go
@@ -346,7 +347,7 @@ static TEE_Result get_dir_key(uint32_t paramTypes,
 
 		/* We have more keys than one. Lets read next key from key chain and decrypt it */
 		next_aes_key_size = OMS_AES_SIZE;
-		tee_rv = wrap_aes_operation(*dir_key, TEE_MODE_DECRYPT,
+		tee_rv = wrap_aes_operation(*dir_key, TEE_MODE_DECRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
 					    key_chain->keys + (i * OMS_AES_SIZE), OMS_AES_SIZE,
 					    next_aes_key, &next_aes_key_size);
 		if (tee_rv != TEE_SUCCESS)
@@ -411,7 +412,8 @@ static TEE_Result do_crypto_create_dir_key(TEE_ObjectHandle dir_key, /* Opaque h
 		return tee_rv;
 
 	/* Encrypt the key into output buffer */
-	return wrap_aes_operation(dir_key, TEE_MODE_ENCRYPT, aes_key, aes_key_size,
+	return wrap_aes_operation(dir_key, TEE_MODE_ENCRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
+				  aes_key, aes_key_size,
 				  params[3].memref.buffer, (uint32_t *)&params[3].memref.size);
 }
 
@@ -447,7 +449,8 @@ static TEE_Result do_crypto_encrypt_file(TEE_ObjectHandle dir_key, /* Opaque han
 		goto out;
 
 	/* Encrypt file key into beginning of the file */
-	tee_rv = wrap_aes_operation(dir_key, TEE_MODE_ENCRYPT, aes_key, aes_key_size,
+	tee_rv = wrap_aes_operation(dir_key, TEE_MODE_ENCRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
+				    aes_key, aes_key_size,
 				    params[3].memref.buffer, &write_bytes);
 	if (tee_rv != TEE_SUCCESS)
 		goto out;
@@ -456,7 +459,7 @@ static TEE_Result do_crypto_encrypt_file(TEE_ObjectHandle dir_key, /* Opaque han
 	params[3].memref.size -= write_bytes;
 
 	/* Encrypt the plain data with newly created key */
-	tee_rv = wrap_aes_operation(new_file_key, TEE_MODE_ENCRYPT,
+	tee_rv = wrap_aes_operation(new_file_key, TEE_MODE_ENCRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
 				    params[2].memref.buffer, params[2].memref.size,
 			(uint8_t *)params[3].memref.buffer + write_bytes,
 			(uint32_t *)&params[3].memref.size);
@@ -501,7 +504,7 @@ static TEE_Result do_crypto_decrypt_file(TEE_ObjectHandle dir_key, /* Opaque han
 	}
 
 	/* Decrypt file key with directory key */
-	tee_rv = wrap_aes_operation(dir_key, TEE_MODE_DECRYPT,
+	tee_rv = wrap_aes_operation(dir_key, TEE_MODE_DECRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
 				    params[2].memref.buffer, OMS_AES_SIZE,
 				    aes_key, &aes_key_size);
 	if (tee_rv != TEE_SUCCESS)
@@ -527,7 +530,7 @@ static TEE_Result do_crypto_decrypt_file(TEE_ObjectHandle dir_key, /* Opaque han
 	}
 
 	/* Decrypting the file */
-	tee_rv = wrap_aes_operation(file_key, TEE_MODE_DECRYPT,
+	tee_rv = wrap_aes_operation(file_key, TEE_MODE_DECRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
 				    (uint8_t *)params[2].memref.buffer + OMS_AES_SIZE,
 			params[2].memref.size - OMS_AES_SIZE,
 			params[3].memref.buffer, (uint32_t *)&params[3].memref.size);
@@ -735,7 +738,7 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 					  oms_rsa_keypair_id, sizeof(oms_rsa_keypair_id),
 					  0, &oms_RSA_keypair_object);
 	if (tee_rv == TEE_SUCCESS) {
-		/* RSA key exist. No action needed. Note: Leaving handle open.
+		/* RSA key exist. No action needed. Note: Leaving handle open. */
 		return tee_rv;
 	} else if (tee_rv == TEE_ERROR_ITEM_NOT_FOUND) {
 		/* OK: It just is that the object is not found and therefore it need to be created*/
