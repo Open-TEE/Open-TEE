@@ -198,8 +198,6 @@ static int fixup_root_path(char *abs_path, const char *path)
 		return -1;
 	}
 
-	OT_LOG(LOG_DEBUG, "Full path : %s\n", abs_path);
-
 	return 0;
 }
 
@@ -216,8 +214,6 @@ static int fixup_root_path(char *abs_path, const char *path)
 int oms_getattr(const char *path, struct stat *buf)
 {
 	char abs_path[MAX_PATH_NAME] = {0};
-
-	OT_LOG(LOG_ERR, "%s", path);
 
 	if (fixup_root_path(abs_path, path))
 		return -1;
@@ -292,8 +288,6 @@ int oms_unlink(const char *path)
 {
 	char abs_path[MAX_PATH_NAME] = {0};
 
-	OT_LOG(LOG_ERR, "%s", path);
-
 	if (fixup_root_path(abs_path, path))
 		return -1;
 
@@ -309,8 +303,6 @@ int oms_unlink(const char *path)
 int oms_rmdir(const char *path)
 {
 	char abs_path[MAX_PATH_NAME] = {0};
-
-	OT_LOG(LOG_ERR, "%s", path);
 
 	if (fixup_root_path(abs_path, path))
 		return -1;
@@ -350,8 +342,6 @@ int oms_chmod(const char *path, mode_t mode)
 {
 	char abs_path[MAX_PATH_NAME] = {0};
 
-	OT_LOG(LOG_ERR, "%s", path);
-
 	if (fixup_root_path(abs_path, path))
 		return -1;
 
@@ -369,8 +359,6 @@ int oms_chown(const char *path, uid_t uid, gid_t gid)
 {
 	char abs_path[MAX_PATH_NAME] = {0};
 
-	OT_LOG(LOG_ERR, "%s", path);
-
 	if (fixup_root_path(abs_path, path))
 		return -1;
 
@@ -387,8 +375,6 @@ int oms_chown(const char *path, uid_t uid, gid_t gid)
 int oms_truncate(const char *path, off_t length)
 {
 	char abs_path[MAX_PATH_NAME] = {0};
-
-	OT_LOG(LOG_ERR, "%s", path);
 
 	if (fixup_root_path(abs_path, path))
 		return -1;
@@ -422,8 +408,6 @@ int oms_open(const char *path, struct fuse_file_info *info)
 {
 	int fd;
 	char abs_path[MAX_PATH_NAME];
-
-	OT_LOG(LOG_ERR, "%s", path);
 
 	if (fixup_root_path(abs_path, path))
 		return -1;
@@ -460,8 +444,6 @@ int oms_read(const char *path, char *buf, size_t size, off_t offset,
 	uint8_t tmp_dec_buf[size];
 	uint32_t tmp_dec_buf_size = size;
 	struct stat s_buf;
-
-	OT_LOG(LOG_ERR, "%s", path);
 
 	if (fixup_root_path(abs_path, path))
 		return -1;
@@ -506,8 +488,6 @@ int oms_write(const char *path, const char *buf, size_t size, off_t offset,
 	uint8_t enc_buf[size + AES_KEY_SIZE];
 	uint32_t enc_buf_sz = sizeof(enc_buf);
 
-	OT_LOG(LOG_ERR, "%s", path);
-
 	if (fixup_root_path(abs_path, path))
 		return -1;
 
@@ -535,8 +515,6 @@ int oms_write(const char *path, const char *buf, size_t size, off_t offset,
 int oms_statfs(const char *path, struct statvfs *buf)
 {
 	char abs_path[MAX_PATH_NAME];
-
-	OT_LOG(LOG_ERR, "%s", path);
 
 	if (fixup_root_path(abs_path, path))
 		return -1;
@@ -596,10 +574,8 @@ int oms_flush(const char *path, struct fuse_file_info *info)
 */
 int oms_release(const char *path, struct fuse_file_info *info)
 {
-	OT_LOG(LOG_ERR, "%s", path);
-
 	if (close(info->fh)) {
-		OT_LOG(LOG_ERR, "Failed to close : %s", strerror(errno));
+		OT_LOG(LOG_ERR, "Failed to close %s : %s", path, strerror(errno));
 		return -errno;
 	}
 
@@ -618,15 +594,13 @@ int oms_fsync(const char *path, int datasync, struct fuse_file_info *info)
 {
 	int ret = 0;
 
-	OT_LOG(LOG_ERR, "%s", path);
-
 	if (datasync)
 		ret = fdatasync(info->fh);
 	else
 		ret = fsync(info->fh);
 
 	if (ret) {
-		OT_LOG(LOG_ERR, "Failed to fsync : %s", strerror(errno));
+		OT_LOG(LOG_ERR, "Failed to fsync %s : %s", path, strerror(errno));
 		return -errno;
 	}
 
@@ -647,8 +621,6 @@ int oms_opendir(const char *path, struct fuse_file_info *info)
 {
 	DIR *dir;
 	char abs_path[MAX_PATH_NAME] = {0};
-
-	OT_LOG(LOG_ERR, "%s", path);
 
 	if (fixup_root_path(abs_path, path))
 		return -1;
@@ -694,13 +666,11 @@ int oms_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 
 	offset = offset;
 
-	OT_LOG(LOG_ERR, "%s", path);
-
 	dir = (DIR *)info->fh;
 
 	for (dent = readdir(dir); dent != NULL; dent = readdir(dir)) {
 		if (filler(buf, dent->d_name, NULL, 0) != 0) {
-			OT_LOG(LOG_ERR, "Filler full");
+			OT_LOG(LOG_ERR, "Filler full for path %s", path);
 			return -ENOMEM;
 		}
 	}
@@ -714,10 +684,13 @@ int oms_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 */
 int oms_releasedir(const char *path, struct fuse_file_info *info)
 {
-	OT_LOG(LOG_ERR, "%s", path);
+	int ret;
 
-	closedir((DIR *)info->fh);
-	return 0;
+	ret = closedir((DIR *)info->fh);
+	if (ret)
+		OT_LOG(LOG_ERR, "Failed to closedir %s, %s", path, strerror(errno));
+
+	return ret;
 }
 
 /**
@@ -833,8 +806,6 @@ int oms_access(const char *path, int mode)
 	int ret = 0;
 	char abs_path[MAX_PATH_NAME] = {0};
 
-	OT_LOG(LOG_ERR, "%s", path);
-
 	if (fixup_root_path(abs_path, path))
 		return -1;
 
@@ -865,8 +836,6 @@ int oms_create(const char *path, mode_t mode, struct fuse_file_info *info)
 	char abs_path[MAX_PATH_NAME] = {0};
 	int fd;
 
-	OT_LOG(LOG_ERR, "%s", path);
-
 	if (fixup_root_path(abs_path, path))
 		return -1;
 
@@ -896,10 +865,8 @@ int oms_create(const char *path, mode_t mode, struct fuse_file_info *info)
 */
 int oms_ftruncate(const char *path, off_t length, struct fuse_file_info *info)
 {
-	OT_LOG(LOG_ERR, "%s", path);
-
 	if (ftruncate(info->fh, length)) {
-		OT_LOG(LOG_ERR, "Failure to ftruncate : %s", strerror(errno));
+		OT_LOG(LOG_ERR, "Failure to ftruncate %s : %s", path, strerror(errno));
 		return -errno;
 	}
 
@@ -923,11 +890,9 @@ int oms_fgetattr(const char *path, struct stat *buf, struct fuse_file_info *info
 {
 	int ret = 0;
 
-	OT_LOG(LOG_ERR, "%s", path);
-
 	ret = fstat(info->fh, buf);
 	if (ret != 0) {
-		OT_LOG(LOG_ERR, "Failed to fstat: %s", strerror(errno));
+		OT_LOG(LOG_ERR, "Failed to fstat %s: %s", path, strerror(errno));
 		return -errno;
 	}
 
@@ -955,8 +920,6 @@ int oms_utimens(const char *path, const struct timespec tv[2])
 {
 	int ret = 0;
 	char abs_path[MAX_PATH_NAME] = {0};
-
-	OT_LOG(LOG_ERR, "%s", path);
 
 	if (fixup_root_path(abs_path, path))
 		return -1;
