@@ -3,7 +3,7 @@ import qbs.Probes
 
 CppApplication {
     type: "application"
-    name: "omnishare_fuse"
+    name: "omnishare-fuse"
     Group {
         name: "project-install"
         fileTagsFilter: "application"

@@ -20,6 +20,7 @@ conn_test
 example_sha1
 test_session_ta
 usr_study
+omnishare-fuse
 
 # Autotools generated files
 Makefile

@@ -20,7 +20,7 @@
 # Description: Initialize Omnishare Fuse
 #
 ### BEGIN INIT INFO
-# Provides:          omnishare_fuse
+# Provides:          omnishare-fuse
 # Required-Start:    $remote_fs $local_fs
 # Required-Stop:     $remote_fs $local_fs
 # Default-Start:     2 3 4 5
@@ -31,7 +31,7 @@
 
 DESC="Omnishare Fuse"
 CONF="/etc/opentee.conf"
-BIN_NAME="omnishare_fuse"
+BIN_NAME="omnishare-fuse"
 LOCAL_VIEW="/tmp/local_view"
 CLOUD_STORE="/tmp/cloud_store"
 

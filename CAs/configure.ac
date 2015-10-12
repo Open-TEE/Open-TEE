@@ -13,7 +13,9 @@ AC_PROG_CC
 LT_INIT
 
 # Ensure fuse available for omnishare
-PKG_CHECK_MODULES(FUSE, libfuse-dev >= 2.9)
+PKG_CHECK_MODULES(FUSE, fuse, , AC_MSG_ERROR('Unable to find libfuse.  Please make sure library and header files are installed.'))
+
+AC_CHECK_HEADERS([fuse.h])
 
 # Created configuration files
 AC_CONFIG_FILES([Makefile])
