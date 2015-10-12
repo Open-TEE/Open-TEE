@@ -13,14 +13,7 @@ CppApplication {
 
     Depends { name: "cpp" }
     Depends { name: "omnishare" }
-
-    Probes.PkgConfigProbe {
-        id: fuseConfig
-        name: "fuse"
-    }
-
-    cpp.cFlags: fuseConfig.cflags
-    cpp.linkerFlags: fuseConfig.libs
+    Depends { name: "fuse" }
 
     cpp.defines: ["OT_LOGGING", "FUSE_USE_VERSION=26"]
 
