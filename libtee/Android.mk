@@ -19,7 +19,7 @@ LOCAL_SHARED_LIBRARIES := libc libdl libz
 LOCAL_EXPORT_C_INCLUDE_DIRS := \
 				$(LOCAL_PATH)/include
 
-LOCAL_C_FLAGS := -DANDROID -lz -DOT_LOGGING
+LOCAL_CFLAGS := -DANDROID -lz -DOT_LOGGING
 
 ifeq ($(TARGET_ARCH),arm)
 LOCAL_LDFLAGS := -Wl,--hash-style=sysv
