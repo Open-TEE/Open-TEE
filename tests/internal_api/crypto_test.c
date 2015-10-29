@@ -590,6 +590,177 @@ err:
 	return fn_ret;
 }
 
+static uint32_t ECDSA_sig_and_ver(uint32_t curve, uint32_t keysize, uint32_t alg)
+{
+	TEE_Result ret;
+	TEE_ObjectHandle ecdsa_keypair = (TEE_ObjectHandle)NULL;
+	TEE_Attribute ecdsa_attrs[1];
+	size_t key_size = keysize;
+	uint32_t ecdsa_alg = alg;
+	char *dig_msg = "TEST";
+	uint32_t fn_ret = 1; /* Initialized error return */
+
+	uint32_t dig_len = 20;
+	/* enough for a p521 sig */
+	uint32_t sig_len = 160;
+
+	void *dig = NULL;
+	void *sig = NULL;
+
+	dig = TEE_Malloc(dig_len, 0);
+	sig = TEE_Malloc(sig_len, 0);
+	if (!dig || !sig) {
+		PRI_FAIL("Out of memory");
+		goto err;
+	}
+
+	TEE_MemMove(dig, dig_msg, 5);
+
+	/* Curve */
+	ecdsa_attrs[0].attributeID = TEE_ATTR_ECC_CURVE;
+	ecdsa_attrs[0].content.value.a = curve;
+	ecdsa_attrs[0].content.value.b = 0;
+
+	ret = TEE_AllocateTransientObject(TEE_TYPE_ECDSA_KEYPAIR, key_size, &ecdsa_keypair);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to alloc transient object handle : 0x%x", ret);
+		goto err;
+	}
+
+	ret = TEE_GenerateKey(ecdsa_keypair, key_size, ecdsa_attrs, 1);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Generate key failure : 0x%x", ret);
+		goto err;
+	}
+
+	if (warp_asym_op(ecdsa_keypair, TEE_MODE_SIGN, ecdsa_alg, ecdsa_attrs, 1,
+			 dig, dig_len, sig, &sig_len))
+		goto err;
+
+	if (warp_asym_op(ecdsa_keypair, TEE_MODE_VERIFY, ecdsa_alg, ecdsa_attrs, 1,
+			 dig, dig_len, sig, &sig_len))
+		goto err;
+
+	fn_ret = 0; /* OK */
+err:
+	TEE_FreeTransientObject(ecdsa_keypair);
+	TEE_Free(dig);
+	TEE_Free(sig);
+
+	if (fn_ret == 0)
+		PRI_OK("- with key size %u", keysize);
+
+	return fn_ret;
+}
+
+static uint32_t ECDSA_set_key_and_rm_and_do_crypto(uint32_t curve, uint32_t keysize, uint32_t alg)
+{
+	TEE_Result ret;
+	TEE_ObjectHandle ecdsa_keypair = (TEE_ObjectHandle)NULL;
+	TEE_OperationHandle sign_op = (TEE_OperationHandle)NULL,
+			verify_op = (TEE_OperationHandle)NULL;
+	TEE_Attribute ecdsa_attrs[1];
+	size_t key_size = keysize;
+	uint32_t ecdsa_alg = alg;
+	char *dig_seed = "TEST";
+	uint32_t dig_len = 32, sig_len = 160;
+	char dig[32] = {0}, sig[160] = {0};
+	uint32_t fn_ret = 1; /* Initialized error return */
+
+	TEE_MemMove(dig, dig_seed, 5);
+
+	/* Curve */
+	ecdsa_attrs[0].attributeID = TEE_ATTR_ECC_CURVE;
+	ecdsa_attrs[0].content.value.a = curve;
+	ecdsa_attrs[0].content.value.b = 0;
+
+	ret = TEE_AllocateTransientObject(TEE_TYPE_ECDSA_KEYPAIR, key_size, &ecdsa_keypair);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to alloc transient object handle : 0x%x", ret);
+		goto err;
+	}
+
+	ret = TEE_GenerateKey(ecdsa_keypair, key_size, ecdsa_attrs, 1);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Generate key failure : 0x%x", ret);
+		goto err;
+	}
+
+	ret = TEE_AllocateOperation(&sign_op, ecdsa_alg, TEE_MODE_SIGN, key_size);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to alloc sign operation handle : 0x%x", ret);
+		goto err;
+	}
+
+	ret = TEE_AllocateOperation(&verify_op, ecdsa_alg, TEE_MODE_VERIFY, key_size);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to alloc verify operation handle : 0x%x", ret);
+		goto err;
+	}
+
+	ret = TEE_SetOperationKey(sign_op, ecdsa_keypair);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to set sign operation key : 0x%x", ret);
+		goto err;
+	}
+
+	ret = TEE_SetOperationKey(verify_op, ecdsa_keypair);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to set verify operation key : 0x%x", ret);
+		goto err;
+	}
+
+	TEE_FreeTransientObject(ecdsa_keypair);
+	ecdsa_keypair = (TEE_ObjectHandle)NULL;
+
+	ret = TEE_AsymmetricSignDigest(sign_op, (TEE_Attribute *)NULL, 0,
+				       dig, dig_len, sig, &sig_len);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Sign failed : 0x%x", ret);
+		goto err;
+	}
+
+	ret = TEE_AsymmetricVerifyDigest(verify_op, (TEE_Attribute *)NULL, 0,
+					 dig, dig_len, sig, sig_len);
+	if (ret == TEE_SUCCESS) {
+		/* Do nothing */
+	} else if (ret == TEE_ERROR_SIGNATURE_INVALID) {
+		PRI_FAIL("Signature invalid");
+		goto err;
+	} else {
+		PRI_FAIL("Verify failed : 0x%x", ret);
+		goto err;
+	}
+
+	fn_ret = 0; /* OK */
+err:
+	TEE_FreeTransientObject(ecdsa_keypair);
+	TEE_FreeOperation(sign_op);
+	TEE_FreeOperation(verify_op);
+
+	if (fn_ret == 0)
+		PRI_OK("- with key size: %u", keysize);
+
+	return fn_ret;
+}
+
+static uint32_t run_ecdsa_tests()
+{
+	/* run the tests for all the curves */
+	if (ECDSA_sig_and_ver(TEE_ECC_CURVE_NIST_P192, 192, TEE_ALG_ECDSA_P192) ||
+	    ECDSA_sig_and_ver(TEE_ECC_CURVE_NIST_P224, 224, TEE_ALG_ECDSA_P224) ||
+	    ECDSA_sig_and_ver(TEE_ECC_CURVE_NIST_P256, 256, TEE_ALG_ECDSA_P256) ||
+	    ECDSA_sig_and_ver(TEE_ECC_CURVE_NIST_P384, 384, TEE_ALG_ECDSA_P384) ||
+	    ECDSA_sig_and_ver(TEE_ECC_CURVE_NIST_P521, 521, TEE_ALG_ECDSA_P521) ||
+	    ECDSA_set_key_and_rm_and_do_crypto(TEE_ECC_CURVE_NIST_P192, 192, TEE_ALG_ECDSA_P192) ||
+	    ECDSA_set_key_and_rm_and_do_crypto(TEE_ECC_CURVE_NIST_P224, 224, TEE_ALG_ECDSA_P224) ||
+	    ECDSA_set_key_and_rm_and_do_crypto(TEE_ECC_CURVE_NIST_P256, 256, TEE_ALG_ECDSA_P256) ||
+	    ECDSA_set_key_and_rm_and_do_crypto(TEE_ECC_CURVE_NIST_P384, 384, TEE_ALG_ECDSA_P384) ||
+	    ECDSA_set_key_and_rm_and_do_crypto(TEE_ECC_CURVE_NIST_P521, 521, TEE_ALG_ECDSA_P521))
+		return TEE_ERROR_GENERIC;
+	return TEE_SUCCESS;
+}
+
 static uint32_t RSA_sig_and_ver()
 {
 	TEE_Result ret;
@@ -997,7 +1168,8 @@ uint32_t crypto_test(uint32_t loop_count)
 		    HMAC_computation() ||
 		    set_key_and_rm_and_do_crypto() ||
 		    read_key_and_do_crypto() ||
-                    rsa_sign_nist_sha1_pkcs()) {
+		    rsa_sign_nist_sha1_pkcs() ||
+		    run_ecdsa_tests()) {
                         test_have_fail = 1;
                         break;
                 }
