@@ -34,6 +34,7 @@ static const TEEC_UUID uuid = {
 /* Hash TA command IDs for this applet */
 #define HASH_UPDATE	0x00000001
 #define HASH_DO_FINAL	0x00000002
+#define HASH_RESET	0x00000003
 
 /* Hash algoithm */
 #define HASH_MD5	0x00000001
@@ -50,94 +51,111 @@ int main()
 	TEEC_Operation operation;
 	TEEC_SharedMemory in_mem;
 	TEEC_SharedMemory out_mem;
-	TEEC_Result ret;
-	uint32_t return_origin;
-	uint32_t connection_method = TEEC_LOGIN_PUBLIC;
+	TEEC_Result tee_rv;
 	char data[DATA_SIZE];
 	uint8_t sha1[SHA1_SIZE];
 	int i;
 
-	printf("START: example SHA1 calc app\n");
+	printf("\nSTART: example SHA1 calc app\n");
 
+	/* Initialize data stuctures */
 	memset((void *)&in_mem, 0, sizeof(in_mem));
 	memset((void *)&out_mem, 0, sizeof(out_mem));
 	memset((void *)&operation, 0, sizeof(operation));
 	memset(data, 'y', DATA_SIZE);
 	memset(sha1, 0, SHA1_SIZE);
 
-	/* Initialize context */
+
+	/*
+	 * Initialize context towards TEE
+	 */
 	printf("Initializing context: ");
-	ret = TEEC_InitializeContext(NULL, &context);
-	if (ret != TEEC_SUCCESS) {
-		printf("TEEC_InitializeContext failed: 0x%x\n", ret);
+	tee_rv = TEEC_InitializeContext(NULL, &context);
+	if (tee_rv != TEEC_SUCCESS) {
+		printf("TEEC_InitializeContext failed: 0x%x\n", tee_rv);
 		goto end_1;
 	} else {
 		printf("initialized\n");
 	}
 
-	/* Open session is expecting HASH algorithm */
-	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_NONE, TEEC_NONE, TEEC_NONE);
-	operation.params[0].value.a = HASH_SHA1;
 
-	/* Open session */
+
+
+	/*
+	 * Open session towards Digest TA
+	 */
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_NONE, TEEC_NONE, TEEC_NONE);
+	operation.params[0].value.a = HASH_SHA1; /* Open session is expecting HASH algorithm */
+
 	printf("Openning session: ");
-	ret = TEEC_OpenSession(&context, &session, &uuid, connection_method,
-			       NULL, &operation, &return_origin);
-	if (ret != TEEC_SUCCESS) {
-		printf("TEEC_OpenSession failed: 0x%x\n", ret);
+	tee_rv = TEEC_OpenSession(&context, &session, &uuid, TEEC_LOGIN_PUBLIC,
+				  NULL, &operation, NULL);
+	if (tee_rv != TEEC_SUCCESS) {
+		printf("TEEC_OpenSession failed: 0x%x\n", tee_rv);
 		goto end_2;
 	} else {
 		printf("opened\n");
 	}
 
-	/* Register shared memory for initial hash */
 
-	/* Data */
+
+	/*
+	 * Register shared memory for input
+	 */
 	in_mem.buffer = data;
 	in_mem.size = DATA_SIZE;
 	in_mem.flags = TEEC_MEM_INPUT;
 
-	ret = TEEC_RegisterSharedMemory(&context, &in_mem);
-	if (ret != TEE_SUCCESS) {
+	tee_rv = TEEC_RegisterSharedMemory(&context, &in_mem);
+	if (tee_rv != TEE_SUCCESS) {
 		printf("Failed to register DATA shared memory\n");
 		goto end_3;
 	}
 	printf("Registered in mem..\n");
 
-	/* Fill operation parameters */
+
+
+
+	/*
+	 * Invoke command from digest TA
+	 */
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_NONE, TEEC_NONE, TEEC_NONE);
 	operation.params[0].memref.parent = &in_mem;
 
-	/* Invoke command */
 	printf("Invoking command: Update sha1: ");
-	ret = TEEC_InvokeCommand(&session, HASH_UPDATE, &operation, &return_origin);
-	if (ret != TEEC_SUCCESS) {
-		printf("TEEC_InvokeCommand failed: 0x%x\n", ret);
+	tee_rv = TEEC_InvokeCommand(&session, HASH_UPDATE, &operation, NULL);
+	if (tee_rv != TEEC_SUCCESS) {
+		printf("TEEC_InvokeCommand failed: 0x%x\n", tee_rv);
 		goto end_3;
 	} else {
 		printf("done\n");
 	}
 
-	/* register a shared memory region to hold the output of the sha1 operation */
+
+
+	/*
+	 * Register shared memory for output (for has result)
+	 */
 	out_mem.buffer = sha1;
 	out_mem.size = SHA1_SIZE;
-	out_mem.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
+	out_mem.flags = TEEC_MEM_OUTPUT;
 
-	ret = TEEC_RegisterSharedMemory(&context, &out_mem);
-	if (ret != TEE_SUCCESS) {
+	tee_rv = TEEC_RegisterSharedMemory(&context, &out_mem);
+	if (tee_rv != TEE_SUCCESS) {
 		printf("Failed to allocate SHA1 shared memory\n");
 		goto end_3;
 	}
 	printf("Registered out mem..\n");
 
-	/*
-	 * Send some more data to calculate the hash over, this will be added to the origional hash
-	 * .  This is not strictly needed it is a test for passing 2 memref params in a single
+
+
+
+	/* Invoke second time from digest TA:
+	 * Send some more data to calculate the hash over, this will be added to the origional hash.
+	 * This is not strictly needed it is a test for passing 2 memref params in a single
 	 * operation
 	 */
 	memset(data, 'Z', DATA_SIZE);
-
-	/* Fill operation parameters */
 	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_MEMREF_WHOLE,
 						TEEC_NONE, TEEC_NONE);
 	/*
@@ -147,24 +165,29 @@ int main()
 	operation.params[0].memref.parent = &in_mem;
 	operation.params[1].memref.parent = &out_mem;
 
-	/* Invoke command */
 	printf("Invoking command: Do final sha1: ");
-	ret = TEEC_InvokeCommand(&session, HASH_DO_FINAL, &operation, &return_origin);
-	if (ret != TEEC_SUCCESS) {
-		printf("TEEC_InvokeCommand failed: 0x%x\n", ret);
+	tee_rv = TEEC_InvokeCommand(&session, HASH_DO_FINAL, &operation, NULL);
+	if (tee_rv != TEEC_SUCCESS) {
+		printf("TEEC_InvokeCommand failed: 0x%x\n", tee_rv);
 		goto end_4;
 	} else {
 		printf("done\n");
 	}
 
-	/* Printf sha1 buf */
+
+
+	/*
+	 * Printf sha1 buf
+	 */
 	printf("Calculated sha1: ");
 	for (i = 0; i < SHA1_SIZE; i++)
 		printf("%02x", sha1[i]);
 	printf("\n");
 
-	/* Cleanup used connection/resources */
 
+
+
+	/* Cleanup used connection/resources */
 end_4:
 
 	printf("Releasing shared out memory..\n");
@@ -182,6 +205,6 @@ end_2:
 	TEEC_FinalizeContext(&context);
 end_1:
 
-	printf("END: example SHA1 calc app\n");
-	exit(ret);
+	printf("END: example SHA1 calc app\n\n");
+	exit(tee_rv);
 }
