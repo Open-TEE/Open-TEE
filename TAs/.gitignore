@@ -19,8 +19,6 @@
 *.out
 *.app
 
-# subdirectorys from other git locations
-pkcs11_ta
 
 # Autotools generated files
 Makefile
