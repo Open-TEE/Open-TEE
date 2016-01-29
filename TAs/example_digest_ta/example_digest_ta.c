@@ -17,7 +17,7 @@
 /* NOTE!!
  *
  * This is an example. It might not have the most perfect design choices and implementation.
- * It is servinc purpose of showing how you could do the most simplest SHA/MD5 hash
+ * It is servinc purpose of showing how you could do the most simplest SHAXXX/MD5 hash
  *
  * NOTE!!
  */
@@ -41,6 +41,7 @@ SET_TA_PROPERTIES(
 /* Hash TA command IDs for this applet */
 #define HASH_UPDATE	0x00000001
 #define HASH_DO_FINAL	0x00000002
+#define HASH_RESET	0x00000003
 
 /* Hash algorithm identifier */
 #define HASH_MD5	0x00000001
@@ -67,14 +68,17 @@ void TA_EXPORT TA_DestroyEntryPoint(void)
 }
 
 TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
-					      TEE_Param params[4], void **sessionContext)
+					      TEE_Param params[4],
+					      void **sessionContext)
 {
 	algorithm_Identifier hash;
 
-	/* Parameter type is not needed */
-	paramTypes = paramTypes;
-
 	OT_LOG(LOG_ERR, "Calling the Open session entry point");
+
+	if (TEE_PARAM_TYPE_GET(paramTypes, 0) != TEE_PARAM_TYPE_VALUE_INPUT) {
+		OT_LOG(LOG_ERR, "Bad parameter at index 0: expexted value input");
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
 
 	switch (params[0].value.a) {
 	case HASH_MD5:
@@ -117,26 +121,49 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 	TEE_FreeOperation(sessionContext);
 }
 
-TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t commandID,
-						uint32_t paramTypes, TEE_Param params[4])
+TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
+						uint32_t commandID,
+						uint32_t paramTypes,
+						TEE_Param params[4])
 {
-	paramTypes = paramTypes;
+	TEE_Result tee_rv = TEE_SUCCESS;
 
 	OT_LOG(LOG_ERR, "Calling the Invoke command entry point");
 
-	if (commandID == HASH_UPDATE) {
+	if (commandID == HASH_RESET) {
+
+		TEE_ResetOperation(sessionContext);
+
+	} else if (commandID == HASH_UPDATE) {
+
+		if (TEE_PARAM_TYPE_GET(paramTypes, 0) != TEE_PARAM_TYPE_MEMREF_INPUT) {
+			OT_LOG(LOG_ERR, "Bad parameter at index 0: expexted memory input");
+			return TEE_ERROR_BAD_PARAMETERS;
+		}
 
 		TEE_DigestUpdate(sessionContext, params[0].memref.buffer, params[0].memref.size);
 
 	} else if (commandID == HASH_DO_FINAL) {
 
-		return TEE_DigestDoFinal(sessionContext, params[0].memref.buffer,
+		if (TEE_PARAM_TYPE_GET(paramTypes, 0) != TEE_PARAM_TYPE_NONE &&
+		    TEE_PARAM_TYPE_GET(paramTypes, 0) != TEE_PARAM_TYPE_MEMREF_INPUT) {
+			OT_LOG(LOG_ERR, "Bad parameter at index 0: expexted memory input");
+			return TEE_ERROR_BAD_PARAMETERS;
+		}
+
+		if (TEE_PARAM_TYPE_GET(paramTypes, 1) != TEE_PARAM_TYPE_MEMREF_OUTPUT) {
+			OT_LOG(LOG_ERR, "Bad parameter at index 1: expexted memory output");
+			return TEE_ERROR_BAD_PARAMETERS;
+		}
+
+		tee_rv = TEE_DigestDoFinal(sessionContext, params[0].memref.buffer,
 				params[0].memref.size, params[1].memref.buffer,
 				(uint32_t *)&params[1].memref.size);
 
 	} else {
 		OT_LOG(LOG_ERR, "Unknow command ID");
+		tee_rv = TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	return TEE_SUCCESS;
+	return tee_rv;
 }
