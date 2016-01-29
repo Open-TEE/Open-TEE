@@ -1,9 +1,8 @@
-1. Setup Open-TEE, compile and run it: https://github.com/Open-TEE
-2. Copy the PKCS#11 TA into place (binary release coming soon)
-3. Modify opentee/project.qbs to include extension/project.qbs
-4. Compile, "chromehost" binary should appear in your output folder for opentee
-5. Modify hostapp/com.intel.chrome.opentee.proxy.json to point to the chromehost binary
-6. Copy hostapp/com.intel.chrome.opentee.proxy.json (or symlink) to the right place:
+1. Setup Open-TEE, compile and RUN it: https://github.com/Open-TEE
+2. Modify opentee/project.qbs to include chrome/project.qbs
+3. Compile, "chromehost" binary should appear in your output folder for opentee
+4. Modify hostapp/com.intel.chrome.opentee.proxy.json to point to the chromehost binary
+5. Copy hostapp/com.intel.chrome.opentee.proxy.json (or symlink) to the right place:
 
 On Linux:
 Chrome: 
@@ -14,8 +13,22 @@ Chromium:
 - /etc/chromium/native-messaging-hosts/
 - ~/.config/chromium/NativeMessagingHosts/ (user specific)
 
-7. Load up the extension in Chrome/Chromium
+6. Load up the extension in Chrome/Chromium
 - Go to Settings - Extensions and tick the Advanced box
 - "Load unpacked extension" and point it to the extension/ folder
 
-8. You should be ready to go
+7. Open the "Apps" tab in Chrome browser and open "Open-TEE dev" app
+
+8. Click "Connect" - response should read
+  "Connecting to native messaging host com.intel.chrome.opentee.proxy
+   CONNECTED to native messaging host com.intel.chrome.opentee.proxy"
+
+9. Click "Add key mode" - enter "test" without the quotes into the "Input area" and click "send". - response should read
+   "Sent message: {"text":"addkey","key":"test"}
+    Received message: {"text":"ok"}"
+
+10. you can use the "Encrypt mode" and "decrypt mode" to test the setup
+
+11. open gmail in chrome and "compose" a mail, there should be a green "encrypt button" which you can click when you are ready to send the message.
+
+12. then send and open the mail in the recipient and see that the message is encrypted (red button). Click it to decrypt the mail.
