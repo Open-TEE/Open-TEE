@@ -139,7 +139,7 @@ static int check_operation_params(TEEC_Operation *operation)
 	}
 
 	for (i = 1; i < 3; i++) {
-		if (operation->params[i].memref.parent->size != SIZE_OF_VEC(out_vector)) {
+		if (operation->params[i].memref.size != SIZE_OF_VEC(out_vector)) {
 			PRI("Parameter at %u is not expected (wrong size)", i);
 			return 1;
 		}
