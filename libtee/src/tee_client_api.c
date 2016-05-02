@@ -380,11 +380,28 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 		/* Flags is used for separating MEMREF_WHOLE type (read or write) */
 		internal_op->params[i].flags = mem_source->flags;
 
+		/* Update size to internal operation. Refer to parent size if
+		 * registered memory reference refers to the entirety of its
+		 * parent shared memory block or temporary memory reference is
+		 * input only */
+		if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_INPUT ||
+		    TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_WHOLE) {
+			internal_op->params[i].param.memref.size = mem_source->size;
+		} else {
+			internal_op->params[i].param.memref.size = operation->params[i].memref.size;
+		}
+
 		/* We have some shared memory area */
 		internal_imp = (struct shared_mem_internal *)mem_source->imp;
 
 		if (internal_imp->org_size == 0)
 			continue;
+
+		/* User error?  */
+		if (internal_imp->org_size < operation->params[i].memref.size) {
+			OT_LOG(LOG_ERR, "Warning: MEMREF size exceeds parent buffer capacity");
+			continue;
+		}
 
 		if (internal_imp->type == REGISTERED) {
 
@@ -395,7 +412,8 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 				continue;
 			}
 
-			memcpy(internal_imp->reg_address, mem_source->buffer, mem_source->size);
+			memcpy(internal_imp->reg_address, mem_source->buffer,
+					internal_op->params[i].param.memref.size);
 		}
 
 		/* assign the name of the shared memory and its size area to
@@ -405,7 +423,6 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 		memcpy(internal_op->params[i].param.memref.shm_area,
 		       internal_imp->shm_uuid, SHM_MEM_NAME_LEN);
 
-		internal_op->params[i].param.memref.size = mem_source->size;
 	}
 }
 
@@ -449,13 +466,24 @@ static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 		if (!(mem_source = operation->params[i].memref.parent))
 			continue;
 
-		/* Update size to operation */
-		mem_source->size = internal_op->params[i].param.memref.size;
+		/* Buffer input only, we're done */
+		if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_PARTIAL_INPUT ||
+		    TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_INPUT)
+			continue;
+
+		/*  Update size to operation to reflect the actual or required
+		 *  size of the output as per Section 4.3.7, paragraph 2.2 and
+		 *  4.3.8, paragraph 2.2 of the TEE Client Specification */
+		operation->params[i].memref.size = internal_op->params[i].param.memref.size;
 
 		/* We have some shared memory area */
 		internal_imp = (struct shared_mem_internal *)mem_source->imp;
 
 		if (internal_imp->org_size == 0)
+			continue;
+
+		/* User error or TA signaling TEEC_ERROR_SHORT_BUFFER */
+		if (internal_imp->org_size < operation->params[i].memref.size)
 			continue;
 
 		if (internal_imp->type == REGISTERED) {
@@ -467,7 +495,8 @@ static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 				continue;
 			}
 
-			memcpy(mem_source->buffer, internal_imp->reg_address, mem_source->size);
+			memcpy(mem_source->buffer, internal_imp->reg_address,
+					operation->params[i].memref.size);
 		}
 	}
 }
@@ -518,7 +547,6 @@ static void unregister_temp_refs(TEEC_Operation *operation, TEEC_SharedMemory *t
 		    TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_INOUT) {
 
 			operation->params[i].tmpref.buffer = temp_shm[i].buffer;
-			operation->params[i].tmpref.size = temp_shm[i].size;
 			TEEC_ReleaseSharedMemory(&temp_shm[i]);
 		}
 	}
