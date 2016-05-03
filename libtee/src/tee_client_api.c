@@ -345,6 +345,7 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 {
 	struct shared_mem_internal *internal_imp;
 	TEEC_SharedMemory *mem_source;
+	size_t offset;
 	int i;
 
 	memset(internal_op, 0, sizeof(struct com_msg_operation));
@@ -364,15 +365,9 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 			       &operation->params[i].value, sizeof(TEEC_Value));
 			continue;
 
-		} else if (TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_INPUT ||
-			   TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_INOUT ||
-			   TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_OUTPUT) {
-			OT_LOG(LOG_ERR, "WARNING: MEMREF partial is not implemented");
-			continue;
 		}
 
-		/* TEEC_MEMREF_WHOLE, TEEC_MEMREF_TEMP_INPUT,
-		 * TEEC_MEMREF_TEMP_INOUT and TEEC_MEMREF_TEMP_OUTPUT */
+		/* Because it is not value, parameter type is MEMREF */
 
 		if (!(mem_source = operation->params[i].memref.parent))
 			continue; /* Buffer is NULL == user error? */
@@ -391,6 +386,17 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 			internal_op->params[i].param.memref.size = operation->params[i].memref.size;
 		}
 
+		/* A PARTIAL MEMREF defines an offset of the referenced memory
+		 * region from the start of the Shared Memory block (Section
+		 * 4.3.8, paragraph 3.1 of the TEE Client Specification */
+		if (TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_INPUT ||
+		    TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_INOUT ||
+		    TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_OUTPUT) {
+			offset = operation->params[i].memref.offset;
+		} else {
+			offset = 0;
+		}
+
 		/* We have some shared memory area */
 		internal_imp = (struct shared_mem_internal *)mem_source->imp;
 
@@ -398,7 +404,7 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 			continue;
 
 		/* User error?  */
-		if (internal_imp->org_size < operation->params[i].memref.size) {
+		if (internal_imp->org_size < offset + operation->params[i].memref.size) {
 			OT_LOG(LOG_ERR, "Warning: MEMREF size exceeds parent buffer capacity");
 			continue;
 		}
@@ -412,7 +418,7 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 				continue;
 			}
 
-			memcpy(internal_imp->reg_address, mem_source->buffer,
+			memcpy(internal_imp->reg_address, mem_source->buffer + offset,
 					internal_op->params[i].param.memref.size);
 		}
 
@@ -438,6 +444,7 @@ static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 {
 	struct shared_mem_internal *internal_imp;
 	TEEC_SharedMemory *mem_source;
+	size_t offset;
 	int i;
 
 	FOR_EACH_PARAM(i) {
@@ -453,15 +460,9 @@ static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 			       &internal_op->params[i].param.value, sizeof(TEEC_Value));
 			continue;
 
-		} else if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_PARTIAL_INPUT ||
-			   TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_PARTIAL_INOUT ||
-			   TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_PARTIAL_OUTPUT) {
-			OT_LOG(LOG_ERR, "WARNING: MEMREF partial is not implemented");
-			continue;
 		}
 
-		/* TEEC_MEMREF_WHOLE, TEEC_MEMREF_TEMP_INPUT,
-		 * TEEC_MEMREF_TEMP_INOUT and TEEC_MEMREF_TEMP_OUTPUT */
+		/* Because it is not value, parameter type is MEMREF */
 
 		if (!(mem_source = operation->params[i].memref.parent))
 			continue;
@@ -476,6 +477,17 @@ static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 		 *  4.3.8, paragraph 2.2 of the TEE Client Specification */
 		operation->params[i].memref.size = internal_op->params[i].param.memref.size;
 
+		/* A PARTIAL MEMREF defines an offset of the referenced memory
+		 * region from the start of the Shared Memory block (Section
+		 * 4.3.8, paragraph 3.1 of the TEE Client Specification */
+		if (TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_INPUT ||
+		    TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_INOUT ||
+		    TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_MEMREF_PARTIAL_OUTPUT) {
+			offset = operation->params[i].memref.offset;
+		} else {
+			offset = 0;
+		}
+
 		/* We have some shared memory area */
 		internal_imp = (struct shared_mem_internal *)mem_source->imp;
 
@@ -483,7 +495,7 @@ static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 			continue;
 
 		/* User error or TA signaling TEEC_ERROR_SHORT_BUFFER */
-		if (internal_imp->org_size < operation->params[i].memref.size)
+		if (internal_imp->org_size < offset + operation->params[i].memref.size)
 			continue;
 
 		if (internal_imp->type == REGISTERED) {
@@ -495,7 +507,7 @@ static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 				continue;
 			}
 
-			memcpy(mem_source->buffer, internal_imp->reg_address,
+			memcpy(mem_source->buffer + offset, internal_imp->reg_address,
 					operation->params[i].memref.size);
 		}
 	}
