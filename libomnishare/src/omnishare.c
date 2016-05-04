@@ -90,7 +90,7 @@ uint32_t omnishare_generate_root_key(uint8_t *key, uint32_t *key_size)
 	 * paramater key is already upto date. If the ret is TEEC_ERROR_SHORT_BUFFER, this can be
 	 * used to let the caller know how big the required buffer actually is.
 	 */
-	*key_size = inout_mem.size;
+	*key_size = operation.params[0].memref.size;
 
 	/*
 	 * Cleanup any allocated shared memory
@@ -264,7 +264,7 @@ uint32_t omnishare_do_crypto(uint8_t *key_chain, uint32_t key_count, uint32_t ke
 	ret = TEEC_InvokeCommand(&g_session, CMD_DO_CRYPTO, &operation, &retOrigin);
 
 	/* Inform the caller of the number of bytes actually used in the destination buffer */
-	*dest_len = dest_mem.size;
+	*dest_len = operation.params[3].memref.size;
 
 free_shm:
 	TEEC_ReleaseSharedMemory(&key_mem);
