@@ -21,8 +21,13 @@
 #include "../include/tee_internal_api.h"
 
 /* Start Open-TEE spesifics. NOT GP Compliant. For debugin sake */
-#include "../include/tee_logging.h"
-#define PRI_STR(str)	    OT_LOG1(LOG_DEBUG, str);
+#include "tee_logging.h"
+
+
+#include <syslog.h>
+#define OT_LOG1(level, message, ...) syslog(level, message, ##__VA_ARGS__)
+
+#define PRI_STR(str)        OT_LOG1(LOG_DEBUG, str);
 #define PRI(str, ...)       OT_LOG1(LOG_DEBUG, "%s : " str "\n",  __func__, ##__VA_ARGS__);
 #define PRI_OK(str, ...)    OT_LOG1(LOG_DEBUG, " [OK] : %s : " str "\n",  __func__, ##__VA_ARGS__);
 #define PRI_YES(str, ...)   OT_LOG1(LOG_DEBUG, " YES? : %s : " str "\n",  __func__, ##__VA_ARGS__);
@@ -30,10 +35,77 @@
 #define PRI_ABORT(str, ...) OT_LOG1(LOG_DEBUG, "ABORT!: %s : " str "\n",  __func__, ##__VA_ARGS__);
 /* End Open-TEE spesifics */
 
+#define NaN 34213456 //Not used in GP!
 #define SIZE_OF_VEC(vec) (sizeof(vec) - 1)
 #define MAX_HASH_OUTPUT_LENGTH 64 /* sha512 */
 
-/* sha256 (NIST) */
+static uint32_t compare_opmultiple_info(TEE_OperationInfoMultiple *info,
+					TEE_OperationInfoMultiple *e_info);
+
+//aes gcm 256: encrypt
+uint8_t aes_gcm_enc_key_256[] = "\x36\xd5\x9c\x85\x72\x26\xd2\xcb\xc9\x4c\x70\x87\xbf\x89"
+	"\x9b\xe6\x08\x74\x57\xcf\x7d\xe9\xd5\x26\xf1\x8c\x60\xc9\x92\x39\x09\xd4";
+uint8_t aes_gcm_enc_iv_256[] = "\x1a";
+uint8_t aes_gcm_enc_plain_256[] = "\x02\x6b\xf2\x25\xe7\xba\x1c\x68\x43\xc5\xd4\x57\xaa\x29\xfd\x3b";
+uint8_t aes_gcm_enc_aad_256[] = "\x29\x55\x1b\x35\x43\x53\xa5\xc8\x6a\x43\xd4\x72\xa0\x44\xaa\xcc"
+	"\x62\xf2\x37\xe6\xa6\xa2\xf6\x7c\x3f\x09\x78\x22\xd6\x91\x43\xa5"
+	"\xaf\x75\x3e\x01\x0b\x14\x9c\xc1\xe0\xb9\x8b\x2c\x6b\x19\x58\xa2"
+	"\x64\xf2\x31\x10\xf4\xa4\xc7\x67\x79\x71\xf4\x46\x45\x08\xe7\xd8"
+	"\x55\x8f\x24\xf5\x4a\x49\xaa\x66\xda\xd0\x6f\x08\x5f\x8b\x88\xa3"
+	"\x12\x38\xbc\x5d\xe1\x75\x34\x21\xda\xe4";
+uint8_t aes_gcm_enc_cipher_256[] = "\xac\xb2\x08\xe4\x76\xeb\xd8\xaf\x21\xa2\x27\x33\x13\x25\x06\x5f";
+uint8_t aes_gcm_enc_tag_256[] = "\x07\x38\x2d\xf9\x7d\x7b\x87\x6e\x60\x88\x03\x6f\x6c\xaa\xda\x93";
+
+//aes gcm 256: decrypt
+uint8_t aes_gcm_dec_key_256[] = "\x74\x58\xa2\x0f\x61\x08\x9b\x97\x18\x4b\xc6\xd5\xc2"
+	"\x2a\x43\xa1\xc8\xf4\x93\x71\x10\x26\xf8\xdd\x49\xc3\xe0\xde\xfd\x33\x4e\x03";
+uint8_t aes_gcm_dec_iv_256[] = "\x68";
+uint8_t aes_gcm_dec_cipher_256[] = "\xc7\x1f\x63\xe0\x0b\x75\x65\x98\x5d\xf7\x11\x57\x61\xeb\x48"
+	"\x96\x1e\x20\xeb\xd4\x85\x7d\xd1\x0c\x87\xf1\xf4\xfe\x36\x57\x82\x79\xd7\x58\x91\x63\x1b\xfe"
+	"\xa1\xff\x71\xe5\xdf\xa5\x34\xa9\x22\xd0\x13\x38\x89";
+uint8_t aes_gcm_dec_aad_256[] = "\x68\x1f\xaa\x07\x7d\xd1\x70\xf7\x7b\x57\x3d\x41\x1d\x4d\xc3\x1a";
+uint8_t aes_gcm_dec_tag_256[] = "\xc5\xea\xb2\xf1\xb5\x2d\x40\xae\xdd\x50\xae\xef\xd9\xb5\x9a";
+uint8_t aes_gcm_dec_plain_256[] = "\xd4\xe4\xfb\x6f\x34\xdf\xc1\xd4\x69\x98\xc5\x98\x69\xbf\x4f\x3d"
+	"\x92\x28\xa8\xba\x70\xba\x3a\x68\xac\xea\xc3\xc6\x45\xec\x64\x00\xd0\xb6"
+	"\x12\x34\x15\x30\xa0\xf3\xcf\xc1\x8f\x7f\x49\x3b\x1d\x42\xa5\x97\x62";
+
+//aes rfc3602
+uint8_t aes_cbc_key_128[] = "\xc2\x86\x69\x6d\x88\x7c\x9a\xa0\x61\x1b\xbb\x3e\x20\x25\xa4\x5a";
+uint8_t aes_cbc_iv_128[]  = "\x56\x2e\x17\x99\x6d\x09\x3d\x28\xdd\xb3\xba\x69\x5a\x2e\x6f\x58";
+uint8_t aes_cbc_plain_128[] =  "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
+	                       "\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f";
+uint8_t aes_cbc_cipher_128[] = "\xd2\x96\xcd\x94\xc2\xcc\xcf\x8a\x3a\x86\x30\x28\xb5\xe1\xdc\x0a"
+	                       "\x75\x86\x60\x2d\x25\x3c\xff\xf9\x1b\x82\x66\xbe\xa6\xd6\x1a\xb1";
+
+//aes NIST: https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38a.pdf
+uint8_t aes_ctr_key_256[] = "\x60\x3d\xeb\x10\x15\xca\x71\xbe\x2b\x73\xae\xf0\x85\x7d\x77\x81"
+	"\x1f\x35\x2c\x07\x3b\x61\x08\xd7\x2d\x98\x10\xa3\x09\x14\xdf\xf4";
+uint8_t aes_ctr_ctr_256[] = "\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff";
+uint8_t aes_ctr_plain_256[] = "\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96\xe9\x3d\x7e\x11\x73\x93\x17\x2a";
+uint8_t aes_ctr_cipher_256[] = "\x60\x1e\xc3\x13\x77\x57\x89\xa5\xb7\xa7\xf5\x04\xbb\xf3\xd2\x28";
+
+uint8_t aes_ctr_key_192[] = "\x8e\x73\xb0\xf7\xda\x0e\x64\x52\xc8\x10\xf3\x2b\x80\x90\x79\xe5\x62\xf8\xea\xd2\x52\x2c\x6b\x7b";
+uint8_t aes_ctr_ctr_192[] = "\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff";
+uint8_t aes_ctr_plain_192[] = "\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96\xe9\x3d\x7e\x11\x73\x93\x17\x2a";
+uint8_t aes_ctr_cipher_192[] = "\x1a\xbc\x93\x24\x17\x52\x1c\xa2\x4f\x2b\x04\x59\xfe\x7e\x6e\x0b";
+
+//hmac NIST: https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/mac/hmactestvectors.zip
+uint8_t hmac_sha1_key[] = "\x59\x78\x59\x28\xd7\x25\x16\xe3\x12\x72";
+uint8_t hmac_sha1_msg[] = "\xa3\xce\x88\x99\xdf\x10\x22\xe8\xd2\xd5\x39\xb4\x7b\xf0"
+	"\xe3\x09\xc6\x6f\x84\x09\x5e\x21\x43\x8e\xc3\x55\xbf\x11"
+	"\x9c\xe5\xfd\xcb\x4e\x73\xa6\x19\xcd\xf3\x6f\x25\xb3\x69"
+	"\xd8\xc3\x8f\xf4\x19\x99\x7f\x0c\x59\x83\x01\x08\x22\x36"
+	"\x06\xe3\x12\x23\x48\x3f\xd3\x9e\xde\xaa\x4d\x3f\x0d\x21"
+	"\x19\x88\x62\xd2\x39\xc9\xfd\x26\x07\x41\x30\xff\x6c\x86"
+	"\x49\x3f\x52\x27\xab\x89\x5c\x8f\x24\x4b\xd4\x2c\x7a\xfc"
+	"\xe5\xd1\x47\xa2\x0a\x59\x07\x98\xc6\x8e\x70\x8e\x96\x49"
+	"\x02\xd1\x24\xda\xde\xcd\xbd\xa9\xdb\xd0\x05\x1e\xd7\x10"
+	"\xe9\xbf";
+uint8_t hmac_sha1_mac[] = "\x3c\x81\x62\x58\x9a\xaf\xae\xe0\x24\xfc"
+	"\x9a\x5c\xa5\x0d\xd2\x33\x6f\xe3\xeb\x28";
+
+
+// sha256 (NIST)
 uint8_t sha256msg[] = "\x45\x11\x01\x25\x0e\xc6\xf2\x66\x52\x24\x9d\x59\xdc\x97\x4b\x73"
 		      "\x61\xd5\x71\xa8\x10\x1c\xdf\xd3\x6a\xba\x3b\x58\x54\xd3\xae\x08"
 		      "\x6b\x5f\xdd\x45\x97\x72\x1b\x66\xe3\xc0\xdc\x5d\x8c\x60\x6d\x96"
@@ -49,7 +121,12 @@ uint8_t sha256msg[] = "\x45\x11\x01\x25\x0e\xc6\xf2\x66\x52\x24\x9d\x59\xdc\x97\
 uint8_t sha256hash[] = "\x3c\x59\x3a\xa5\x39\xfd\xcd\xae\x51\x6c\xdf\x2f\x15\x00\x0f\x66"
 		       "\x34\x18\x5c\x88\xf5\x05\xb3\x97\x75\xfb\x9a\xb1\x37\xa1\x0a\xa2";
 
-/* RSA (NIST) */
+//https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/shs/shabittestvectors.zip
+uint8_t sha1msg[] = "\xc4\xa7\x56\xf6\x02\x4a\x9d\xce\xab\xf6\xe2\x64\xff\xff\xf9\xc7\x19\x21\x7f\xb4\x18\x14\x1a\xc5\x7d\x60\x02\xe5\xd4\x73\xc1\x07\x97\xf1\x37\x18\x4f\x4b\xe0\x31\xfc\x93\x5a\x12\xb7\x8f\x21\xcc\x96\x0c\x9e\xbd\xd0\x74\x60\xc1\x21\xa3\xa9\xa7\x70\xf7\x2c";
+uint8_t sha1hash[] = "\x36\xfd\x10\x1b\x7d\x07\x68\x5a\x3f\x8a\xaa\x04\x73\x7c\x95\x4d\x9a\xb7\xba\xa5";
+
+// RSA (NIST)
+//https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/dss/186-2rsatestvectors.zip
 uint8_t modulus[] = "\xa8\xd6\x8a\xcd\x41\x3c\x5e\x19\x5d\x5e\xf0\x4e\x1b\x4f\xaa\xf2"
 		    "\x42\x36\x5c\xb4\x50\x19\x67\x55\xe9\x2e\x12\x15\xba\x59\x80\x2a"
 		    "\xaf\xba\xdb\xf2\x56\x4d\xd5\x50\x95\x6a\xbb\x54\xf8\xb1\xc9\x17"
@@ -67,6 +144,8 @@ uint8_t public_exp[] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
 		       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03";
+
+uint8_t public_exp_4_bytes[] = "\x00\x00\x00\x03";
 
 uint8_t private_exp[] = "\x1c\x23\xc1\xcc\xe0\x34\xba\x59\x8f\x8f\xd2\xb7\xaf\x37\xf1\xd3"
 			"\x0b\x09\x0f\x73\x62\xae\xe6\x8e\x51\x87\xad\xae\x49\xb9\x95\x5c"
@@ -95,11 +174,10 @@ uint8_t rsa_sig[] = "\x17\x50\x15\xbd\xa5\x0a\xbe\x0f\xa7\xd3\x9a\x83\x53\x88\x5
 		    "\x1b\x44\xe8\xe8\xd0\x6b\x3e\xf4\x9c\xee\x61\x97\x58\x21\x63\xa8"
 		    "\x49\x00\x89\xca\x65\x4c\x00\x12\xfc\xe1\xba\x65\x11\x08\x97\x50";
 
+
 static int calc_digest(algorithm_Identifier hash_alg,
-		       void *msg,
-		       uint32_t msg_len,
-		       void *hash,
-		       uint32_t *hash_len)
+		       void *msg, size_t msg_len,
+		       void *hash, size_t *hash_len)
 {
 	TEE_OperationHandle operation = (TEE_OperationHandle)NULL;
 	TEE_Result ret;
@@ -128,13 +206,32 @@ static uint32_t sha256_digest()
 	TEE_OperationHandle digest_handler_2 = (TEE_OperationHandle)NULL;
 	void *rand_msg = NULL;
 	void *rand_msg_2 = NULL;
+	uint32_t op_alg = TEE_ALG_SHA256;
+	uint32_t op_mode = TEE_MODE_DIGEST;
+	uint32_t op_keysize = 0;
+	uint32_t sha256Len = 32;
+	uint32_t op_class = TEE_OPERATION_DIGEST;
+	size_t operationSize;
 	char hash[64] = {0};
 	char hash_2[64] = {0};
-	uint32_t rand_msg_len = 1000;
-	uint32_t hash_len = 64;
-	uint32_t hash_len_2 = 64;
-	uint32_t fn_ret = 1; /* Initialized error return */
-
+	size_t rand_msg_len = 1000;
+	size_t hash_len = 64;
+	size_t hash_len_2 = 64;
+	size_t fn_ret = 1; /* Initialized error return */
+	TEE_OperationInfoMultiple info;
+	
+	TEE_OperationInfoMultiple expectInfoM;
+	expectInfoM.algorithm = op_alg;
+	expectInfoM.operationClass = op_class;
+	expectInfoM.mode = op_mode;
+	expectInfoM.digestLength = sha256Len;
+	expectInfoM.maxKeySize = 0;
+	expectInfoM.handleState = (TEE_HANDLE_FLAG_KEY_SET | TEE_HANDLE_FLAG_INITIALIZED);
+	expectInfoM.operationState = TEE_OPERATION_STATE_INITIAL;
+	expectInfoM.numberOfKeys = 0;
+	expectInfoM.keyInformation[0].keySize = 0;
+	expectInfoM.keyInformation[0].requiredKeyUsage = 0;
+	
 	rand_msg = TEE_Malloc(rand_msg_len, 0);
 	rand_msg_2 = TEE_Malloc(rand_msg_len, 0);
 	if (rand_msg == NULL || rand_msg_2 == NULL) {
@@ -145,24 +242,37 @@ static uint32_t sha256_digest()
 	TEE_GenerateRandom(rand_msg, rand_msg_len);
 	TEE_MemMove(rand_msg_2, rand_msg, rand_msg_len);
 
-	ret = TEE_AllocateOperation(&digest_handler, TEE_ALG_SHA256, TEE_MODE_DIGEST, 0);
+	ret = TEE_AllocateOperation(&digest_handler, op_alg, op_mode, op_keysize);
 	if (ret != TEE_SUCCESS) {
 		PRI_FAIL("Cant alloc first handler");
 		goto err;
 	}
 
-	ret = TEE_AllocateOperation(&digest_handler_2, TEE_ALG_SHA256, TEE_MODE_DIGEST, 0);
+	ret = TEE_AllocateOperation(&digest_handler_2, op_alg, op_mode, op_keysize);
 	if (ret != TEE_SUCCESS) {
 		PRI_FAIL("Cant alloc second handler");
 		goto err;
 	}
 
+	TEE_GetOperationInfoMultiple(digest_handler, &info, &operationSize);
+	if (compare_opmultiple_info(&info, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (1)");
+		goto err;
+	}
+	
 	TEE_DigestUpdate(digest_handler, rand_msg, rand_msg_len);
 	TEE_DigestUpdate(digest_handler, rand_msg, rand_msg_len);
 
 	TEE_DigestUpdate(digest_handler_2, rand_msg_2, rand_msg_len);
 	TEE_DigestUpdate(digest_handler_2, rand_msg_2, rand_msg_len);
 
+	TEE_GetOperationInfoMultiple(digest_handler, &info, &operationSize);
+	expectInfoM.operationState = TEE_OPERATION_STATE_ACTIVE;
+	if (compare_opmultiple_info(&info, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (2)");
+		goto err;
+	}
+	
 	ret = TEE_DigestDoFinal(digest_handler, NULL, 0, hash, &hash_len);
 	if (ret != TEE_SUCCESS) {
 		PRI_FAIL("Failed final first");
@@ -185,6 +295,13 @@ static uint32_t sha256_digest()
 		goto err;
 	}
 
+	TEE_GetOperationInfoMultiple(digest_handler, &info, &operationSize);
+	expectInfoM.operationState = TEE_OPERATION_STATE_INITIAL;
+	if (compare_opmultiple_info(&info, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (3)");
+		goto err;
+	}
+	
 	fn_ret = 0; /* OK */
 
 err:
@@ -199,19 +316,122 @@ err:
 	return fn_ret;
 }
 
+static uint32_t compare_opmultiple_info(TEE_OperationInfoMultiple *info,
+					TEE_OperationInfoMultiple *e_info)
+{
+	//NOTE: Pass "NaN" if not interested..
+
+	uint32_t e_value, i_value;
+
+	if (info == NULL || e_info == NULL) {
+		PRI_FAIL("info is NULL");
+		return 1;
+	}
+
+	if (e_info->algorithm != NaN && e_info->algorithm != info->algorithm) {
+		PRI_FAIL("algorithm mismatch (expected[%u]; fromInfo[%u])",
+			 e_info->algorithm, info->algorithm);
+		return 1;
+	}
+
+	if (e_info->operationClass != NaN && e_info->operationClass != info->operationClass) {
+		PRI_FAIL("operationClass mismatch (expected[%u]; fromInfo[%u])",
+			 e_info->operationClass, info->operationClass);
+		return 1;
+	}
+	
+	if (e_info->mode != NaN && e_info->mode != info->mode) {
+		PRI_FAIL("mode mismatch (expected[%u]; fromInfo[%u])",
+			 e_info->mode, info->mode);
+		return 1;
+	}
+
+	if (e_info->digestLength != NaN && e_info->digestLength != info->digestLength) {
+		PRI_FAIL("digestLength mismatch (expected[%u]; fromInfo[%u])",
+			 e_info->digestLength, info->digestLength);
+		return 1;
+	}
+
+	if (e_info->maxKeySize != NaN && e_info->maxKeySize != info->maxKeySize) {
+		PRI_FAIL("maxKeySize mismatch (expected[%u]; fromInfo[%u])",
+			 e_info->maxKeySize, info->maxKeySize);
+		return 1;
+	}
+
+	if (e_info->handleState != NaN && e_info->handleState != info->handleState) {
+		PRI_FAIL("handleState mismatch (expected[%u]; fromInfo[%u])",
+			 e_info->handleState, info->handleState);
+		return 1;
+	}
+
+	if (e_info->operationState != NaN && e_info->operationState != info->operationState) {
+		PRI_FAIL("operationState mismatch (expected[%u]; fromInfo[%u])",
+			 e_info->operationState, info->operationState);
+		return 1;
+	}
+
+	if (e_info->numberOfKeys != NaN && e_info->numberOfKeys != info->numberOfKeys) {
+		PRI_FAIL("numberOfKeys mismatch (expected[%u]; fromInfo[%u])",
+			 e_info->numberOfKeys, info->numberOfKeys);
+		return 1;
+	}
+
+	if (e_info->keyInformation[0].keySize != NaN &&
+	    e_info->keyInformation[0].keySize != info->keyInformation[0].keySize) {
+		PRI_FAIL("keySize mismatch (expected[%u]; fromInfo[%u])",
+			 e_info->keyInformation[0].keySize, info->keyInformation[0].keySize);
+		return 1;
+	}
+
+	if (e_info->keyInformation[0].requiredKeyUsage != NaN &&
+	    e_info->keyInformation[0].requiredKeyUsage != info->keyInformation[0].requiredKeyUsage) {
+		PRI_FAIL("requiredKeyUsage mismatch (expected[%u]; fromInfo[%u])",
+			 e_info->keyInformation[0].requiredKeyUsage,
+			 info->keyInformation[0].requiredKeyUsage);
+		return 1;
+	}
+
+	return 0;
+}
+
 static uint32_t sha256_digest_nist()
 {
 	TEE_Result ret = TEE_SUCCESS;
 	TEE_OperationHandle sha256_operation = (TEE_OperationHandle)NULL;
+	TEE_OperationInfoMultiple info;
+	uint32_t op_alg = TEE_ALG_SHA256;
+	uint32_t op_mode = TEE_MODE_DIGEST;
+	uint32_t op_class = TEE_OPERATION_DIGEST;
+	uint32_t keySize = 0;
+	uint32_t sha256Size = 32;
+	uint32_t operationSize;
 	char hash[64] = {0};
 	uint32_t hash_len = MAX_HASH_OUTPUT_LENGTH, fn_ret = 1; /* Initialized error return */
 
-	ret = TEE_AllocateOperation(&sha256_operation, TEE_ALG_SHA256, TEE_MODE_DIGEST, 0);
+	TEE_OperationInfoMultiple expectInfoM;
+	expectInfoM.algorithm = op_alg;
+	expectInfoM.operationClass = op_class;
+	expectInfoM.mode = op_mode;
+	expectInfoM.digestLength = sha256Size;
+	expectInfoM.maxKeySize = 0;
+	expectInfoM.handleState = (TEE_HANDLE_FLAG_KEY_SET | TEE_HANDLE_FLAG_INITIALIZED);
+	expectInfoM.operationState = TEE_OPERATION_STATE_INITIAL;
+	expectInfoM.numberOfKeys = 0;
+	expectInfoM.keyInformation[0].keySize = 0;
+	expectInfoM.keyInformation[0].requiredKeyUsage = 0;
+	
+	ret = TEE_AllocateOperation(&sha256_operation, op_alg, op_mode, keySize);
 	if (ret != TEE_SUCCESS) {
 		PRI_FAIL("Cant alloc sha256 handler");
 		goto err;
 	}
 
+	TEE_GetOperationInfoMultiple(sha256_operation, &info, &operationSize);
+	if (compare_opmultiple_info(&info, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (1)");
+		goto err;
+	}
+	
 	ret = TEE_DigestDoFinal(sha256_operation,
 				sha256msg, SIZE_OF_VEC(sha256msg), hash, &hash_len);
 	if (ret != TEE_SUCCESS) {
@@ -229,6 +449,12 @@ static uint32_t sha256_digest_nist()
 		goto err;
 	}
 
+	TEE_GetOperationInfoMultiple(sha256_operation, &info, &operationSize);
+	if (compare_opmultiple_info(&info, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (2)");
+		goto err;
+	}
+	
 	fn_ret = 0; /* OK */
 
 err:
@@ -248,15 +474,30 @@ static int warp_sym_op(TEE_ObjectHandle key,
 		       void *in_chunk,
 		       size_t in_chunk_len,
 		       void *out_chunk,
-		       size_t *out_chunk_len)
+		       size_t *out_chunk_len,
+		       uint32_t test_maxKeySize,
+		       uint32_t test_keySize)
 {
 	TEE_Result ret = TEE_SUCCESS;
-	TEE_OperationHandle handle = (TEE_OperationHandle)NULL;
-	uint32_t write_bytes = 0;
-	uint32_t total_write_bytes = 0;
+	TEE_OperationHandle handle = (TEE_OperationHandle *)NULL;
+	size_t write_bytes = 0, total_write_bytes = 0;
 	TEE_ObjectInfo info;
-
-	TEE_GetObjectInfo(key, &info);
+	TEE_OperationInfoMultiple infoM;
+	TEE_OperationInfoMultiple expectInfoM;
+	size_t operationSize;
+	
+	expectInfoM.algorithm = alg;
+	expectInfoM.operationClass = TEE_OPERATION_CIPHER;
+	expectInfoM.mode = mode;
+	expectInfoM.digestLength = 0;
+	expectInfoM.maxKeySize = test_maxKeySize;
+	expectInfoM.handleState = 0;
+	expectInfoM.operationState = TEE_OPERATION_STATE_INITIAL;
+	expectInfoM.numberOfKeys = 0;
+	expectInfoM.keyInformation[0].keySize = 0;
+	expectInfoM.keyInformation[0].requiredKeyUsage = 0;
+	
+	TEE_GetObjectInfo1(key, &info);
 
 	ret = TEE_AllocateOperation(&handle, alg, mode, info.maxObjectSize);
 	if (ret != TEE_SUCCESS) {
@@ -264,13 +505,45 @@ static int warp_sym_op(TEE_ObjectHandle key,
 		goto err;
 	}
 
+	TEE_GetOperationInfoMultiple(handle, &infoM, &operationSize);
+	if (compare_opmultiple_info(&infoM, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (1)");
+		goto err;
+	}
+	
 	ret = TEE_SetOperationKey(handle, key);
 	if (ret != TEE_SUCCESS) {
 		PRI_FAIL("Failed to set key : 0x%x", ret);
 		goto err;
 	}
 
+	TEE_GetOperationInfoMultiple(handle, &infoM, &operationSize);
+	expectInfoM.maxKeySize = test_maxKeySize;
+	expectInfoM.keyInformation[0].keySize = test_keySize;
+	expectInfoM.numberOfKeys = 1;
+	expectInfoM.handleState = TEE_HANDLE_FLAG_KEY_SET;
+	if (compare_opmultiple_info(&infoM, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (2)");
+		goto err;
+	}
+	
 	TEE_CipherInit(handle, IV, IV_len);
+
+	TEE_GetOperationInfoMultiple(handle, &infoM, &operationSize);
+	expectInfoM.handleState = (TEE_HANDLE_FLAG_KEY_SET | TEE_HANDLE_FLAG_INITIALIZED);
+	expectInfoM.operationState = TEE_OPERATION_STATE_ACTIVE;
+	if (compare_opmultiple_info(&infoM, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (3)");
+		goto err;
+	}
+
+	write_bytes = 1;
+	ret = TEE_CipherUpdate(handle, in_chunk, in_chunk_len, out_chunk, &write_bytes);
+	if (ret != TEE_ERROR_SHORT_BUFFER) {
+		PRI_FAIL("Updated failure (expected short buffer): 0x%x", ret);
+		goto err;
+	}
+	
 
 	write_bytes = *out_chunk_len;
 
@@ -282,7 +555,7 @@ static int warp_sym_op(TEE_ObjectHandle key,
 
 	total_write_bytes += write_bytes;
 	write_bytes = *out_chunk_len - total_write_bytes;
-
+		
 	ret = TEE_CipherDoFinal(handle, NULL, 0,
 				(unsigned char *)out_chunk + total_write_bytes, &write_bytes);
 	if (ret != TEE_SUCCESS) {
@@ -291,6 +564,15 @@ static int warp_sym_op(TEE_ObjectHandle key,
 	}
 
 	*out_chunk_len = total_write_bytes + write_bytes;
+
+	TEE_GetOperationInfoMultiple(handle, &infoM, &operationSize);
+	expectInfoM.handleState = TEE_HANDLE_FLAG_KEY_SET;
+	expectInfoM.operationState = TEE_OPERATION_STATE_INITIAL;
+	if (compare_opmultiple_info(&infoM, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (4)");
+		goto err;
+	}
+	
 	TEE_FreeOperation(handle);
 	return 0;
 err:
@@ -343,11 +625,11 @@ static uint32_t aes_256_cbc_enc_dec()
 	}
 
 	if (warp_sym_op(key, TEE_MODE_ENCRYPT, IV, IVlen, alg,
-			plain, plain_len, cipher, &cipher_len))
+			plain, plain_len, cipher, &cipher_len, key_size, key_size))
 		goto err;
 
 	if (warp_sym_op(key, TEE_MODE_DECRYPT, IV, IVlen, alg,
-			cipher, cipher_len, dec_plain, &dec_plain_len))
+			cipher, cipher_len, dec_plain, &dec_plain_len, key_size, key_size))
 		goto err;
 
 	if (TEE_MemCompare(dec_plain, plain, dec_plain_len)) {
@@ -362,9 +644,6 @@ err:
 	TEE_Free(IV);
 	TEE_Free(cipher);
 	TEE_Free(dec_plain);
-
-	if (fn_ret == 0)
-		PRI_OK("-");
 
 	return fn_ret;
 }
@@ -414,11 +693,11 @@ static uint32_t aes_128_cbc_enc_dec()
 	}
 
 	if (warp_sym_op(key, TEE_MODE_ENCRYPT, IV, IVlen, alg,
-			plain, plain_len, cipher, &cipher_len))
+			plain, plain_len, cipher, &cipher_len, key_size, key_size))
 		goto err;
 
 	if (warp_sym_op(key, TEE_MODE_DECRYPT, IV, IVlen, alg,
-			cipher, cipher_len, dec_plain, &dec_plain_len))
+			cipher, cipher_len, dec_plain, &dec_plain_len, key_size, key_size))
 		goto err;
 
 	if (TEE_MemCompare(dec_plain, plain, dec_plain_len)) {
@@ -433,10 +712,6 @@ err:
 	TEE_Free(IV);
 	TEE_Free(cipher);
 	TEE_Free(dec_plain);
-
-	if (fn_ret == 0)
-		PRI_OK("-");
-
 	return fn_ret;
 }
 
@@ -446,15 +721,15 @@ static int warp_asym_op(TEE_ObjectHandle key,
 			TEE_Attribute *params,
 			uint32_t paramCount,
 			void *in_chunk,
-			uint32_t in_chunk_len,
+			size_t in_chunk_len,
 			void *out_chunk,
-			uint32_t *out_chunk_len)
+			size_t *out_chunk_len)
 {
 	TEE_Result ret = TEE_SUCCESS;
 	TEE_OperationHandle handle = (TEE_OperationHandle)NULL;
 	TEE_ObjectInfo info;
 
-	TEE_GetObjectInfo(key, &info);
+	TEE_GetObjectInfo1(key, &info);
 
 	ret = TEE_AllocateOperation(&handle, alg, mode, info.maxObjectSize);
 	if (ret != TEE_SUCCESS) {
@@ -521,72 +796,105 @@ err:
 	return 1;
 }
 
-static uint32_t rsa_sign_nist_sha1_pkcs()
+static uint32_t do_rsa_sign_nist_sha1_pkcs(bool fromStorage)
 {
 	TEE_Result ret = TEE_SUCCESS;
-	TEE_ObjectHandle object = (TEE_ObjectHandle)NULL;
-	char hash[64] = {0}; /*sha1*/
-	char signature[256] = {0}; /* 1024 */
-	uint32_t signature_len = 256, hash_len = 64;
+	TEE_ObjectHandle nistKey = NULL, usedKey = NULL;
+	TEE_ObjectHandle perObject = NULL;
+	char hash[64] = {0}; //sha1
+	char signature[256] = {0}; //1024
+	size_t signature_len = 256, hash_len = 64;
 	TEE_Attribute rsa_attrs[3];
 	uint32_t rsa_alg = TEE_ALG_RSASSA_PKCS1_V1_5_SHA1, fn_ret = 1; /* Init error return */;
-
+	char objID[] = "2222222222222222222222222222223322226622222222222222222222222222";//64
+	size_t objID_len = 45;
+	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META;
+	
 	/* Modulo */
 	rsa_attrs[0].attributeID = TEE_ATTR_RSA_MODULUS;
 	rsa_attrs[0].content.ref.buffer = modulus;
 	rsa_attrs[0].content.ref.length = SIZE_OF_VEC(modulus);
 
 	/* Public exp */
+	//rsa_attrs[1].attributeID = TEE_ATTR_RSA_PUBLIC_EXPONENT;
+	//rsa_attrs[1].content.ref.buffer = public_exp;
+	//rsa_attrs[1].content.ref.length = SIZE_OF_VEC(public_exp);
+
 	rsa_attrs[1].attributeID = TEE_ATTR_RSA_PUBLIC_EXPONENT;
-	rsa_attrs[1].content.ref.buffer = public_exp;
-	rsa_attrs[1].content.ref.length = SIZE_OF_VEC(public_exp);
+	rsa_attrs[1].content.ref.buffer = public_exp_4_bytes;
+	rsa_attrs[1].content.ref.length = SIZE_OF_VEC(public_exp_4_bytes);
 
 	/* Private exp */
 	rsa_attrs[2].attributeID = TEE_ATTR_RSA_PRIVATE_EXPONENT;
 	rsa_attrs[2].content.ref.buffer = private_exp;
 	rsa_attrs[2].content.ref.length = SIZE_OF_VEC(private_exp);
 
-	ret = TEE_AllocateTransientObject(TEE_TYPE_RSA_KEYPAIR, 1024, &object);
+	ret = TEE_AllocateTransientObject(TEE_TYPE_RSA_KEYPAIR, 1024, &nistKey);
 	if (ret != TEE_SUCCESS) {
 		PRI_FAIL("Cant alloc object handler");
 		goto err;
 	}
 
-	ret = TEE_PopulateTransientObject(object, (TEE_Attribute *)&rsa_attrs, 3);
+	ret = TEE_PopulateTransientObject(nistKey, (TEE_Attribute *)&rsa_attrs, 3);
 	if (ret != TEE_SUCCESS) {
 		PRI_FAIL("RSA key population failed");
 		goto err;
 	}
 
+	
+	if (fromStorage) {
+		ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)objID, objID_len,
+						 0, nistKey, NULL, 0,
+						 (TEE_ObjectHandle *)NULL);
+		if (ret != TEE_SUCCESS) {
+			PRI_FAIL("Create persisten object failed : 0x%x", ret);
+			goto err;
+		}
+
+		ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE,
+					       (void *)objID, objID_len, flags, &perObject);
+		if (ret != TEE_SUCCESS) {
+			PRI_FAIL("Open failed : 0x%x", ret);
+			goto err;
+		}
+
+		usedKey = perObject;
+	} else {
+		usedKey = nistKey;
+	}
+	
 	if (calc_digest(TEE_ALG_SHA1, rsa_msg, SIZE_OF_VEC(rsa_msg), hash, &hash_len))
 		goto err;
 
-	if (warp_asym_op(object, TEE_MODE_SIGN, rsa_alg, (TEE_Attribute *)NULL, 0,
+	if (warp_asym_op(usedKey, TEE_MODE_SIGN, rsa_alg, (TEE_Attribute *)NULL, 0,
 			 (void *)hash, hash_len, (void *)signature, &signature_len))
 		goto err;
 
 	if (SIZE_OF_VEC(rsa_sig) != signature_len) {
-		PRI_FAIL("Signature length invalid");
+		PRI_FAIL("Signature length invalid (expected[%u]; calculated[%u])",
+			 SIZE_OF_VEC(rsa_sig), signature_len);
 		goto err;
 	}
 
 	if (TEE_MemCompare(rsa_sig, signature, signature_len)) {
-		PRI_FAIL("Signature length invalid");
+		PRI_FAIL("Signature invalid");
 		goto err;
 	}
 
-	if (warp_asym_op(object, TEE_MODE_VERIFY, rsa_alg, (TEE_Attribute *)NULL, 0,
+	if (warp_asym_op(usedKey, TEE_MODE_VERIFY, rsa_alg, (TEE_Attribute *)NULL, 0,
 			 (void *)hash, hash_len, (void *)signature, &signature_len))
 		goto err;
 
 	fn_ret = 0; /* OK */
 
 err:
-	TEE_FreeTransientObject(object);
-
-	if (fn_ret == 0)
-		PRI_OK("-");
-
+	TEE_FreeTransientObject(nistKey);
+	if (fromStorage) {
+		TEE_CloseAndDeletePersistentObject1(perObject);
+	} else {
+		//Nothing due nistKey == usedKey
+	}
+	
 	return fn_ret;
 }
 
@@ -817,7 +1125,7 @@ err:
 	return fn_ret;
 }
 
-static uint32_t HMAC_computation()
+static uint32_t HMAC_computation_basic()
 {
 	TEE_Result ret;
 	TEE_ObjectHandle hmac_key = (TEE_ObjectHandle)NULL;
@@ -829,7 +1137,7 @@ static uint32_t HMAC_computation()
 	char *seed_msg = "TEST";
 	uint32_t fn_ret = 1; /* Initialized error return */
 
-	uint32_t mac_len = 64;
+	size_t mac_len = 64;
 	size_t msg_len = 100;
 
 	void *mac = NULL;
@@ -921,9 +1229,9 @@ static uint32_t RSA_keypair_enc_dec()
 	char *plain_msg = "TEST";
 	uint32_t fn_ret = 1; /* Initialized error return */
 
-	uint32_t plain_len = 10;
-	uint32_t cipher_len = 64;
-	uint32_t dec_plain_len = 64;
+	size_t plain_len = 10;
+	size_t cipher_len = 64;
+	size_t dec_plain_len = 64;
 
 	void *plain = NULL;
 	void *cipher = NULL;
@@ -1141,7 +1449,7 @@ static uint32_t read_key_and_do_crypto()
 	fn_ret = 0; /* OK */
 err:
 	TEE_FreeTransientObject(rsa_keypair);
-	TEE_CloseAndDeletePersistentObject(persisten_rsa_keypair);
+	TEE_CloseAndDeletePersistentObject1(persisten_rsa_keypair);
 
 	if (fn_ret == 0)
 		PRI_OK("-");
@@ -1149,30 +1457,878 @@ err:
 	return fn_ret;
 }
 
+
+static uint32_t aes_per()
+{
+	TEE_ObjectHandle perkey = (TEE_ObjectHandle *)NULL;
+	TEE_ObjectHandle key = (TEE_ObjectHandle *)NULL;
+	TEE_Result ret = TEE_SUCCESS;
+	uint32_t key_size = 128;
+	uint32_t obj_type = TEE_TYPE_AES;
+	uint32_t alg = TEE_ALG_AES_CBC_NOPAD;
+	uint32_t fn_ret = 1; // Initialized error return
+	char objID[] = "1111111111111111111111111121111111111111111111111111111111111111";//64
+	uint32_t objID_len = 64;
+	TEE_Attribute aes_key = {0};
+	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META;
+	
+	size_t plain_len = SIZE_OF_VEC(aes_cbc_plain_128);
+	size_t cipher_len = 200; //Random lenght. Function will assign correct length
+	size_t IVlen = SIZE_OF_VEC(aes_cbc_iv_128);
+	size_t expect_cipher_len = SIZE_OF_VEC(aes_cbc_cipher_128);
+		
+	void *plain = NULL;
+	void *cipher = NULL;
+	void *IV = NULL;
+	void *expect_cipher = NULL;
+
+	//AES key
+	aes_key.attributeID = TEE_ATTR_SECRET_VALUE;
+	aes_key.content.ref.length = SIZE_OF_VEC(aes_cbc_key_128);
+	aes_key.content.ref.buffer = aes_cbc_key_128;
+	
+	IV = TEE_Malloc(IVlen, 0);
+	plain = TEE_Malloc(plain_len, 0);
+	cipher = TEE_Malloc(cipher_len, 0);
+	expect_cipher =  TEE_Malloc(expect_cipher_len, 0);
+	if (!IV || !plain || !cipher || !expect_cipher) {
+		PRI_FAIL("Out of memory");
+		goto err;
+	}
+
+	TEE_MemMove(plain, aes_cbc_plain_128, plain_len);
+	TEE_MemMove(IV, aes_cbc_iv_128, IVlen);
+	TEE_MemMove(expect_cipher, aes_cbc_cipher_128, expect_cipher_len);
+
+	/* Alloc and gen keys */
+	ret = TEE_AllocateTransientObject(obj_type, key_size, &key);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to alloc transient object handle : 0x%x", ret);
+		goto err;
+	}
+	
+	ret = TEE_PopulateTransientObject(key, (TEE_Attribute *)&aes_key, 1);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("RSA key population failed");
+		goto err;
+	}
+	
+	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)objID, objID_len,
+					 0, key, NULL, 0, (TEE_ObjectHandle *)NULL);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Create persisten object failed : 0x%x", ret);
+		goto err;
+	}
+
+	ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE,
+				       (void *)objID, objID_len, flags, &perkey);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Open failed : 0x%x", ret);
+		goto err;
+	}
+
+	if (warp_sym_op(perkey, TEE_MODE_ENCRYPT, IV, IVlen, alg,
+			plain, plain_len, cipher, &cipher_len, key_size, key_size)) {
+		goto err;
+	}
+
+	if (expect_cipher_len != cipher_len) {
+		PRI_FAIL("Cipher text length is wrong (expectLen[%u]; cipherLen[%u])",
+			 expect_cipher_len, cipher_len);
+		goto err;
+	}
+	
+	if (TEE_MemCompare(cipher, expect_cipher, expect_cipher_len)) {
+		PRI_FAIL("Cipher text is wrong");
+		goto err;
+	}
+	
+	fn_ret = 0; //Ok
+err:
+	TEE_FreeTransientObject(key);
+	TEE_CloseAndDeletePersistentObject1(perkey);
+	TEE_Free(plain);
+	TEE_Free(IV);
+	TEE_Free(cipher);
+	TEE_Free(expect_cipher);
+	return fn_ret;	
+}
+
+static uint32_t sha1_digest_nist()
+{
+	TEE_Result ret = TEE_SUCCESS;
+	TEE_OperationHandle sha1_operation = (TEE_OperationHandle)NULL;
+	char hash[MAX_HASH_OUTPUT_LENGTH] = {0};
+	uint32_t hash_len = MAX_HASH_OUTPUT_LENGTH, fn_ret = 1; /* Initialized error return */
+
+	ret = TEE_AllocateOperation(&sha1_operation, TEE_ALG_SHA1, TEE_MODE_DIGEST, 0);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Cant alloc sha256 handler");
+		goto err;
+	}
+
+	ret = TEE_DigestDoFinal(sha1_operation,
+				sha1msg, SIZE_OF_VEC(sha1msg), hash, &hash_len);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Digest failed : 0x%x", ret);
+		goto err;
+	}
+
+	if (hash_len != SIZE_OF_VEC(sha1hash)) {
+		PRI_FAIL("Sha1 hash lenght error (expected[%u]; calculated[%u])",
+			 SIZE_OF_VEC(sha1hash), hash_len);
+		goto err;
+	}
+
+	if (TEE_MemCompare(hash, sha1hash, hash_len)) {
+		PRI_FAIL("SHA1 hash is not correct");
+		goto err;
+	}
+
+	fn_ret = 0; /* OK */
+
+err:
+	TEE_FreeOperation(sha1_operation);
+
+	if (fn_ret == 0)
+		PRI_OK("-");
+
+	return fn_ret;
+}
+
+static uint32_t aes_256_ctr_nist()
+{
+	TEE_ObjectHandle key = (TEE_ObjectHandle *)NULL;
+	TEE_Result ret = TEE_SUCCESS;
+	uint32_t key_size = 256;
+	uint32_t obj_type = TEE_TYPE_AES;
+	uint32_t alg = TEE_ALG_AES_CTR;
+	uint32_t fn_ret = 1; // Initialized error return
+	TEE_Attribute aes_key = {0};
+	
+	size_t plain_len = SIZE_OF_VEC(aes_ctr_plain_256);
+	size_t cipher_len = 210; //Random lenght. Function will assign correct length
+	size_t IVlen = SIZE_OF_VEC(aes_ctr_ctr_256);
+	size_t expect_cipher_len = SIZE_OF_VEC(aes_ctr_cipher_256);
+		
+	void *plain = NULL;
+	void *cipher = NULL;
+	void *IV = NULL;
+	void *expect_cipher = NULL;
+
+	//AES key
+	aes_key.attributeID = TEE_ATTR_SECRET_VALUE;
+	aes_key.content.ref.length = SIZE_OF_VEC(aes_ctr_key_256);
+	aes_key.content.ref.buffer = aes_ctr_key_256;
+	
+	IV = TEE_Malloc(IVlen, 0);
+	plain = TEE_Malloc(plain_len, 0);
+	cipher = TEE_Malloc(cipher_len, 0);
+	expect_cipher =  TEE_Malloc(expect_cipher_len, 0);
+	if (!IV || !plain || !cipher || !expect_cipher) {
+		PRI_FAIL("Out of memory");
+		goto err;
+	}
+
+	TEE_MemMove(plain, aes_ctr_plain_256, plain_len);
+	TEE_MemMove(IV, aes_ctr_ctr_256, IVlen);
+	TEE_MemMove(expect_cipher, aes_ctr_cipher_256, expect_cipher_len);
+
+	/* Alloc and gen keys */
+	ret = TEE_AllocateTransientObject(obj_type, key_size, &key);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to alloc transient object handle : 0x%x", ret);
+		goto err;
+	}
+	
+	ret = TEE_PopulateTransientObject(key, (TEE_Attribute *)&aes_key, 1);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("RSA key population failed");
+		goto err;
+	}
+
+	if (warp_sym_op(key, TEE_MODE_ENCRYPT, IV, IVlen, alg,
+			plain, plain_len, cipher, &cipher_len, key_size, key_size)) {
+		goto err;
+	}
+
+	if (expect_cipher_len != cipher_len) {
+		PRI_FAIL("Cipher text length is wrong (expectLen[%u]; cipherLen[%u])",
+			 expect_cipher_len, cipher_len);
+		goto err;
+	}
+	
+	if (TEE_MemCompare(cipher, expect_cipher, expect_cipher_len)) {
+		PRI_FAIL("Cipher text is wrong");
+		goto err;
+	}
+	
+	fn_ret = 0; //Ok
+err:
+	TEE_FreeTransientObject(key);
+	TEE_Free(plain);
+	TEE_Free(IV);
+	TEE_Free(cipher);
+	TEE_Free(expect_cipher);
+
+	return fn_ret;	
+}
+
+static uint32_t hmac_sha1_nist(bool fromStorage)
+{
+	TEE_Result ret;
+	TEE_ObjectHandle nistKey = NULL, usedKey = NULL, perObject = NULL;
+	TEE_OperationHandle operation = (TEE_OperationHandle)NULL;
+	uint32_t key_type = TEE_TYPE_HMAC_SHA1;
+	uint32_t key_size = SIZE_OF_VEC(hmac_sha1_key) * 8; // x * 8 = converts to bits
+	uint32_t max_key_size = 504;
+	uint32_t alg = TEE_ALG_HMAC_SHA1;
+	uint32_t op_mode = TEE_MODE_MAC;
+	uint32_t fn_ret = 1; /* Initialized error return */
+	TEE_Attribute hmac_key;
+	char objID[] = "2222222222222222212342222222222222222222222222222222222222222222";//64
+	uint32_t objID_len = 45;
+	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META;
+	
+	size_t msg_len = SIZE_OF_VEC(hmac_sha1_msg);
+	size_t mac_len = 189; //Random lenght. Function will assign correct length
+	size_t expect_mac_len = SIZE_OF_VEC(hmac_sha1_mac);
+	
+	void *msg = NULL;
+	void *mac = NULL;
+	void *expect_mac = NULL;
+
+	TEE_OperationInfoMultiple infoM;
+	TEE_OperationInfoMultiple expectInfoM;
+	size_t operationSize;
+	
+	expectInfoM.algorithm = alg;
+	expectInfoM.operationClass = TEE_OPERATION_MAC;
+	expectInfoM.mode = op_mode;
+	expectInfoM.digestLength = expect_mac_len;
+	expectInfoM.maxKeySize = max_key_size;
+	expectInfoM.handleState = 0;
+	expectInfoM.operationState = TEE_OPERATION_STATE_INITIAL;
+	expectInfoM.numberOfKeys = 0;
+	expectInfoM.keyInformation[0].keySize = 0;
+	expectInfoM.keyInformation[0].requiredKeyUsage = 0;
+	
+	//hmac key
+	hmac_key.attributeID = TEE_ATTR_SECRET_VALUE;
+	hmac_key.content.ref.length = SIZE_OF_VEC(hmac_sha1_key);
+	hmac_key.content.ref.buffer = hmac_sha1_key;
+	
+	msg = TEE_Malloc(msg_len, 0);
+	mac = TEE_Malloc(mac_len, 0);
+	expect_mac = TEE_Malloc(expect_mac_len, 0);
+	if (!msg || !mac || !expect_mac) {
+		PRI_FAIL("Out of memory");
+		goto err;
+	}
+
+	TEE_MemMove(msg, hmac_sha1_msg, msg_len);
+	TEE_MemMove(expect_mac, hmac_sha1_mac, expect_mac_len);
+
+	ret = TEE_AllocateTransientObject(key_type, max_key_size, &nistKey);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to alloc transient object handle : 0x%x", ret);
+		goto err;
+	}
+
+	ret = TEE_PopulateTransientObject(nistKey, &hmac_key, 1);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("TEE_PopulateTransientObject failure : 0x%x", ret);
+		goto err;
+	}
+
+	if (fromStorage) {
+		ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, (void *)objID, objID_len,
+						 0, nistKey, NULL, 0,
+						 (TEE_ObjectHandle *)NULL);
+		if (ret != TEE_SUCCESS) {
+			PRI_FAIL("Create persisten object failed : 0x%x", ret);
+			goto err;
+		}
+		
+		ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE,
+					       (void *)objID, objID_len, flags, &perObject);
+		if (ret != TEE_SUCCESS) {
+			PRI_FAIL("Open failed : 0x%x", ret);
+			goto err;
+		}
+		
+		usedKey = perObject;
+	} else {
+		usedKey = nistKey;
+	}
+		
+	ret = TEE_AllocateOperation(&operation, alg, TEE_MODE_MAC, max_key_size);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Cant alloc first handler");
+		goto err;
+	}
+
+	TEE_GetOperationInfoMultiple(operation, &infoM, &operationSize);
+	if (compare_opmultiple_info(&infoM, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (1)");
+		goto err;
+	}
+
+	
+	ret = TEE_SetOperationKey(operation, usedKey);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to set first operation key : 0x%x", ret);
+		goto err;
+	}
+
+	TEE_GetOperationInfoMultiple(operation, &infoM, &operationSize);
+	expectInfoM.keyInformation[0].keySize = key_size;
+	expectInfoM.numberOfKeys = 1;
+	expectInfoM.handleState = TEE_HANDLE_FLAG_KEY_SET;
+	if (compare_opmultiple_info(&infoM, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (2)");
+		goto err;
+	}
+	
+	TEE_MACInit(operation, NULL, 0);
+
+	TEE_GetOperationInfoMultiple(operation, &infoM, &operationSize);
+	expectInfoM.handleState = TEE_HANDLE_FLAG_KEY_SET | TEE_HANDLE_FLAG_INITIALIZED;
+	expectInfoM.operationState = TEE_OPERATION_STATE_ACTIVE;
+	if (compare_opmultiple_info(&infoM, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (2)");
+		goto err;
+	}
+	
+	TEE_MACUpdate(operation, msg, msg_len);
+
+	TEE_GetOperationInfoMultiple(operation, &infoM, &operationSize);
+	if (compare_opmultiple_info(&infoM, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (3)");
+		goto err;
+	}
+
+	mac_len = 2; //SHORT!
+	ret = TEE_MACComputeFinal(operation, NULL, 0, mac, &mac_len);
+	if (ret != TEE_ERROR_SHORT_BUFFER) {
+		PRI_FAIL("First final failed : 0x%x", ret);
+		goto err;
+	}
+
+	mac_len = 189;
+	ret = TEE_MACComputeFinal(operation, NULL, 0, mac, &mac_len);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("First final failed : 0x%x", ret);
+		goto err;
+	}
+
+	if (mac_len != expect_mac_len) {
+		PRI_FAIL("Not expected mac lenght (calculated[%u]; expected[%u])",
+			 mac_len, expect_mac_len);
+		goto err;
+	}
+
+	if (TEE_MemCompare(mac, expect_mac, expect_mac_len)) {
+		PRI_FAIL("Not expected MAC");
+		goto err;
+	}
+
+	TEE_GetOperationInfoMultiple(operation, &infoM, &operationSize);
+	expectInfoM.operationState = TEE_OPERATION_STATE_INITIAL;
+	expectInfoM.handleState = TEE_HANDLE_FLAG_KEY_SET;
+	if (compare_opmultiple_info(&infoM, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (4)");
+		goto err;
+	}
+	
+	/*ret = TEE_MACCompareFinal(operation, msg, msg_len, mac, mac_len);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("MAC Invalid");
+		goto err;
+		}*/
+
+	fn_ret = 0; /* OK */
+err:
+	TEE_FreeTransientObject(nistKey);
+	if (fromStorage) {
+		TEE_CloseAndDeletePersistentObject1(perObject);
+	} else {
+		//Nothing due nistKey == usedKey
+	}
+	TEE_FreeOperation(operation);
+	TEE_Free(mac);
+	TEE_Free(msg);
+
+	return fn_ret;
+}
+
+static uint32_t aes_192_256_ctr_nist()
+{
+	TEE_OperationHandle operation = NULL;
+	TEE_ObjectHandle key_192 = NULL, key_256 = NULL;
+	TEE_Result ret = TEE_SUCCESS;
+	uint32_t max_key_size = 256;
+	uint32_t obj_type = TEE_TYPE_AES;
+	uint32_t op_alg = TEE_ALG_AES_CTR;
+	uint32_t fn_ret = 1; // Initialized error return
+	TEE_Attribute aes_key_192 = {0}, aes_key_256 = {0};
+	uint32_t op_mode = TEE_MODE_ENCRYPT;
+	
+	size_t plain_192_len = SIZE_OF_VEC(aes_ctr_plain_192);
+	size_t cipher_192_len = 210; //Random lenght. Function will assign correct length
+	size_t IV_192_len = SIZE_OF_VEC(aes_ctr_ctr_192);
+	size_t expect_cipher_192_len = SIZE_OF_VEC(aes_ctr_cipher_192);
+
+	void *plain_192 = NULL;
+	void *cipher_192 = NULL;
+	void *IV_192 = NULL;
+	void *expect_cipher_192 = NULL;
+	
+	size_t plain_256_len = SIZE_OF_VEC(aes_ctr_plain_256);
+	size_t cipher_256_len = 210; //Random lenght. Function will assign correct length
+	size_t IV_256_len = SIZE_OF_VEC(aes_ctr_ctr_256);
+	size_t expect_cipher_256_len = SIZE_OF_VEC(aes_ctr_cipher_256);
+
+	void *plain_256 = NULL;
+	void *cipher_256 = NULL;
+	void *IV_256 = NULL;
+	void *expect_cipher_256 = NULL;
+
+	//AES key 192
+	aes_key_192.attributeID = TEE_ATTR_SECRET_VALUE;
+	aes_key_192.content.ref.length = SIZE_OF_VEC(aes_ctr_key_192);
+	aes_key_192.content.ref.buffer = aes_ctr_key_192;
+
+	//AES key 256
+	aes_key_256.attributeID = TEE_ATTR_SECRET_VALUE;
+	aes_key_256.content.ref.length = SIZE_OF_VEC(aes_ctr_key_256);
+	aes_key_256.content.ref.buffer = aes_ctr_key_256;	
+	
+	IV_192 = TEE_Malloc(IV_192_len, 0);
+	plain_192 = TEE_Malloc(plain_192_len, 0);
+	cipher_192 = TEE_Malloc(cipher_192_len, 0);
+	expect_cipher_192 =  TEE_Malloc(expect_cipher_192_len, 0);
+	if (!IV_192 || !plain_192 || !cipher_192 || !expect_cipher_192) {
+		PRI_FAIL("Out of memory");
+		goto err;
+	}
+
+	TEE_MemMove(plain_192, aes_ctr_plain_192, plain_192_len);
+	TEE_MemMove(IV_192, aes_ctr_ctr_192, IV_192_len);
+	TEE_MemMove(expect_cipher_192, aes_ctr_cipher_192, expect_cipher_192_len);
+
+	IV_256 = TEE_Malloc(IV_256_len, 0);
+	plain_256 = TEE_Malloc(plain_256_len, 0);
+	cipher_256 = TEE_Malloc(cipher_256_len, 0);
+	expect_cipher_256 =  TEE_Malloc(expect_cipher_256_len, 0);
+	if (!IV_256 || !plain_256 || !cipher_256 || !expect_cipher_256) {
+		PRI_FAIL("Out of memory");
+		goto err;
+	}
+
+	TEE_MemMove(plain_256, aes_ctr_plain_256, plain_256_len);
+	TEE_MemMove(IV_256, aes_ctr_ctr_256, IV_256_len);
+	TEE_MemMove(expect_cipher_256, aes_ctr_cipher_256, expect_cipher_256_len);
+	
+	ret = TEE_AllocateTransientObject(obj_type, 192, &key_192);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to alloc transient object handle (192) : 0x%x", ret);
+		goto err;
+	}
+	
+	ret = TEE_PopulateTransientObject(key_192, (TEE_Attribute *)&aes_key_192, 1);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("AES 192 key population failed");
+		goto err;
+	}
+
+	ret = TEE_AllocateTransientObject(obj_type, 256, &key_256);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to alloc transient object handle (256): 0x%x", ret);
+		goto err;
+	}
+	
+	ret = TEE_PopulateTransientObject(key_256, (TEE_Attribute *)&aes_key_256, 1);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("AES 256 key population failed");
+		goto err;
+	}
+
+	ret = TEE_AllocateOperation(&operation, op_alg, op_mode, max_key_size);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to alloc operation handle : 0x%x", ret);
+		goto err;
+	}
+	
+	ret = TEE_SetOperationKey(operation, key_192);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to set key (192) : 0x%x", ret);
+		goto err;
+	}
+
+	TEE_CipherInit(operation, IV_192, IV_192_len);
+
+	ret = TEE_CipherDoFinal(operation, plain_192, plain_192_len, cipher_192, &cipher_192_len);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Do final failure : 0x%x", ret);
+		goto err;
+	}
+
+	if (expect_cipher_192_len != cipher_192_len) {
+		PRI_FAIL("Cipher text length is wrong (192) (expectLen[%u]; cipherLen[%u])",
+			 expect_cipher_192_len, cipher_192_len);
+		goto err;
+	}
+	
+	if (TEE_MemCompare(cipher_192, expect_cipher_192, expect_cipher_192_len)) {
+		PRI_FAIL("Cipher text is wrong (192)");
+		goto err;
+	}
+
+	ret = TEE_SetOperationKey(operation, key_256);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to set key (256) : 0x%x", ret);
+		goto err;
+	}
+
+	TEE_CipherInit(operation, IV_256, IV_256_len);
+
+	ret = TEE_CipherDoFinal(operation, plain_256, plain_256_len, cipher_256, &cipher_256_len);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Do final failure (256) : 0x%x", ret);
+		goto err;
+	}
+
+	if (expect_cipher_256_len != cipher_256_len) {
+		PRI_FAIL("Cipher text length is wrong (256) (expectLen[%u]; cipherLen[%u])",
+			 expect_cipher_256_len, cipher_256_len);
+		goto err;
+	}
+	
+	if (TEE_MemCompare(cipher_256, expect_cipher_256, expect_cipher_256_len)) {
+		PRI_FAIL("Cipher text is wrong (256)");
+		goto err;
+	}
+	
+	fn_ret = 0; //Ok
+err:
+	TEE_FreeOperation(operation);
+	TEE_FreeTransientObject(key_192);
+	TEE_FreeTransientObject(key_256);
+
+	TEE_Free(plain_192);
+	TEE_Free(IV_192);
+	TEE_Free(cipher_192);
+	TEE_Free(expect_cipher_192);
+
+	TEE_Free(plain_256);
+	TEE_Free(IV_256);
+	TEE_Free(cipher_256);
+	TEE_Free(expect_cipher_256);
+	
+	return fn_ret;		
+}
+
+static uint32_t aes_tests()
+{
+	/*
+	if (aes_256_cbc_enc_dec()) {
+		return 1;
+	}
+	
+	if (aes_per()) {
+		return 1;
+	}
+	
+	if (aes_128_cbc_enc_dec()) {
+		return 1;
+	}
+
+	if (aes_256_ctr_nist()) {
+		return 1;
+	}
+	*/
+	if (aes_192_256_ctr_nist()) {
+		return 1;
+	}
+	
+	PRI_OK("-");
+	return 0;	
+}
+
+static uint32_t hmac_tests()
+{	
+	if (HMAC_computation_basic()) {
+		return 1;
+	}
+
+	if (hmac_sha1_nist(true)) {
+		return 1;
+	}
+
+	if (hmac_sha1_nist(false)) {
+		return 1;
+	}
+	
+	PRI_OK("-");
+	return 0;	
+}
+
+static uint32_t ae_enc()
+{
+	TEE_ObjectHandle key = NULL;
+	TEE_OperationHandle operation = NULL;
+	TEE_Result ret = TEE_SUCCESS;
+	uint32_t key_size = 256;
+	uint32_t obj_type = TEE_TYPE_AES;
+	uint32_t op_alg = TEE_ALG_AES_GCM;
+	uint32_t op_class = TEE_OPERATION_AE;
+	uint32_t op_mode = TEE_MODE_ENCRYPT;
+	uint32_t fn_ret = 1; // Initialized error return
+	TEE_Attribute aes_key = {0};
+	
+	size_t plain_len = SIZE_OF_VEC(aes_gcm_enc_plain_256);
+	size_t cipher_len = 210; //Random lenght. Function will assign correct length
+	size_t tag_len = 400; //Random lenght. Function will assign correct length
+	size_t IVlen = SIZE_OF_VEC(aes_gcm_enc_iv_256);
+	size_t aad_len = SIZE_OF_VEC(aes_gcm_enc_aad_256);
+	size_t expect_tag_len = SIZE_OF_VEC(aes_gcm_enc_tag_256);
+	size_t expect_cipher_len = SIZE_OF_VEC(aes_gcm_enc_cipher_256);
+	
+	void *plain = NULL;
+	void *cipher = NULL;
+	void *aad =NULL;
+	void *IV = NULL;
+	void *tag = NULL;
+	void *expect_cipher = NULL;
+	void *expect_tag = NULL;
+
+	size_t operationSize;
+	TEE_OperationInfoMultiple info;
+	TEE_OperationInfoMultiple expectInfoM;
+	expectInfoM.algorithm = op_alg;
+	expectInfoM.operationClass = op_class;
+	expectInfoM.mode = op_mode;
+	expectInfoM.digestLength = 0;
+	expectInfoM.maxKeySize = key_size;
+	expectInfoM.handleState = 0;
+	expectInfoM.operationState = TEE_OPERATION_STATE_INITIAL;
+	expectInfoM.numberOfKeys = 0;
+	expectInfoM.keyInformation[0].keySize = 0;
+	expectInfoM.keyInformation[0].requiredKeyUsage = 0;
+	
+	plain = TEE_Malloc(plain_len, 0);
+	IV = TEE_Malloc(IVlen, 0);
+	cipher = TEE_Malloc(cipher_len, 0);
+	aad = TEE_Malloc(aad_len, 0);
+	tag = TEE_Malloc(tag_len, 0);
+	expect_cipher =  TEE_Malloc(expect_cipher_len, 0);
+	expect_tag =  TEE_Malloc(expect_tag_len, 0);
+
+	if (!IV || !plain || !cipher || !expect_cipher || !aad || !tag || !expect_tag) {
+		PRI_FAIL("Out of memory");
+		goto err;
+	}
+
+	TEE_MemMove(plain, aes_gcm_enc_plain_256, plain_len);
+	TEE_MemMove(IV, aes_gcm_enc_iv_256, IVlen);
+	TEE_MemMove(expect_cipher, aes_gcm_enc_cipher_256, expect_cipher_len);
+	TEE_MemMove(expect_tag, aes_gcm_enc_tag_256, expect_tag_len);
+	TEE_MemMove(aad, aes_gcm_enc_aad_256, aad_len);
+
+	//AES key
+	aes_key.attributeID = TEE_ATTR_SECRET_VALUE;
+	aes_key.content.ref.length = SIZE_OF_VEC(aes_gcm_enc_key_256);
+	aes_key.content.ref.buffer = aes_gcm_enc_key_256;
+
+	ret = TEE_AllocateTransientObject(obj_type, key_size, &key);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to alloc transient object handle : 0x%x", ret);
+		goto err;
+	}
+	
+	ret = TEE_PopulateTransientObject(key, &aes_key, 1);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("TEE_PopulateTransientObject failure : 0x%x", ret);
+		goto err;
+	}
+
+	ret = TEE_AllocateOperation(&operation, op_alg, op_mode, key_size);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Cant alloc first handler");
+		goto err;
+	}
+
+	TEE_GetOperationInfoMultiple(operation, &info, &operationSize);
+	if (compare_opmultiple_info(&info, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (1)");
+		goto err;
+	}
+	
+	ret = TEE_SetOperationKey(operation, key);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to set first operation key : 0x%x", ret);
+		goto err;
+	}
+
+	TEE_GetOperationInfoMultiple(operation, &info, &operationSize);
+	expectInfoM.numberOfKeys = 1;
+	expectInfoM.keyInformation[0].keySize = key_size;
+	expectInfoM.keyInformation[0].requiredKeyUsage = 0;
+	expectInfoM.handleState = TEE_HANDLE_FLAG_KEY_SET;
+	if (compare_opmultiple_info(&info, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (2)");
+		goto err;
+	}
+	
+	ret = TEE_AEInit(operation,
+			 IV, IVlen,
+			 128,
+			 0, //AADLen ignoed gcm
+			 plain_len);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("failed TEE_AEInit : 0x%x", ret);
+		goto err;
+	}
+
+	TEE_GetOperationInfoMultiple(operation, &info, &operationSize);
+	expectInfoM.handleState = (TEE_HANDLE_FLAG_KEY_SET | TEE_HANDLE_FLAG_INITIALIZED);
+	expectInfoM.digestLength = expect_tag_len * 8;
+	expectInfoM.operationState = TEE_OPERATION_STATE_ACTIVE;
+	if (compare_opmultiple_info(&info, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (3)");
+		goto err;
+	}
+
+	TEE_AEUpdateAAD(operation, aad, aad_len);
+
+	ret = TEE_AEUpdate(operation,
+			   plain, plain_len,
+			   cipher, &cipher_len);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("failed TEE_AEUpdate : 0x%x", ret);
+		goto err;
+	}
+
+	ret = TEE_AEEncryptFinal(operation,
+				 NULL, 0,
+				 NULL, NULL,
+				 tag, &tag_len);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("failed TEE_AEEncryptFinal : 0x%x", ret);
+		goto err;
+	}
+
+	if (tag_len != expect_tag_len) {
+		PRI_FAIL("Tag lenght mismatch (calculated[%u]; expected[%u])", tag_len, expect_tag_len);
+		goto err;
+	}
+
+	if (cipher_len != expect_cipher_len) {
+		PRI_FAIL("Cipher lenght mismatch (calculated[%u]; expected[%u])",
+			 cipher_len, expect_cipher_len);
+	}
+
+	if (TEE_MemCompare(tag, expect_tag, expect_tag_len)) {
+		PRI_FAIL("Not expected TAG");
+		goto err;
+	}
+
+	if (TEE_MemCompare(cipher, expect_cipher, expect_cipher_len)) {
+		PRI_FAIL("Not expected Cipher");
+		goto err;
+	}
+
+	TEE_GetOperationInfoMultiple(operation, &info, &operationSize);
+	expectInfoM.handleState = TEE_HANDLE_FLAG_KEY_SET;
+	expectInfoM.digestLength = 0;
+	expectInfoM.operationState = TEE_OPERATION_STATE_INITIAL;
+	if (compare_opmultiple_info(&info, &expectInfoM)) {
+		PRI_FAIL("OperationInfo bad state (3)");
+		goto err;
+	}
+	
+	fn_ret = 0; /* OK */
+err:
+	TEE_FreeTransientObject(key);
+	TEE_FreeOperation(operation);
+	TEE_Free(plain);
+	TEE_Free(cipher);
+	TEE_Free(aad);
+	TEE_Free(IV);
+	TEE_Free(tag);
+	TEE_Free(expect_cipher);
+	TEE_Free(expect_tag);
+	
+	return fn_ret;
+}
+
+static uint32_t ae_tests()
+{	
+	if (ae_enc()) {
+		return 1;
+	}
+
+	/*if (ae_dec()) {
+		return 1;
+	}*/
+	
+	PRI_OK("-");
+	return 0;	
+}
+
+static uint32_t rsa_sign_verify_sha1_pkcs()
+{	
+	if (do_rsa_sign_nist_sha1_pkcs(true)) {
+		return 1;
+	}
+
+	if (do_rsa_sign_nist_sha1_pkcs(false)) {
+		return 1;
+	}
+	
+	PRI_OK("-");
+	return 0;	
+}
+
 uint32_t crypto_test(uint32_t loop_count)
 {
         uint32_t i, test_have_fail = 0;
-
+	
 	PRI_STR("START: crypto tests");
 
 	PRI_STR("----Begin-with-test-cases----\n");
 
 	for (i = 0; i < loop_count; ++i) {
 
-		if (sha256_digest() ||
-		    sha256_digest_nist() ||
-		    aes_256_cbc_enc_dec() ||
-		    aes_128_cbc_enc_dec() ||
-		    RSA_sig_and_ver() ||
+		/*
+		if (		    
+		    //ae_tests() //||
+		    //run_ecdsa_tests()
+		    //aes_tests()// ||
+		    //hmac_tests()// ||
 		    RSA_keypair_enc_dec() ||
-		    HMAC_computation() ||
-		    set_key_and_rm_and_do_crypto() ||
-		    read_key_and_do_crypto() ||
-		    rsa_sign_nist_sha1_pkcs() ||
-		    run_ecdsa_tests()) {
+		    rsa_sign_verify_sha1_pkcs() //||
+		    //sha256_digest() ||
+		    //sha256_digest_nist() ||
+		    //sha1_digest_nist()
+		    
+		    //rsa_sign_nist_sha1_pkcs(true) //||
+		    		    //rsa_sign_nist_sha1_pkcs(false) //||
+		    
+		    //aes_256_cbc_enc_dec() ||
+		    //aes_128_cbc_enc_dec() ||
+		    //RSA_sig_and_ver() ||
+		    
+		    
+		    //set_key_and_rm_and_do_crypto() ||
+		    //read_key_and_do_crypto() ||
+		    
+		    ) {
                         test_have_fail = 1;
                         break;
-                }
+			}
+		*/
 	}
 
 	PRI_STR("----Test-has-reached-end----\n");
