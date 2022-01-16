@@ -71,10 +71,9 @@ CK_RV C_GetSlotInfo(CK_SLOT_ID slotID, CK_SLOT_INFO_PTR pInfo)
 
 	if (g_slot_info.slotDescription[0] == 0) {
 		memset(g_slot_info.slotDescription, ' ', sizeof(g_slot_info.slotDescription));
-		strncpy((char *)g_slot_info.slotDescription, "TEE_BASED_SLOT",
-			strlen("TEE_BASED_SLOT"));
+		memcpy((char *)g_slot_info.slotDescription, "TEE_BASED_SLOT", 14);
 		memset(g_slot_info.manufacturerID, ' ', sizeof(g_slot_info.manufacturerID));
-		strncpy((char *)g_slot_info.manufacturerID, "Intel", strlen("Intel"));
+		memcpy((char *)g_slot_info.manufacturerID, "Intel", 5);
 
 		g_slot_info.flags = CKF_TOKEN_PRESENT | CKF_HW_SLOT;
 		g_slot_info.hardwareVersion.major = 0;

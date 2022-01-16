@@ -163,13 +163,12 @@ CK_RV C_GetInfo(CK_INFO_PTR pInfo)
 		g_info.cryptokiVersion.minor = 0x14;
 
 		memset(g_info.manufacturerID, ' ', sizeof(g_info.manufacturerID));
-		strncpy((char *)g_info.manufacturerID, "Intel", strlen("Intel"));
+		memcpy((char *)g_info.manufacturerID, "Intel", 5);
 
 		g_info.flags = 0;
 
 		memset(g_info.libraryDescription, ' ', sizeof(g_info.libraryDescription));
-		strncpy((char *)g_info.libraryDescription, "libtee_pkcs11",
-			strlen("libtee_pkcs11"));
+		memcpy((char *)g_info.libraryDescription, "libtee_pkcs11", 13);
 
 		g_info.libraryVersion.major = 0;
 		g_info.libraryVersion.minor = 1;

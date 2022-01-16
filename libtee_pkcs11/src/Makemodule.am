@@ -7,7 +7,7 @@ libtee_pkcs11_la_includes = \
 	include/pkcs11.h \
 	include/pkcs11f.h \
 	include/pkcs11t.h
-	
+
 # Target specific variables
 libtee_pkcs11_la_SOURCES = \
 	src/hal_gp.c \
