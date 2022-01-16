@@ -1,6 +1,7 @@
 # pkcs11_test executable
 
-check_PROGRAMS += pkcs11_test
+#check_PROGRAMS += pkcs11_test
+bin_PROGRAMS += pkcs11_test
 
 pkcs11_test_includes = \
 	../emulator/include/tee_internal_api.h \

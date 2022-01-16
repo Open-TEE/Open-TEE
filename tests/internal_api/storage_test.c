@@ -36,6 +36,31 @@
 
 #define KEY_IN_BYTES(key_in_bits) ((key_in_bits + 7) / 8)
 
+//Random, but valid, RSA components
+#define SIZE_OF_VEC(vec) (sizeof(vec) - 1)
+static uint8_t modulus[] = "\x88\x3e\x6b\x47\x4e\xdb\x4a\x36\xa4\xf4\x7f\x2f\x88\xc9\xdd\x96\x45\xf0\xee"
+	"\x9e\x1d\xe9\xf5\xc4\x1d\x36\x2e\xbf\x1e\x61\x25\x52\x62\x62\x6e\xce\x95\xc8"
+	"\xcb\xd7\x0e\x34\x37\xe1\x77\xf1\x32\x20\x2d\xa6\x1e\x6b\x4f\x9f\x94\x7d\xc9"
+	"\x8e\xad\x78\x7e\xae\x75\xac\xed\x10\x7f\xca\xd2\x2f\xab\x79\x37\x8d\xc1\xeb"
+	"\xec\x8b\xcb\x6a\x1d\x1b\x9a\xd8\x13\xd4\x6a\x4b\x65\x67\xa7\xa9\xae\x9c\x47"
+	"\xb0\xfc\xc4\x46\xb9\xbc\x44\x6a\x1a\xb0\x29\x08\xc7\x3b\x0a\xd2\xea\x01\x40"
+	"\x22\x24\x97\xd7\x80\xe0\x31\x89\xb6\x0b\x51\xef\x4c\x79\xb5\xfb\x51\x8c\xb2"
+	"\x18\x49\xfe\x3c\xd6\x1a\x07\x20\x4e\xaa\x5a\xab\x80\x2e\xa9\x0c\x67\x00\xb4"
+	"\xaa\xa1\xce\xbb\xc6\xb1\x57\x02\x0a\xfd\x65\xe3\xf8\x05\x1b\xf8\xec\x6c\x3d"
+	"\xe2\x1c\x24\xf7\x9b\xf9\x82\x42\xe5\x91\x50\xf4\x21\x37\xce\x0f\xde\x85\x52"
+	"\x13\x6d";
+static uint8_t public_exp_4_bytes[] = "\x00\x00\x00\x03";
+
+
+//Random, but valid, EC curve
+static uint8_t ecc_qx_p256[] = "\x2a\xcb\x25\x56\x7e\x9d\x79\x5e\xe1\x99\xf9\x4f\xcf\xe5\x1b\xf5"
+	"\x75\x6e\x36\xce\xe1\x3b\x4a\x24\x99\xd7\x9e\x40\x92\x71\xfd\x0c";
+static uint8_t ecc_qy_p256[] = "\x05\xc0\xcb\xe6\x48\xc1\xdd\x02\x65\x33\x6e\x79\xf9\x71\x92\x99"
+	"\x0f\x95\xf4\x27\x7f\xa0\x5c\x18\x62\x94\x6c\x9c\x91\xf3\x2d\x8d";
+static uint8_t ecc_r_p256[] = "\xa6\xc8\xe7\x67\x34\xbb\x77\x95\x5f\x59\x2e\x3d\xed\x6b\xc7\xd1"
+	"\x58\x82\x62\x7a\xbf\x97\x5e\x32\xcb\x3c\x82\x62\xeb\x96\x72\x68";
+
+
 static uint32_t do_data_stream_write(bool fromStorage, bool addAesAttr);
 static uint32_t do_data_position(bool fromStorage);
 
@@ -101,34 +126,20 @@ err:
 static uint32_t popu_rsa_pub_key()
 {
 	TEE_Result ret;
-	TEE_ObjectHandle rsa_pubkey = (TEE_ObjectHandle)NULL;
-	uint32_t key_size = 512;
-	TEE_Attribute *params = (TEE_Attribute *)NULL;
+	TEE_ObjectHandle rsa_pubkey = NULL;
+	uint32_t key_size = 2048;
 	uint32_t param_count = 2, fn_ret = 1; /* Initialized error return */
-
-	/* Do malloc */
-	params = (TEE_Attribute *)TEE_Malloc(param_count * sizeof(TEE_Attribute), 0);
-	if (params == NULL) {
-		PRI_FAIL("Out of memory");
-		return fn_ret;
-	}
-	params[0].content.ref.buffer = TEE_Malloc(KEY_IN_BYTES(key_size), 0);
-	params[1].content.ref.buffer = TEE_Malloc(KEY_IN_BYTES(key_size), 0);
-	if (params[0].content.ref.buffer == NULL || params[1].content.ref.buffer == NULL) {
-		PRI_FAIL("Out of memory");
-		goto err_1;
-	}
-
+	TEE_Attribute params[2];
+	
 	// modulo
 	params[0].attributeID = TEE_ATTR_RSA_MODULUS;
-	TEE_GenerateRandom(params[0].content.ref.buffer, KEY_IN_BYTES(key_size));
-	params[0].content.ref.length = KEY_IN_BYTES(key_size);
+	params[0].content.ref.buffer = modulus;
+	params[0].content.ref.length = SIZE_OF_VEC(modulus);
 
 	// pub exp (4 byte random, lazyness)
 	params[1].attributeID = TEE_ATTR_RSA_PUBLIC_EXPONENT;
-	TEE_GenerateRandom(params[1].content.ref.buffer, 4);
-	params[1].content.ref.length = 4;
-
+	params[1].content.ref.buffer = public_exp_4_bytes;
+	params[1].content.ref.length = SIZE_OF_VEC(public_exp_4_bytes);
 
 	ret = TEE_AllocateTransientObject(TEE_TYPE_RSA_PUBLIC_KEY, key_size, &rsa_pubkey);
 	if (ret == TEE_ERROR_OUT_OF_MEMORY) {
@@ -146,10 +157,6 @@ static uint32_t popu_rsa_pub_key()
 
 err_2:
 	TEE_FreeTransientObject(rsa_pubkey);
-	TEE_Free(params[0].content.ref.buffer);
-	TEE_Free(params[1].content.ref.buffer);
-err_1:
-	TEE_Free(params);
 
 	if (fn_ret == 0)
 		PRI_OK("-");
@@ -344,7 +351,7 @@ static uint32_t data_stream_write_read()
 	}
 
 	if (count != write_data_len) {
-		PRI_FAIL("Read data length mismatch (read[%u]; expected[%u])",
+		PRI_FAIL("Read data length mismatch (read[%lu]; expected[%lu])",
 			 count, write_data_len);
 		goto err;
 	}
@@ -649,7 +656,7 @@ static uint32_t persisten_object_write_and_read()
 	for (i = 0; i < write_count; i++) {
 		ret = TEE_WriteObjectData(object, write_data, write_data_len);
 		if (ret != TEE_SUCCESS) {
-			PRI_FAIL("Write failed (%u) : 0x%x", i, ret);
+			PRI_FAIL("Write failed (%ld) : 0x%x", i, ret);
 			goto err;
 		}
 	}
@@ -780,7 +787,7 @@ static uint32_t persistent_initial_data(bool fromStorage)
 	TEE_GetObjectInfo1(object, &info);
 
 	if (info.dataSize != init_data_len) {
-		PRI_FAIL("Object size is not correct after init (initLen[%u]; "
+		PRI_FAIL("Object size is not correct after init (initLen[%lu]; "
 			 "info.size[%u])", init_data_len, info.dataSize);
 		goto err;
 	}
@@ -798,7 +805,7 @@ static uint32_t persistent_initial_data(bool fromStorage)
 	}
 
 	if (read_bytes != init_data_len) {
-		PRI_FAIL("Read data incorrect lenght (read_bytes[%u]; init_data_len[%u])",
+		PRI_FAIL("Read data incorrect lenght (read_bytes[%lu]; init_data_len[%lu])",
 			 read_bytes, init_data_len);
 		goto err;
 	}
@@ -811,13 +818,13 @@ static uint32_t persistent_initial_data(bool fromStorage)
 	TEE_GetObjectInfo1(object, &info);
 
 	if (info.dataSize != init_data_len) {
-		PRI_FAIL("Object size is not correct after read (initLen[%u]; "
+		PRI_FAIL("Object size is not correct after read (initLen[%lu]; "
 			 "info.size[%u])", init_data_len,info.dataSize);
 		goto err;
 	}
 
 	if (info.dataPosition != init_data_len) {
-		PRI_FAIL("Object position wrong (expectedPos[%u]; "
+		PRI_FAIL("Object position wrong (expectedPos[%lu]; "
 			 "info.dataPosition[%u])", init_data_len, info.dataPosition);
 		goto err;
 	}
@@ -1086,7 +1093,7 @@ static uint32_t do_data_stream_write(bool fromStorage, bool addAesAttr)
 	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META | TEE_DATA_FLAG_OVERWRITE |
 			 TEE_DATA_FLAG_ACCESS_WRITE;
 	char data[50] = {0};
-	size_t read_bytes = 0, data_len = 27;
+	size_t data_len = 27;
 	uint32_t fn_ret = 1; //Initialized error return
 	TEE_ObjectInfo info;
 
@@ -1135,7 +1142,7 @@ static uint32_t do_data_stream_write(bool fromStorage, bool addAesAttr)
 
 	if (info.dataSize != 0) {
 		PRI_FAIL("Object size is not correct after init (initDataLen[0]; "
-			 "info.size[%u])", data_len, info.dataSize);
+			 "info.size[%u])", info.dataSize);
 		goto err;
 	}
 
@@ -1154,13 +1161,13 @@ static uint32_t do_data_stream_write(bool fromStorage, bool addAesAttr)
 	TEE_GetObjectInfo1(object, &info);
 
 	if (info.dataSize != data_len) {
-		PRI_FAIL("Object size is not correct after write (initDataLen[%u]; "
-			 "info.size[%u])", data_len,info.dataSize);
+		PRI_FAIL("Object size is not correct after write (initDataLen[%lu]; "
+			 "info.size[%u])", data_len, info.dataSize);
 		goto err;
 	}
 
 	if (info.dataPosition != data_len) {
-		PRI_FAIL("Object position wrong (expectedPos[%u]; "
+		PRI_FAIL("Object position wrong (expectedPos[%lu]; "
 			 "info.dataPosition[%u])", data_len, info.dataPosition);
 		goto err;
 	}
@@ -1198,7 +1205,7 @@ static uint32_t do_data_position(bool fromStorage)
 	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META | TEE_DATA_FLAG_OVERWRITE |
 			 TEE_DATA_FLAG_ACCESS_WRITE;
 	char data[50] = {0};
-	size_t data_len = 27, read_bytes = 0;
+	size_t data_len = 27;
 	uint32_t fn_ret = 1; //Initialized error return
 	TEE_ObjectInfo info;
 
@@ -1244,8 +1251,8 @@ static uint32_t do_data_position(bool fromStorage)
 	
 	TEE_GetObjectInfo1(object, &info);
 
-	if (info.dataSize != info.dataSize) {
-		PRI_FAIL("Object size is not correct after init (initDataLen[%u]; "
+	if (data_len != info.dataSize) {
+		PRI_FAIL("Object size is not correct after init (initDataLen[%lu]; "
 			 "info.size[%u])", data_len, info.dataSize);
 		goto err;
 	}
@@ -1269,7 +1276,6 @@ static uint32_t do_closeTransientObject(bool genKey, bool callClose)
 	TEE_Result ret = TEE_SUCCESS;
 	size_t key_size = 128;
 	uint32_t obj_type = TEE_TYPE_AES;
-	uint32_t alg = TEE_ALG_AES_CBC_NOPAD;
 	TEE_ObjectHandle key = (TEE_ObjectHandle)NULL;
 	uint32_t fn_ret = 1; // Initialized error return
 	TEE_Attribute aes_key = {0};
@@ -1362,8 +1368,13 @@ static uint32_t truncate_per_object()
 	
 	TEE_GetObjectInfo1(perObj, &info);
 
+	if (info.objectType != obj_type) {
+		PRI_FAIL("Object type is TEE_TYPE_DATA, but info [%u]", info.objectType);
+		goto err;
+	}
+	
 	if (init_data_len != info.dataSize) {
-		PRI_FAIL("Object size is not correct after init (initDataLen[%u]; "
+		PRI_FAIL("Object size is not correct after init (initDataLen[%lu]; "
 			 "info.size[%u])", init_data_len, info.dataSize);
 		goto err;
 	}
@@ -1697,10 +1708,9 @@ static uint32_t do_closePersistantObject(bool fromStorage)
 	size_t objID_len = 64;
 	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META | TEE_DATA_FLAG_OVERWRITE |
 			 TEE_DATA_FLAG_ACCESS_READ;
-	char init_data[50] = {0}, read_data[100] = {0};
+	char init_data[50] = {0};
 	size_t init_data_len = 20;
 	uint32_t fn_ret = 1; //Initialized error return
-	TEE_ObjectInfo info;
 
 	//Create write initial data
 	TEE_GenerateRandom((void *)init_data, init_data_len);
@@ -1782,7 +1792,6 @@ static uint32_t get_rsa_buffer_attr()
 	TEE_Result ret;
 	TEE_ObjectHandle rsa_keypair = (TEE_ObjectHandle)NULL;
 	size_t key_size = 1024;
-	uint32_t rsa_alg = TEE_ALG_RSAES_PKCS1_V1_5;
 	uint32_t fn_ret = 1; /* Initialized error return */
 	uint8_t buf[256]; //will fit 1024 modulo
 	size_t buf_len = 5;
@@ -1809,7 +1818,7 @@ static uint32_t get_rsa_buffer_attr()
 	}
 
 	if (buf_len != 128) {
-		PRI_FAIL("buf_len should contain lenght (expected[128]; returned[%u])", buf_len);
+		PRI_FAIL("buf_len should contain lenght (expected[128]; returned[%lu])", buf_len);
 		goto err;
 	}
 
@@ -1832,7 +1841,7 @@ static uint32_t get_rsa_buffer_attr()
 	}
 
 	if (buf_len != 128) {
-		PRI_FAIL("Not expected buf_len (expected[128]; returned[%u])", buf_len);
+		PRI_FAIL("Not expected buf_len (expected[128]; returned[%lu])", buf_len);
 		goto err;
 	}
 
@@ -1855,6 +1864,169 @@ err:
 	return fn_ret;
 }
 
+static uint32_t do_popu_ecc(uint32_t obj_type)
+{
+	TEE_Result ret;
+	TEE_ObjectHandle key = NULL;
+	uint32_t key_size = 256;
+	uint32_t param_count = 4, fn_ret = 1; /* Initialized error return */
+	TEE_Attribute params[4] = {0};
+
+	// Qx
+	params[0].attributeID = TEE_ATTR_ECC_PUBLIC_VALUE_X;
+	params[0].content.ref.buffer = ecc_qx_p256;
+	params[0].content.ref.length = SIZE_OF_VEC(ecc_qx_p256);
+
+	// Qy
+	params[1].attributeID = TEE_ATTR_ECC_PUBLIC_VALUE_Y;
+	params[1].content.ref.buffer = ecc_qy_p256;
+	params[1].content.ref.length = SIZE_OF_VEC(ecc_qy_p256);
+
+	if (obj_type == TEE_TYPE_ECDH_KEYPAIR ||
+	    obj_type == TEE_TYPE_ECDSA_KEYPAIR) {
+		// R
+		params[2].attributeID = TEE_ATTR_ECC_PRIVATE_VALUE;
+		params[2].content.ref.buffer = ecc_r_p256;
+		params[2].content.ref.length = SIZE_OF_VEC(ecc_r_p256);
+	} else {
+		//Opentee Should not crash due this should ignored
+		params[2].attributeID = TEE_ATTR_SECRET_VALUE;
+		params[2].content.ref.buffer = NULL;
+		params[2].content.ref.length = 3;
+	}
+
+	// Curve
+	params[3].attributeID = TEE_ATTR_ECC_CURVE;
+	params[3].content.value.a = TEE_ECC_CURVE_NIST_P256;
+	params[3].content.value.b = 0;
+	
+	ret = TEE_AllocateTransientObject(obj_type, key_size, &key);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Transied object alloc failed : 0x%x", ret);
+		goto err_2;
+	}
+
+	ret = TEE_PopulateTransientObject(key, params, param_count);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("ECC key pair population failed : 0x%x", ret);
+		goto err_2;
+	}
+
+	fn_ret = 0; // OK
+
+err_2:
+	TEE_FreeTransientObject(key);
+	return fn_ret;	
+}
+
+static uint32_t populate_ecc()
+{
+	if (do_popu_ecc(TEE_TYPE_ECDSA_KEYPAIR)) {
+		return 1;
+	}
+
+	if (do_popu_ecc(TEE_TYPE_ECDSA_PUBLIC_KEY)) {
+		return 1;
+	}
+
+	PRI_OK("-");
+	return 0;
+}
+
+static uint32_t is_buffer_empty(void *buf, size_t bufLen)
+{
+	uint8_t *buf8 = (uint8_t *)buf;
+	if (buf8[0] == 0 && !TEE_MemCompare(buf8, buf8 + 1, bufLen - 1)) {
+		return 1; //Empty
+	}
+
+	return 0;
+}
+
+static uint32_t do_gen_ecc_key(uint32_t obj_type,
+			       uint32_t key_size,
+			       uint32_t curve)
+{
+	TEE_Result ret;
+	TEE_ObjectHandle key = NULL;
+	uint32_t param_count = 1, fn_ret = 1; /* Initialized error return */
+	TEE_Attribute params = {0};
+	void *buffer = NULL;
+	size_t bufferLen = 200;
+	uint32_t a = 0, b = 0;
+
+	params.attributeID = TEE_ATTR_ECC_CURVE;
+	params.content.value.a = curve;
+	
+	buffer = TEE_Malloc(bufferLen, 0);
+	if (buffer == NULL) {
+		PRI_FAIL("Out of memory");
+		goto err;
+	}
+	
+	ret = TEE_AllocateTransientObject(obj_type, key_size, &key);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Transied object alloc failed : 0x%x", ret);
+		goto err;
+	}
+
+	ret = TEE_GenerateKey(key, key_size, &params, param_count);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Key generation failed : 0x%x", ret);
+		goto err;
+	}
+
+	ret = TEE_GetObjectBufferAttribute(key, TEE_ATTR_ECC_PRIVATE_VALUE,
+					   buffer, &bufferLen);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to fetch TEE_ATTR_ECC_PRIVATE_VALUE : 0x%x", ret);
+		goto err;
+	}
+
+	if (is_buffer_empty(buffer, bufferLen)) {
+		PRI_FAIL("TEE_ATTR_ECC_PRIVATE_VALUE is all zeros");
+		goto err;
+	}
+
+	ret = TEE_GetObjectValueAttribute(key, TEE_ATTR_ECC_CURVE, &a, &b);
+	if (ret != TEE_SUCCESS) {
+		PRI_FAIL("Failed to fetch TEE_ATTR_ECC_CURVE : 0x%x", ret);
+		goto err;
+	}
+
+	if (a != curve) {
+		PRI_FAIL("Wrong curve");
+		goto err;
+	}
+	
+	fn_ret = 0; // OK
+ err:
+	TEE_FreeTransientObject(key);
+	TEE_Free(buffer);
+	return fn_ret;
+	
+}
+
+static uint32_t generate_ecc_key()
+{
+	
+	if (do_gen_ecc_key(TEE_TYPE_ECDSA_KEYPAIR, 256, TEE_ECC_CURVE_NIST_P256)) {
+		return 1;
+	}
+
+	if (do_gen_ecc_key(TEE_TYPE_ECDSA_KEYPAIR, 521, TEE_ECC_CURVE_NIST_P521)) {
+		return 1;
+	}
+	
+	if (do_gen_ecc_key(TEE_TYPE_ECDH_KEYPAIR, 256, TEE_ECC_CURVE_NIST_P256)) {
+		return 1;
+	}
+	
+
+	PRI_OK("-");
+	return 0;
+}
+
 uint32_t storage_test(uint32_t loop_count)
 {
 	uint32_t i, test_have_fail = 0;
@@ -1865,7 +2037,9 @@ uint32_t storage_test(uint32_t loop_count)
 
 	for (i = 0; i < loop_count; ++i) {
 		
-		if (popu_rsa_pub_key() ||
+		if (generate_ecc_key() ||
+		    populate_ecc() ||
+		    popu_rsa_pub_key() ||
 		    enumerate_per_objecs() ||
 		    get_rsa_buffer_attr() ||
 		    truncate_per_object() ||
@@ -1886,6 +2060,7 @@ uint32_t storage_test(uint32_t loop_count)
 			test_have_fail = 1;
 			break;
 		}
+		
 	}
 
 	PRI_STR("----Test-has-reached-end----\n");

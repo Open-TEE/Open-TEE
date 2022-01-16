@@ -4,10 +4,13 @@
 ACLOCAL_AMFLAGS = -I m4
 
 # Additional C compiler flags
-AM_CFLAGS = -Wall -Wextra -Werror
+AM_CFLAGS = -Wall -Wextra
 
 # Test executables
-check_PROGRAMS =
+#heck_PROGRAMS =
+
+# Executables
+bin_PROGRAMS =
 
 # Shared libraries
 lib_LTLIBRARIES  =
