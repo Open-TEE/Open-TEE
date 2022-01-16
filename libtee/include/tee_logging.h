@@ -48,13 +48,28 @@
 */
 #define OT_LOG_STR(str) syslog(LOG_ERR, "%s", str)
 
-#else
+/*!
+  Print buffer to syslog
+ */
+void pri_buf_hex_format(const char *title,
+                        const unsigned char *buf,
+                        int buf_len);
+#define OT_LOG_HEX_BUF(str, buf, len) pri_buf_hex_format(str, buf, len)
 
+void pri_obj_info(const char *title, void *info);
+#define OT_LOG_OBJ_INFO(title, info) pri_obj_info(title, info)
+
+void pri_op_info(const char *title, void *info);
+#define OT_LOG_OP_INFO(title, info) pri_op_info(title, info)
+
+#else
 #define OT_LOG(...) do {} while (0)
 #define OT_LOG1(...) do {} while (0)
 #define OT_LOG_ERR(...) do {} while (0)
 #define OT_LOG_INT(...) do {} while (0)
 #define OT_LOG_STR(...) do {} while (0)
+#define OT_LOG_HEX_BUF(...) do {} while (0)
+#define OT_LOG_OBJ_INFO(...) do {} while (0)
 
 #endif
 
