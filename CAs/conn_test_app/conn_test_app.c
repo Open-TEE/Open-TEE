@@ -298,7 +298,7 @@ static int full_treatment_test()
 		goto end_5;
 
 	/* Invoke: Crypto tests */
-	if (call_invoke_cmd(&session, &reg_inout_mem, &alloc_inout_mem, INVOKE_CMD_ID_1))
+	if (call_invoke_cmd(&session, &reg_inout_mem, &alloc_inout_mem, INVOKE_CMD_ID_2))
 		goto end_5;
 
 	fn_ret = 0; /* Success. If some void function fails, nothing to be done, here */
