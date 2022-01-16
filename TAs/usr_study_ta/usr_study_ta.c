@@ -143,7 +143,7 @@ static struct internal_transaction *get_transaction_by_index(uint32_t index)
 }
 
 static TEE_Result calc_digest(struct internal_transaction *transaction,
-			      void *digest, uint32_t digest_len)
+			      void *digest, size_t digest_len)
 {
 	TEE_DigestUpdate(digest_handler, &transaction->info, sizeof(struct transaction));
 

@@ -1,15 +1,39 @@
 # pkcs11 TA
 
-lib_LTLIBRARIES += libpkcs11_ta.la
+ta_LTLIBRARIES += libpkcs11_ta.la
 
-libexample_ta_la_SOURCES = \
-	pkcs11_ta/pkcs11_ta.c
+libpkcs11_ta_la_includes = \
+	include/tee_ta_properties.h \
+	object.h \
+	compat.h \
+	pkcs11_ta/common/commands.h \
+	cryptoki.h \
+	pkcs11t.h \
+	token_conf.h \
+	compat.h \
+	pkcs11_ta.h \
+	crypto.h \
+	pkcs11_application.h \
+	pkcs11_session.h \
+	slot_token.h \
+	utils.h \
+	tee_logging.h
 
-libexample_ta_la_CFLAGS = ${AM_CFLAGS} \
+libpkcs11_ta_la_SOURCES = ${5libpkcs11_ta_la_includes} \
+	pkcs11_ta/common/compat.c \
+	pkcs11_ta/gp/pkcs11_ta.c \
+	pkcs11_ta/gp/crypto.c \
+	pkcs11_ta/gp/object.c \
+	pkcs11_ta/gp/open_tee_conf.c \
+	pkcs11_ta/gp/pkcs11_application.c \
+	pkcs11_ta/gp/pkcs11_session.c \
+	pkcs11_ta/gp/slot_token.c \
+	pkcs11_ta/gp/utils.c
+
+libpkcs11_ta_la_CFLAGS = ${AM_CFLAGS} \
         -iquote $(top_srcdir)/include \
-        -iquote $(top_srcdir)/../emulator/include
+        -iquote $(top_srcdir)/../emulator/include \
+        -iquote $(top_srcdir)/pkcs11_ta/common \
+        -iquote $(top_srcdir)/pkcs11_ta/gp
 
-libexample_ta_la_LDFLAGS = ${AM_LDFLAGS}
-
-libexample_ta_la_LIBADD =\
-        ../libtee/libtee.la
+libpkcs11_ta_la_LDFLAGS = ${AM_LDFLAGS}

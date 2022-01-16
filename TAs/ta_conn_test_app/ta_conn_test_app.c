@@ -175,6 +175,8 @@ void TA_EXPORT TA_DestroyEntryPoint(void)
 
 	if (crypto_test(2))
 		TEE_Panic(TEE_ERROR_GENERIC);
+
+	OT_LOG(LOG_INFO, "TA_DestroyEntryPoint: end");
 }
 
 TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
@@ -237,6 +239,8 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
 {
 	TEE_Result tee_rv = TEE_SUCCESS;
 
+	OT_LOG(LOG_INFO, "Invoking command from TA");
+	
 	/* Check session context */
 	if (TEE_MemCompare(sessionContext, out_vector, SIZE_OF_VEC(out_vector))) {
 		OT_LOG(LOG_ERR, "Not a correct session context");

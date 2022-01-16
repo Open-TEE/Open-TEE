@@ -158,7 +158,7 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
 
 		tee_rv = TEE_DigestDoFinal(sessionContext, params[0].memref.buffer,
 				params[0].memref.size, params[1].memref.buffer,
-				(uint32_t *)&params[1].memref.size);
+				&params[1].memref.size);
 
 	} else {
 		OT_LOG(LOG_ERR, "Unknow command ID");

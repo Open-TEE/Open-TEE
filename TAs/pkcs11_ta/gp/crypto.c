@@ -47,9 +47,9 @@ struct crypto_op {
 	struct pkcs11_session *session;
 	uint32_t crypto_type;
 	void *src;
-	uint32_t src_len;
+	size_t src_len;
 	void *dst;
-	uint32_t dst_len;
+	size_t dst_len;
 };
 
 
@@ -523,7 +523,7 @@ static CK_RV do_sym_crypto(struct crypto_op *crypto_op)
 
 static CK_RV do_asym_sign_verify(struct crypto_op *crypto_op)
 {
-	uint32_t hash_len = BIGGEST_HASH_OUTUPUT_IN_BYTES;
+	size_t hash_len = BIGGEST_HASH_OUTUPUT_IN_BYTES;
 	char hash[hash_len]; /* Reserved for the most biggest hash, sha512 */
 	CK_RV ck_rv = CKR_OK;
 	TEE_Result tee_rv = TEE_SUCCESS;
@@ -602,7 +602,7 @@ static CK_RV do_asym_sign_verify(struct crypto_op *crypto_op)
 
 static CK_RV do_mac_crypto(struct crypto_op *crypto_op)
 {
-	uint32_t hash_len = BIGGEST_HASH_OUTUPUT_IN_BYTES, operation_output;
+	size_t hash_len = BIGGEST_HASH_OUTUPUT_IN_BYTES, operation_output;
 	char hash[hash_len]; /* Reserved for the most biggest hash, sha512 */
 	CK_RV ck_rv = CKR_OK;
 
@@ -653,7 +653,7 @@ static CK_RV do_mac_crypto(struct crypto_op *crypto_op)
 
 static CK_RV do_asym_enc_dec_crypto(struct crypto_op *crypto_op)
 {
-	uint32_t decryption_buf_len = BIGGEST_RSA_KEY_IN_BYTES; /* Biggest possbile RSA key */
+	size_t decryption_buf_len = BIGGEST_RSA_KEY_IN_BYTES; /* Biggest possbile RSA key */
 	char decryption_buf[decryption_buf_len];
 	CK_RV ck_rv = CKR_OK;
 

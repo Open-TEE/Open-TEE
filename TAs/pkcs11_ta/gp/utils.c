@@ -67,7 +67,8 @@ CK_RV map_teec2ck(TEE_Result teec_result)
 		return CKR_OK;
 
 	default:
-		break;
+		// Prevent accidental success return
+		return CKR_GENERAL_ERROR;
 	}
 
 	return CKR_OK;

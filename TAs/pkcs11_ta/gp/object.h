@@ -21,9 +21,9 @@
 #ifndef __OBJECT_H__
 #define __OBJECT_H__
 
-#include "cryptoki.h"
 #include "tee_internal_api.h"
 #include "tee_list.h"
+#include "cryptoki.h"
 
 struct application;
 struct pkcs11_session;

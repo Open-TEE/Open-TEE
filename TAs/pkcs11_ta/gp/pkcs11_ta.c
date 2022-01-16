@@ -18,13 +18,15 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include "object.h"
 #include "commands.h"
 #include "crypto.h"
 #include "slot_token.h"
 #include "pkcs11_application.h"
 #include "pkcs11_session.h"
 #include "tee_internal_api.h"
+#include "object.h"
+
+#include "tee_logging.h"
 
 TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {

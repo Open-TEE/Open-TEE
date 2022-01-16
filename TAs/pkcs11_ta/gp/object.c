@@ -19,13 +19,13 @@
 *****************************************************************************/
 
 #include "utils.h"
-#include "cryptoki.h"
 #include "object.h"
 #include "tee_internal_api.h"
 #include "pkcs11_session.h"
 #include "pkcs11_application.h"
 #include "stdbool.h"
 #include "compat.h"
+#include "cryptoki.h"
 #include <string.h>
 
 #define OBJ_ID_LEN CK_OBJECT_HANDLE
@@ -38,7 +38,7 @@ static char CPY_SET_OBJ_ID[] = "set_object_cpy_id";
 struct pTemplate {
 	void *buffer; /* Pointing to first attribute */
 	CK_ULONG attr_count; /* Attributes count in pTemplate */
-	uint32_t buffer_size; /* Buffer size in bytes */
+	size_t buffer_size; /* Buffer size in bytes */
 	uint8_t generated_by_who; /* Who is generated template. TEE or recv from usr */
 	uint8_t template_for; /* set/get/create template */
 };
@@ -54,7 +54,7 @@ static CK_RV get_next_free_object_id(CK_OBJECT_HANDLE *next_id)
 	 * defining that zero is not valid object ID */
 	CK_OBJECT_HANDLE id_object_id = 0;
 	TEE_Result tee_rv = TEE_SUCCESS;
-	uint32_t read_bytes;
+	size_t read_bytes;
 
 	tee_rv = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, &id_object_id, sizeof(OBJ_ID_LEN),
 					    TEE_DATA_FLAG_ACCESS_WRITE, NULL,
@@ -548,7 +548,7 @@ static CK_RV create_key_object(struct pTemplate *ptemplate,
 	return ck_rv;
 
 err_2:
-	TEE_CloseAndDeletePersistentObject(pers_object);
+	TEE_CloseAndDeletePersistentObject1(pers_object);
 err_1:
 	release_object_id(*new_obj_id);
 	*new_obj_id = CKR_OBJECT_HANDLE_INVALID;
@@ -657,7 +657,7 @@ CK_RV get_object_header(TEE_ObjectHandle object,
 {
 	bool obj_was_open = object == NULL ? false : true;
 	TEE_Result tee_ret;
-	uint32_t read_bytes;
+	size_t read_bytes;
 
 	if (!obj_was_open) {
 
@@ -813,7 +813,7 @@ static CK_RV get_next_attr_from_object(TEE_ObjectHandle object,
 				       CK_ATTRIBUTE *ck_attr)
 {
 	TEE_Result tee_ret;
-	uint32_t read_bytes;
+	size_t read_bytes;
 
 	/* Attribute type */
 	tee_ret = TEE_ReadObjectData(object, &ck_attr->type, sizeof(ck_attr->type), &read_bytes);
@@ -920,12 +920,12 @@ CK_RV get_attr_from_object(TEE_ObjectHandle object,
 	struct object_header obj_header;
 	TEE_ObjectInfo object_info;
 	CK_ATTRIBUTE iter_attr;
-	uint32_t i, read_bytes;
+	size_t i, read_bytes;
 	TEE_Result tee_ret;
 	CK_RV ck_rv;
 
 	/* Function is saving data position and setting it back before exiting */
-	TEE_GetObjectInfo(object, &object_info);
+	TEE_GetObjectInfo1(object, &object_info);
 
 	/* Needing a object header. Object header is storing template attribute count */
 	ck_rv = get_object_header(object, 0, &obj_header);
@@ -1220,7 +1220,7 @@ void delete_object(CK_ULONG obj_id)
 				     TEE_DATA_FLAG_ACCESS_WRITE_META, &del_obj) != TEE_SUCCESS)
 		return;
 
-	TEE_CloseAndDeletePersistentObject(del_obj);
+	TEE_CloseAndDeletePersistentObject1(del_obj);
 }
 
 TEE_Result find_objects_init(struct application *app,
@@ -1328,7 +1328,7 @@ TEE_Result find_objects(struct application *app,
 	CK_ATTRIBUTE template_attr = {0}, object_attr = {0};
 	char temp_object_id[TEE_OBJECT_ID_MAX_LEN] = {0};
 	CK_OBJECT_HANDLE object_id;
-	uint32_t object_id_len = sizeof(CK_OBJECT_HANDLE);
+	size_t object_id_len = sizeof(CK_OBJECT_HANDLE);
 	struct pTemplate ptemplate;
 	struct pkcs11_session *session;
 	TEE_ObjectHandle object;
@@ -1632,7 +1632,7 @@ TEE_Result object_set_attr_value(struct application *app,
 	/* Remove original object and rename temporary object and close object.
 	 * Note: Object might be lost (original) if temporary object renaming failing or
 	 * if can't add object to session */
-	TEE_CloseAndDeletePersistentObject(set_object);
+	TEE_CloseAndDeletePersistentObject1(set_object);
 	set_object = NULL;
 
 	tee_rv = TEE_RenamePersistentObject(cpy_set_object,
@@ -1650,7 +1650,7 @@ err_4:
 err_3:
 	TEE_Free(obj_attr.pValue);
 err_2:
-	TEE_CloseAndDeletePersistentObject(cpy_set_object);
+	TEE_CloseAndDeletePersistentObject1(cpy_set_object);
 err_1:
 	/* Something went wrong, zero out out buffer and return */
 	TEE_MemFill(params[0].memref.buffer, 0, params[2].value.a);
