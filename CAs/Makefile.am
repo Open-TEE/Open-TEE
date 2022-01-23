@@ -17,3 +17,4 @@ include conn_test_app/Makemodule.am
 include example_sha1_ca/Makemodule.am
 include usr_study_ca/Makemodule.am
 include omnishare_fuse/Makemodule.am
+include example_conversion/Makemodule.am
