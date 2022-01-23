@@ -1,0 +1,14 @@
+ta_LTLIBRARIES += libsign_ecdsa_256.la
+
+libsign_ecdsa_256_la_includes = \
+	include/tee_ta_properties.h \
+	sign_ecdsa_256_ctrl.h
+
+libsign_ecdsa_256_la_SOURCES = $(libsign_ecdsa_256_la_includes) \
+	example_conversion/sign_ecdsa_256.c
+
+libsign_ecdsa_256_la_CFLAGS = ${AM_CFLAGS} \
+        -iquote $(top_srcdir)/include \
+        -iquote $(top_srcdir)/../emulator/include
+
+libsign_ecdsa_256_la_LDFLAGS = ${AM_LDFLAGS}
