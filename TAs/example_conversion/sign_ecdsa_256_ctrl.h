@@ -23,6 +23,6 @@ const TEEC_UUID uuid = {
      0x12345678, 0x8765, 0x4321, { 'S', 'I', 'G', 'N', 'S', 'I', 'G', 'N'}
 };
 
-const uint32_t SIGN_ECDSA_256_SIGN = 1234;
+#define SIGN_ECDSA_256_SIGN 1234
 
 #endif
