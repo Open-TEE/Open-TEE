@@ -35,3 +35,25 @@ libStorageTest_la_CFLAGS = ${AM_CFLAGS} \
 	-iquote $(top_srcdir)/../emulator/include
 
 libStorageTest_la_LIBADD = ../emulator/libInternalApi.la
+
+
+
+##################################
+# tat2ta_test library
+##################################
+lib_LTLIBRARIES += libta2taTest.la
+
+libta2taTest_la_includes = \
+	../emulator/include/tee_internal_api.h \
+	../emulator/include/tee_logging.h \
+	internal_api/ta2ta_test.h \
+	ta2ta_conn_test_app_ctrl.h
+
+libta2taTest_la_SOURCES = ${libta2taTest_la_include} \
+	internal_api/ta2ta_test.c
+
+libta2taTest_la_CFLAGS = ${AM_CFLAGS} \
+	-iquote $(top_srcdir)/../emulator/include \
+	-iquote $(top_srcdir)/../TAs/ta2ta_conn_test_app
+
+libta2taTest_la_LIBADD = ../emulator/libInternalApi.la
