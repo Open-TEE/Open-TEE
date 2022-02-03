@@ -19,6 +19,7 @@
 #include "tee_internal_api.h"
 #include "tee_logging.h"
 #include "storage_test.h"
+#include "ta2ta_test.h"
 
 #ifdef TA_PLUGIN
 #include "tee_ta_properties.h"
@@ -240,7 +241,7 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
 	TEE_Result tee_rv = TEE_SUCCESS;
 
 	OT_LOG(LOG_INFO, "Invoking command from TA");
-	
+
 	/* Check session context */
 	if (TEE_MemCompare(sessionContext, out_vector, SIZE_OF_VEC(out_vector))) {
 		OT_LOG(LOG_ERR, "Not a correct session context");
@@ -261,6 +262,9 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
 		return TEE_ERROR_GENERIC;
 
 	if (crypto_test(2))
+		return TEE_ERROR_GENERIC;
+
+	if (ta2ta_test(2))
 		return TEE_ERROR_GENERIC;
 
 	return TEE_SUCCESS;

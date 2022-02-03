@@ -8,6 +8,7 @@ libta_conn_test_la_includes = \
 	include/tee_ta_properties.h \
 	conn_test_ctl.h \
 	crypto_test.h \
+	ta2ta_test.h \
 	storage_test.h \
 	tee_logging.h
 
@@ -23,4 +24,5 @@ libta_conn_test_la_LDFLAGS = ${AM_LDFLAGS}
 
 libta_conn_test_la_LIBADD = \
 	../tests/libCryptoTest.la \
-	../tests/libStorageTest.la
+	../tests/libStorageTest.la \
+	../tests/libta2taTest.la
