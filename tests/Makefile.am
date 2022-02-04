@@ -4,7 +4,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 # Additional C compiler flags
-AM_CFLAGS = -Wall -Wextra
+AM_CFLAGS = -Wall -Wextra -DTA_PLUGIN
 
 # Test executables
 #heck_PROGRAMS =

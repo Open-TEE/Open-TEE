@@ -18,21 +18,8 @@
 /* Extreme simply smoke tests. */
 
 #include "storage_test.h"
-#include "../include/tee_internal_api.h"
-
-/* Start Open-TEE spesifics. NOT GP Compliant. For debugin sake */
-#include "../include/tee_logging.h"
-
-#include <syslog.h>
-#define OT_LOG1(level, message, ...) syslog(level, message, ##__VA_ARGS__)
-
-#define PRI_STR(str)	    OT_LOG1(LOG_DEBUG, str);
-#define PRI(str, ...)       OT_LOG1(LOG_DEBUG, "%s : " str "\n",  __func__, ##__VA_ARGS__);
-#define PRI_OK(str, ...)    OT_LOG1(LOG_DEBUG, " [OK] : %s : " str "\n",  __func__, ##__VA_ARGS__);
-#define PRI_YES(str, ...)   OT_LOG1(LOG_DEBUG, " YES? : %s : " str "\n",  __func__, ##__VA_ARGS__);
-#define PRI_FAIL(str, ...)  OT_LOG1(LOG_DEBUG, "FAIL  : %s : " str "\n",  __func__, ##__VA_ARGS__);
-#define PRI_ABORT(str, ...) OT_LOG1(LOG_DEBUG, "ABORT!: %s : " str "\n",  __func__, ##__VA_ARGS__);
-/* Start Open-TEE spesifics. */
+#include "tee_internal_api.h"
+#include "print_functions.h"
 
 #define KEY_IN_BYTES(key_in_bits) ((key_in_bits + 7) / 8)
 

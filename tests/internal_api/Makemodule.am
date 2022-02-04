@@ -6,7 +6,8 @@ lib_LTLIBRARIES += libCryptoTest.la
 libCryptoTest_la_includes = \
 	../emulator/include/tee_internal_api.h \
 	../emulator/include/tee_logging.h \
-	internal_api/crypto_test.h
+	internal_api/crypto_test.h \
+	internal_api/print_functions.h
 
 libCryptoTest_la_SOURCES = ${libCryptoTest_la_include} \
 	internal_api/crypto_test.c
@@ -26,7 +27,8 @@ lib_LTLIBRARIES += libStorageTest.la
 libStorageTest_la_includes = \
 	../emulator/include/tee_internal_api.h \
 	../emulator/include/tee_logging.h \
-	internal_api/storage_test.h
+	internal_api/storage_test.h \
+	internal_api/print_functions.h
 
 libStorageTest_la_SOURCES = ${libStorageTest_la_include} \
 	internal_api/storage_test.c
@@ -47,7 +49,8 @@ libta2taTest_la_includes = \
 	../emulator/include/tee_internal_api.h \
 	../emulator/include/tee_logging.h \
 	internal_api/ta2ta_test.h \
-	ta2ta_conn_test_app_ctrl.h
+	ta2ta_conn_test_app_ctrl.h \
+	internal_api/print_functions.h
 
 libta2taTest_la_SOURCES = ${libta2taTest_la_include} \
 	internal_api/ta2ta_test.c
