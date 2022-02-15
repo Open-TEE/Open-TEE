@@ -1346,7 +1346,6 @@ static uint32_t run_ecdsa_tests()
 		return 1;
 	}
 	
-	
 	// run the tests for all the curves
 	if (ECDSA_sig_and_ver(TEE_ECC_CURVE_NIST_P192, 192, TEE_ALG_ECDSA_SHA1, SHA1_SIZE) ||
 	    ECDSA_sig_and_ver(TEE_ECC_CURVE_NIST_P224, 224, TEE_ALG_ECDSA_SHA224, SHA224_SIZE) ||
@@ -1512,18 +1511,12 @@ err:
 	return fn_ret;
 }
 
-static uint32_t RSA_keypair_enc_dec()
+static uint32_t RSA_generate_keypair_enc_dec(size_t key_size, uint32_t rsa_alg, size_t plain_len, size_t cipher_len, size_t dec_plain_len)
 {
 	TEE_Result ret;
 	TEE_ObjectHandle rsa_keypair = (TEE_ObjectHandle)NULL;
-	size_t key_size = 512;
-	uint32_t rsa_alg = TEE_ALG_RSAES_PKCS1_V1_5;
 	char *plain_msg = "TEST";
 	uint32_t fn_ret = 1; /* Initialized error return */
-
-	size_t plain_len = 10;
-	size_t cipher_len = 64;
-	size_t dec_plain_len = 64;
 
 	void *plain = NULL;
 	void *cipher = NULL;
@@ -1577,6 +1570,20 @@ err:
 	return fn_ret;
 }
 
+static uint32_t RSA_keypair_enc_dec()
+{
+	// run the tests for all the algorithms
+	if (RSA_generate_keypair_enc_dec(512, TEE_ALG_RSAES_PKCS1_V1_5, 10, 64, 64) ||
+	    RSA_generate_keypair_enc_dec(512, TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA1, 10, 64, 64) ||
+	    RSA_generate_keypair_enc_dec(2048, TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA224, 10, 256, 256) ||
+	    RSA_generate_keypair_enc_dec(2048, TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA256, 10, 256, 256) ||
+	    RSA_generate_keypair_enc_dec(2048, TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA384, 10, 256, 256) ||
+	    RSA_generate_keypair_enc_dec(2048, TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA512, 10, 256, 256))
+		return 1;
+
+	PRI_OK("-");
+	return 0;
+}
 
 static uint32_t set_key_and_rm_and_do_crypto()
 {
