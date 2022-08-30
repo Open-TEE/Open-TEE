@@ -26,6 +26,7 @@ include example_digest_ta/Makemodule.am
 include example_ta/Makemodule.am
 include ta_conn_test_app/Makemodule.am
 include ta2ta_conn_test_app/Makemodule.am
+include ta_panic_crash/Makemodule.am
 include usr_study_ta/Makemodule.am
 include pkcs11_ta/Makemodule.am
 include example_conversion/Makemodule.am
