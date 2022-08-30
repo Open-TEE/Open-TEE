@@ -19,6 +19,7 @@
 
 #include "conn_test_ctl.h"
 #include "tee_client_api.h"
+#include "panic_crash_ctl.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,7 +36,7 @@ static uint32_t full_treatment_loop_count = 5;
 #define PRI(str, ...) printf(str, ##__VA_ARGS__);
 #define PRIn(str, ...) printf(str "\n", ##__VA_ARGS__);
 static const TEEC_UUID uuid = {0x12345678, 0x8765, 0x4321, {'T','A','C','O','N','N','T','E'}};
-
+static const TEEC_UUID panic_crash_ta_UUID = {0x12345678, 0x8765, 0x4321, {'P','A','N','I','C','R','A','S'}};
 /* Dirty, but cleanest and fastest for now */
 static uint8_t in_vector[] = IN_KNOWN_VECTOR;
 static uint8_t out_vector[] = OUT_KNOWN_VECTOR;
@@ -325,6 +326,70 @@ end_1:
 	return fn_ret;
 }
 
+static int do_crash_panic_test(uint32_t open_cmd,
+			       TEEC_Result exp_open_ret,
+			       uint32_t invoke_cmd,
+			       TEEC_Result exp_inv_ret)
+{
+	TEEC_Context context;
+	TEEC_Session session;
+	TEEC_Operation operation = {0};
+	TEEC_Result ret;
+	uint32_t return_origin;
+	uint32_t connection_method = TEEC_LOGIN_PUBLIC;
+	uint32_t fn_ret = 1; /* Default is error return */
+
+	//PRIn("Command: open_cmd 0x%x : exp_open_ret 0x%x ; invoke_cmd 0x%x : exp_inv_ret 0x%x\n", open_cmd, exp_open_ret, invoke_cmd, exp_inv_ret);
+	
+	ret = TEEC_InitializeContext(NULL, &context);
+	if (ret != TEEC_SUCCESS) {
+		PRI("TEEC_InitializeContext failed: 0x%x", ret);
+		goto end_1;
+	}
+	
+	operation.paramTypes =	TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_NONE,
+						 TEEC_NONE, TEEC_NONE);
+	operation.params[0].value.a = open_cmd;
+	ret = TEEC_OpenSession(&context, &session, &panic_crash_ta_UUID, connection_method,
+			       NULL, &operation, &return_origin);
+	if (ret != exp_open_ret) {
+		PRIn("TEEC_OpenSession failed: 0x%x : expected 0x%x", ret, exp_open_ret);
+		goto end_2;
+	}
+	
+	ret = TEEC_InvokeCommand(&session, invoke_cmd, NULL, &return_origin);
+	if (ret != exp_inv_ret) {
+		PRIn("TEEC_InvokeCommand failed: 0x%x : expected 0x%x\n", ret, exp_inv_ret);
+		goto end_3;
+	}
+	
+	fn_ret = 0; /* Success. If some void function fails, nothing to be done, here */
+end_3:
+	TEEC_CloseSession(&session);
+end_2:
+	TEEC_FinalizeContext(&context);
+end_1:
+	if (fn_ret) {
+		PRIn("Failed command: open_cmd 0x%x : exp_open_ret 0x%x ; invoke_cmd 0x%x : exp_inv_ret 0x%x\n", open_cmd, exp_open_ret, invoke_cmd, exp_inv_ret);
+	}
+
+	return fn_ret;
+}
+
+static int crash_panic_test()
+{
+	if (do_crash_panic_test(CMD_NO_CRASH, TEEC_SUCCESS, CMD_NO_CRASH, TEEC_SUCCESS) ||
+	    do_crash_panic_test(CMD_PANIC, TEEC_ERROR_TARGET_DEAD, CMD_NO_CRASH, TEEC_ERROR_BAD_PARAMETERS) ||
+	    do_crash_panic_test(CMD_SEG_FAULT, TEEC_ERROR_TARGET_DEAD, CMD_NO_CRASH, TEEC_ERROR_BAD_PARAMETERS) ||
+	    do_crash_panic_test(CMD_NO_CRASH, TEEC_SUCCESS, CMD_PANIC, TEEC_ERROR_TARGET_DEAD) ||
+	    do_crash_panic_test(CMD_NO_CRASH, TEEC_SUCCESS, CMD_SEG_FAULT, TEEC_ERROR_TARGET_DEAD)) {
+		PRIn("Basic crash/panic test(s) have failed!");
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
 int main()
 {
 	uint32_t i;
@@ -335,12 +400,18 @@ int main()
 		PRI("Error: Can't seed random");
 		goto err;
 	}
-
+	
 	for (i = 0; i < full_treatment_loop_count; i++) {
 		if (full_treatment_test())
 			goto err;
-	}
 
+		PRI("Running basic crash/panic testes.. ");
+		fflush(stdout);
+		if (crash_panic_test())
+			goto err;
+		PRIn("OK\n");
+	}
+	
 	PRIn("END: conn test app\n");
 
 	PRIn("\n");
