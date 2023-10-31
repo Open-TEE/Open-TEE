@@ -1,0 +1,30 @@
+# libtee shared library
+
+lib_LTLIBRARIES += libtee_pkcs11.la
+
+libtee_pkcs11_la_includes = \
+	include/cryptoki.h \
+	include/pkcs11.h \
+	include/pkcs11f.h \
+	include/pkcs11t.h
+
+# Target specific variables
+libtee_pkcs11_la_SOURCES = \
+	src/hal_gp.c \
+	src/mutex_manager.c \
+	src/pkcs11_crypto.c \
+	src/pkcs11_general.c \
+	src/pkcs11_object.c \
+	src/pkcs11_session_slot.c 
+
+libtee_pkcs11_la_CFLAGS = ${AM_CFLAGS} \
+	-iquote $(top_srcdir)/include \
+	-iquote $(top_srcdir)/src \
+	-iquote $(top_srcdir)/../libtee/include
+
+
+libtee_pkcs11_la_LDFLAGS = ${AM_LDFLAGS} \
+	-version-info 0:0:0
+
+libtee_pkcs11_la_LIBADD = ../libtee/libtee.la
+
