@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: @PACKAGE_NAME@
+Description: Open-TEE userspace library
+Requires:
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -ltee
+Cflags: -I${includedir}
