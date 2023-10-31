@@ -1,0 +1,19 @@
+# conn_test_app executable
+
+bin_PROGRAMS += conn_test
+
+conn_test_includes = \
+	conn_test_app/conn_test_ctl.h \
+	conn_test_app/panic_crash_ctl.h
+
+conn_test_SOURCES = ${conn_test_include} \
+	conn_test_app/conn_test_app.c
+
+conn_test_CFLAGS = ${AM_CFLAGS} \
+	-iquote $(top_srcdir)/../libtee/include
+
+conn_test_LDFLAGS = ${AM_LDFLAGS} \
+	-rdynamic
+
+conn_test_LDADD = \
+	../libtee/libtee.la

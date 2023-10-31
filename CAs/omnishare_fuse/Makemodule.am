@@ -1,0 +1,18 @@
+# omnishare_fuse executable
+
+bin_PROGRAMS += omnishare-fuse
+
+omnishare_fuse_SOURCES = \
+	omnishare_fuse/omnishare_fuse.c
+
+omnishare_fuse_CFLAGS = ${AM_CFLAGS} \
+	$(FUSE_CFLAGS) \
+	-DOT_LOGGING -DFUSE_USE_VERSION=26 \
+	-iquote $(top_srcdir)/../libomnishare/include
+
+omnishare_fuse_LDFLAGS = ${AM_LDFLAGS} \
+	$(FUSE_LIBS)
+	-rdynamic
+
+omnishare_fuse_LDADD = \
+	../libomnishare/libomnishare.la

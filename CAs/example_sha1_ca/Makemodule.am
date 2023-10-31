@@ -1,0 +1,15 @@
+# conn_test_app executable
+
+bin_PROGRAMS += example_sha1
+
+example_sha1_SOURCES = \
+	example_sha1_ca/example_sha1_ca.c
+
+example_sha1_CFLAGS = ${AM_CFLAGS} \
+	-iquote $(top_srcdir)/../libtee/include
+
+example_sha1_LDFLAGS = ${AM_LDFLAGS} \
+	-rdynamic
+
+example_sha1_LDADD = \
+	../libtee/libtee.la

@@ -1,0 +1,103 @@
+#!/bin/bash
+
+#
+# Copyright (c) 2015 Brian McGillion
+#
+#      This program is free software; you can redistribute it and/or modify
+#      it under the terms of the GNU General Public License as published by
+#      the Free Software Foundation, version 2.
+#
+#      This program is distributed in the hope that it will be useful, but
+#      WITHOUT ANY WARRANTY; without even the implied warranty of
+#      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#      General Public License for more details.
+#
+#      You should have received a copy of the GNU General Public
+#      License along with this program; if not, write to the Free Software
+#      Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+#      02110-1301 USA
+#
+# Description: Initialize Omnishare Fuse
+#
+### BEGIN INIT INFO
+# Provides:          omnishare-fuse
+# Required-Start:    $remote_fs $local_fs
+# Required-Stop:     $remote_fs $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Utility to set up omnishare
+# Description:       Omnishare is a mechanism for secure storage using high entropy keys.
+### END INIT INFO
+
+DESC="Omnishare Fuse"
+CONF="/etc/opentee.conf"
+BIN_NAME="omnishare-fuse"
+LOCAL_VIEW="/tmp/local_view"
+CLOUD_STORE="/tmp/cloud_store"
+
+TEST_FILES_DIR="$(dirname "${BASH_SOURCE[0]}")/tests"
+
+# Check whether opentee config file exists
+if [ ! -f $CONF ]; then
+	echo "No conf file exists"
+	exit 1
+fi
+
+# determine where the the opentee binary is and hence all the Open-TEE bins
+OPENTEE_PROG=$(awk -F "=" '$1!~/^#/ && /opentee_bin/ {print $2}' $CONF)
+if [ ! $OPENTEE_PROG ]; then
+	echo "Could not find binary name for opentee"
+	exit 2
+fi
+
+PROG_PATH=`dirname $OPENTEE_PROG`
+PROG="$PROG_PATH/$BIN_NAME"
+
+start_omnishare() {
+	if [ ! -d $LOCAL_VIEW ]; then
+		echo "Making $LOCAL_VIEW and $CLOUD_STORE directories"
+		mkdir $LOCAL_VIEW
+		mkdir $CLOUD_STORE
+	fi
+
+	echo "Script Starting $DESC ..."
+	$PROG $LOCAL_VIEW $CLOUD_STORE
+	echo "done."
+}
+
+stop_omnishare() {
+	echo "Stopping $DESC ..."
+	killall $BIN_NAME
+	echo "done."
+}
+
+copy_files() {
+	echo "copying files ..."
+	ls -al $TEST_FILES_DIR
+	cp "$TEST_FILES_DIR/"* $LOCAL_VIEW
+	echo "copying done"
+}
+
+case "$1" in
+   start)
+		start_omnishare
+		;;
+   reload|force-reload|restart|try-restart)
+		echo "Reloading $DESC ..."
+		stop_omnishare
+		start_omnishare
+		echo "Reload done."
+		;;
+   stop)
+		stop_omnishare
+		;;
+   copy)
+		copy_files
+		;;
+   *)
+		echo $"Usage: $0 {start|stop|reload|force-reload|restart|try-restart|status}"
+		exit 4
+		;;
+esac
+
+exit 0
