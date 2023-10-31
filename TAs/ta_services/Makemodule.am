@@ -1,0 +1,15 @@
+# example TA
+
+ta_LTLIBRARIES += libta_services.la
+
+libta_services_la_includes = \
+        include/tee_ta_properties.h
+
+libta_services_la_SOURCES = $(libta_services_la_includes) \
+	ta_services/ta_services.c
+
+libta_services_la_CFLAGS = ${AM_CFLAGS} \
+        -iquote $(top_srcdir)/include \
+        -iquote $(top_srcdir)/../emulator/include
+
+libta_services_la_LDFLAGS = ${AM_LDFLAGS}

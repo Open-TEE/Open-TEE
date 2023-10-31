@@ -1,0 +1,36 @@
+/*****************************************************************************
+** Copyright (C) 2016 Open-TEE project.                                     **
+** Copyright (C) 2016 Atte Pellikka                                         **
+** Copyright (C) 2016 Brian McGillion                                       **
+** Copyright (C) 2016 Tanel Dettenborn                                      **
+** Copyright (C) 2016 Ville Kankainen                                       **
+**                                                                          **
+** Licensed under the Apache License, Version 2.0 (the "License");          **
+** you may not use this file except in compliance with the License.         **
+** You may obtain a copy of the License at                                  **
+**                                                                          **
+**      http://www.apache.org/licenses/LICENSE-2.0                          **
+**                                                                          **
+** Unless required by applicable law or agreed to in writing, software      **
+** distributed under the License is distributed on an "AS IS" BASIS,        **
+** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. **
+** See the License for the specific language governing permissions and      **
+** limitations under the License.                                           **
+*****************************************************************************/
+
+#ifndef TOKEN_CONF_H
+#define TOKEN_CONF_H
+
+/* The max number of sessions that each application can have simultaneously open */
+#define MAX_SESSIONS 5
+
+#define MAX_PIN_LEN 64
+#define MIN_PIN_LEN 8
+
+/* 16 simultaneous apps is enough for now :) */
+#define MAX_APPS 16
+
+/* TODO: Use CKR_ENCRYPTED_DATA_LEN_RANGE: Max crypto block at time */
+#define MAX_CRYPTO_BLOCK 4096
+
+#endif // TOKEN_CONF_H

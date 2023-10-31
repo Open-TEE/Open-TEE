@@ -1,0 +1,20 @@
+ta_LTLIBRARIES += libta_panic_crash.la
+
+libta_panic_crash_la_includes = \
+	include/tee_ta_properties.h \
+	tee_logging.h
+
+libta_panic_crash_la_SOURCES = ${libta_panic_crash_la_includes} \
+	ta_panic_crash/ta_panic_crash.c
+
+libta_panic_crash_la_CFLAGS = ${AM_CFLAGS} \
+	-iquote $(top_srcdir)/include \
+	-iquote $(top_srcdir)/../emulator/include \
+	-iquote $(top_srcdir)/../tests/internal_api
+
+libta_panic_crash_la_LDFLAGS = ${AM_LDFLAGS}
+
+libta_panic_crash_la_LIBADD = \
+	../tests/libCryptoTest.la \
+	../tests/libStorageTest.la \
+	../tests/libta2taTest.la

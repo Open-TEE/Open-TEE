@@ -1,0 +1,15 @@
+# example digest TA
+
+ta_LTLIBRARIES += libexample_digest.la
+
+libexample_digest_la_includes = \
+	include/tee_ta_properties.h
+
+libexample_digest_la_SOURCES = $(libexample_digest_la_includes) \
+	example_digest_ta/example_digest_ta.c
+
+libexample_digest_la_CFLAGS = ${AM_CFLAGS} \
+        -iquote $(top_srcdir)/include \
+        -iquote $(top_srcdir)/../emulator/include
+
+libexample_digest_la_LDFLAGS = ${AM_LDFLAGS}
