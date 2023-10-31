@@ -1,0 +1,9 @@
+{
+  "name": "com.intel.chrome.opentee.proxy",
+  "description": "OpenTEE Native Messaging Api proxy host",
+  "path": "PATH TO EXECUTABLE HERE",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://knldjmfmopnpolahpmmgbagdohdnhkik/"
+  ]
+}
