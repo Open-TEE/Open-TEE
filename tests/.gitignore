@@ -1,0 +1,57 @@
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+test-driver
+
+# Autotools generated files
+Makefile
+Makefile.in
+aclocal.m4
+ar-lib
+autom4te.cache
+confdefs.h
+config.guess
+config.h
+config.h.in
+config.log
+config.status
+config.sub
+configure
+configure.scan
+compile
+depcomp
+install-sh
+ltmain.sh
+libtool
+m4
+missing
+stamp-h1
+.deps
+.dirstamp
+.libs
