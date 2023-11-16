@@ -16,3 +16,6 @@
 *.exe
 *.out
 *.app
+
+#nix and direnv
+.direnv/
