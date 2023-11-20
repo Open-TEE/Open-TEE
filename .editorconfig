@@ -10,5 +10,16 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 
 # C source files use Linux kernel style
-[*.c]
-intent_style = tab
+[*.[ch]]
+indent_style = tab
+indent_size = 8
+trim_trailing_whitespace = true
+
+[*.sym]
+indent_style = tab
+indent_size = 4
+trim_trailing_whitespace = true
+
+# Makefiles always use tabs for indentation
+[Makefile]
+indent_style = tab
