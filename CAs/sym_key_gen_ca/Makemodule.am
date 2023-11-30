@@ -1,0 +1,18 @@
+# To create the example_aes_256 executable 
+
+bin_PROGRAMS += example_aes_256
+
+example_aes_256_SOURCES = \
+        sym_key_gen_ca/ca_sym_key_256_gen.c
+
+
+example_aes_256_CFLAGS = ${AM_CFLAGS} \
+        -I/home/farah/Open-TEE/libtee/include
+
+
+example_aes_256_LDFLAGS = ${AM_LDFLAGS} \
+        -rdynamic 
+
+
+example_aes_256_LDADD = \
+        ../libtee/libtee.la 
