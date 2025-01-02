@@ -71,12 +71,31 @@ stop_opentee() {
 	echo "done."
 }
 
+status_opentee() {
+	pidfile=""
+	if [ -e "$USER_PID" ]; then
+		pidfile="$USER_PID"
+	elif [ -e "$ROOT_PID" ]; then
+		pidfile="$ROOT_PID"
+	else
+		echo "Can't find the PID file"
+		exit 3
+	fi
+	if lslocks | grep "$pidfile" &>/dev/null; then
+		echo "opentee is running"
+		exit 0
+	else
+		echo "opentee is not running"
+		exit 1
+	fi
+}
+
 case "$1" in
    start)
 		start_opentee
 		;;
    status)
-		echo "TO DO, test if the pid file is locked"
+		status_opentee
 		;;
    reload|force-reload|restart|try-restart)
 		echo "Reloading $DESC ..."
