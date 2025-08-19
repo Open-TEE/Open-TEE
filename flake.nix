@@ -4,113 +4,54 @@
 {
   description = "Open-TEE - GP emulator";
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-parts.url = "github:hercules-ci/flake-parts";
-    flake-root.url = "github:srid/flake-root";
-    treefmt-nix = {
-      url = "github:numtide/treefmt-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+  outputs = {
+    self,
+    nixpkgs,
+    ...
+  }: let
+    pkgs = nixpkgs.legacyPackages.x86_64-linux;
+    opentee = import ./default.nix {
+      inherit pkgs;
     };
-    # For preserving compatibility with non-Flake users
-    flake-compat = {
-      url = "github:nix-community/flake-compat";
-      flake = false;
+    kill-opentee-sh = pkgs.writeShellScriptBin "kill-opentee" ''
+      pkill -9 tee_manager
+    '';
+    start-opentee-sh = pkgs.writeShellScriptBin "start-opentee" ''
+      pkill -9 tee_manager
+      ${opentee}/bin/opentee-engine -c ${opentee}//opentee.conf
+    '';
+    status-opentee-sh = pkgs.writeShellScriptBin "status-opentee" ''
+      printf "\n\n*Opentee status* :: If tee_manager AND tee_launcher listed --> opentee running\n\n\n"
+      ps waux | grep tee_
+    '';
+  in {
+    packages.x86_64-linux.opentee = opentee;
+    devShells.x86_64-linux.default = opentee.shell;
+    formatter.x86_64-linux = pkgs.alejandra;
+    apps.x86_64-linux = rec {
+      start-opentee = {
+        type = "app";
+        #program = "${self.packages.x86_64-linux.opentee}/bin/opentee-engine -c ${self.packages.x86_64-linux.opentee}/opentee.conf";
+        program = "${start-opentee-sh}/bin/start-opentee";
+        meta.description = "Starts opentee engine";
+      };
+      test-opentee = {
+        type = "app";
+        program = "${self.packages.x86_64-linux.opentee}/bin/conn_test";
+        meta.description = "Executes opentee connection test app";
+      };
+      kill-opentee = {
+        type = "app";
+        program = "${kill-opentee-sh}/bin/kill-opentee";
+        meta.description = "just for convenience";
+      };
+      status-opentee = {
+        type = "app";
+        program = "${status-opentee-sh}/bin/status-opentee";
+        meta.description = "just for convenience";
+      };
     };
   };
-
-  outputs = inputs @ {flake-parts, ...}:
-    flake-parts.lib.mkFlake
-    {
-      inherit inputs;
-    } {
-      systems = [
-        "x86_64-linux"
-        #"aarch64-linux"
-      ];
-      imports = [
-        ./nix
-      ];
-    };
 }
-#     let
-#       # to work with older version of flakes
-#       lastModifiedDate = self.lastModifiedDate or self.lastModified or "19700101";
-#       # Generate a user-friendly version number.
-#       version = builtins.substring 0 8 lastModifiedDate;
-#       # System types to support.
-#       supportedSystems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
-#       # Helper function to generate an attrset '{ x86_64-linux = f "x86_64-linux"; ... }'.
-#       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-#       # Nixpkgs instantiated for supported system types.
-#       nixpkgsFor = forAllSystems (system: import nixpkgs { inherit system; overlays = [ self.overlay ]; });
-#     in
-#     {
-#       # A Nixpkgs overlay.
-#       overlay = final: prev: {
-#         hello = with final; stdenv.mkDerivation rec {
-#           pname = "hello";
-#           inherit version;
-#           src = ./.;
-#           nativeBuildInputs = [ autoreconfHook ];
-#         };
-#       };
-#       # Provide some binary packages for selected system types.
-#       packages = forAllSystems (system:
-#         {
-#           inherit (nixpkgsFor.${system}) hello;
-#         });
-#       # The default package for 'nix build'. This makes sense if the
-#       # flake provides only one package or there is a clear "main"
-#       # package.
-#       defaultPackage = forAllSystems (system: self.packages.${system}.hello);
-#       # A NixOS module, if applicable (e.g. if the package provides a system service).
-#       nixosModules.hello =
-#         { pkgs, ... }:
-#         {
-#           nixpkgs.overlays = [ self.overlay ];
-#           environment.systemPackages = [ pkgs.hello ];
-#           #systemd.services = { ... };
-#         };
-#       # Tests run by 'nix flake check' and by Hydra.
-#       checks = forAllSystems
-#         (system:
-#           with nixpkgsFor.${system};
-#           {
-#             inherit (self.packages.${system}) hello;
-#             # Additional tests, if applicable.
-#             test = stdenv.mkDerivation {
-#               pname = "hello-test";
-#               inherit version;
-#               buildInputs = [ hello ];
-#               dontUnpack = true;
-#               buildPhase = ''
-#                 echo 'running some integration tests'
-#                 [[ $(hello) = 'Hello Nixers!' ]]
-#               '';
-#               installPhase = "mkdir -p $out";
-#             };
-#           }
-#           // lib.optionalAttrs stdenv.isLinux {
-#             # A VM test of the NixOS module.
-#             vmTest =
-#               with import (nixpkgs + "/nixos/lib/testing-python.nix") {
-#                 inherit system;
-#               };
-#               makeTest {
-#                 nodes = {
-#                   client = { ... }: {
-#                     imports = [ self.nixosModules.hello ];
-#                   };
-#                 };
-#                 testScript =
-#                   ''
-#                     start_all()
-#                     client.wait_for_unit("multi-user.target")
-#                     client.succeed("hello")
-#                   '';
-#               };
-#           }
-#         );
-#     };
-# }
