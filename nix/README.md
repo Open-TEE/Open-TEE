@@ -250,10 +250,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
-      
+
       - name: Check Nix flake
         run: nix flake check
-      
+
       - name: Build
         run: nix build
 ```

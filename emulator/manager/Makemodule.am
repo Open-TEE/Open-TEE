@@ -41,4 +41,3 @@ libManagerApi_la_LDFLAGS = ${AM_LDFLAGS} \
 
 libManagerApi_la_LIBADD = \
 	libCommonApi.la
-

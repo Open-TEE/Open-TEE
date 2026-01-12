@@ -25,4 +25,3 @@ opentee_engine_LDFLAGS = ${AM_LDFLAGS} \
 
 opentee_engine_LDADD = \
 	libCommonApi.la
-

@@ -19,4 +19,3 @@ libtee_la_CFLAGS = ${AM_CFLAGS} \
 
 libtee_la_LDFLAGS = ${AM_LDFLAGS} \
 	-version-info 0:0:0
-

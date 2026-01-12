@@ -57,25 +57,29 @@
             #   # Run on pre-commit to only check staged files
             #   stages = ["pre-commit"];
             # };
-            # Disabled - too many legacy files with EOF/whitespace issues
-            # end-of-file-fixer = {
-            #   enable = true;
-            #   # Run on pre-commit to only check staged files
-            #   stages = ["pre-commit"];
-            #   # Exclude files that should not be modified
-            #   excludes = [
-            #     ".*\\.patch$"
-            #   ];
-            # };
-            # trim-trailing-whitespace = {
-            #   enable = true;
-            #   # Run on pre-commit to only check staged files
-            #   stages = ["pre-commit"];
-            #   # Exclude files that should not be modified
-            #   excludes = [
-            #     ".*\\.patch$"
-            #   ];
-            # };
+            # EOF fixer enabled - with exclusions for third-party code
+            end-of-file-fixer = {
+              enable = true;
+              # Run on pre-commit to only check staged files
+              stages = [ "pre-commit" ];
+              # Exclude files that should not be modified
+              excludes = [
+                ".*\\.patch$"
+                ".*\\.pdf$"
+                "^chrome/.*"
+              ];
+            };
+            trim-trailing-whitespace = {
+              enable = true;
+              # Run on pre-commit to only check staged files
+              stages = [ "pre-commit" ];
+              # Exclude files that should not be modified
+              excludes = [
+                ".*\\.patch$"
+                ".*\\.pdf$"
+                "^chrome/.*"
+              ];
+            };
           };
         };
       };

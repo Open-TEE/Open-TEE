@@ -34,4 +34,3 @@ libLauncherApi_la_LDFLAGS = ${AM_LDFLAGS} \
 libLauncherApi_la_LIBADD =\
 	libInternalApi.la \
 	libCommonApi.la
-

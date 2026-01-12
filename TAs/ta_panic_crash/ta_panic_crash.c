@@ -32,14 +32,14 @@ SET_TA_PROPERTIES({0x12345678, 0x8765, 0x4321, {'P', 'A', 'N', 'I', 'C', 'R', 'A
 
 static TEE_Result cause_crash_if_need(uint32_t cmd)
 {
-	uint32_t *nullptr = NULL;
+	uint32_t *null_ptr = NULL;
 
 	if (cmd == CMD_PANIC) {
 		OT_LOG(LOG_ERR, "TEST: TA will panic");
 		TEE_Panic(PANIC_RETURNCODE);
 	} else if (cmd == CMD_SEG_FAULT) {
 		OT_LOG(LOG_ERR, "TEST: TA will cause segfault");
-		*nullptr = 1;
+		*null_ptr = 1;
 	} else if (cmd == CMD_NO_CRASH) {
 		// Nothing
 	} else {

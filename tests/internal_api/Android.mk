@@ -27,4 +27,3 @@ LOCAL_C_INCLUDES := $(local_c_includes)
 LOCAL_CFLAGS := -DANDROID -DOT_LOGGING
 LOCAL_SHARED_LIBRARIES := libc libdl libInternalApi
 include $(BUILD_SHARED_LIBRARY)
-

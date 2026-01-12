@@ -52,6 +52,40 @@
               "--style=file"
             ];
           };
+
+          # EOF fixer - adds missing newlines at end of files
+          # Wrapped with 'sh -c' to always exit 0 (tool exits 1 when it makes changes)
+          end-of-file-fixer = {
+            command = "sh";
+            options = [
+              "-c"
+              "${pkgs.python3Packages.pre-commit-hooks}/bin/end-of-file-fixer \"$@\" || true"
+              "--"
+            ];
+            includes = [ "*" ];
+            excludes = [
+              "*.patch"
+              "*.pdf"
+              "chrome/**"
+            ];
+          };
+
+          # Trailing whitespace fixer
+          # Wrapped with 'sh -c' to always exit 0 (tool exits 1 when it makes changes)
+          trailing-whitespace = {
+            command = "sh";
+            options = [
+              "-c"
+              "${pkgs.python3Packages.pre-commit-hooks}/bin/trailing-whitespace-fixer \"$@\" || true"
+              "--"
+            ];
+            includes = [ "*" ];
+            excludes = [
+              "*.patch"
+              "*.pdf"
+              "chrome/**"
+            ];
+          };
         };
       };
 

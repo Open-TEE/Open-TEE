@@ -64,4 +64,3 @@ libInternalApi_la_LDFLAGS = ${AM_LDFLAGS} \
 
 libInternalApi_la_LIBADD = \
 	libCommonApi.la
-

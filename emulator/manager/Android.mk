@@ -31,4 +31,3 @@ LOCAL_LDFLAGS := -Wl,--hash-style=sysv
 endif
 
 include $(BUILD_SHARED_LIBRARY)
-
