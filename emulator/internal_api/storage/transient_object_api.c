@@ -23,51 +23,50 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "crypto/crypto_asym.h"
+#include "crypto/crypto_utils.h"
+#include "crypto/operation_handle.h"
 #include "object_handle.h"
 #include "storage_utils.h"
-#include "tee_logging.h"
-#include "tee_storage_api.h"
-#include "tee_panic.h"
-#include "crypto/operation_handle.h"
-#include "crypto/crypto_asym.h"
 #include "tee_internal_api.h"
-#include "crypto/crypto_utils.h"
+#include "tee_logging.h"
+#include "tee_panic.h"
+#include "tee_storage_api.h"
 
-static int malloc_attr(TEE_Attribute *init_attr,
-		       uint32_t attrID,
-		       uint32_t buf_len)
+static int malloc_attr(TEE_Attribute *init_attr, uint32_t attrID, uint32_t buf_len)
 {
 	init_attr->attributeID = attrID;
-	
+
 	if (buf_len == 0) {
 		return 0;
 	}
-	
+
 	init_attr->content.ref.buffer = calloc(1, buf_len);
 	if (init_attr->content.ref.buffer == NULL) {
 		OT_LOG_ERR("Malloc failed");
 		return 1;
 	}
-	
-	init_attr->content.ref.length = 0; //Nothing initilaized
+
+	init_attr->content.ref.length = 0; // Nothing initilaized
 	return 0;
 }
 
-static TEE_Attribute *copy_attr2gpKeyAttr(struct gp_key *key,
-					  TEE_Attribute *cpy_attr)
+static TEE_Attribute *copy_attr2gpKeyAttr(struct gp_key *key, TEE_Attribute *cpy_attr)
 {
 	TEE_Attribute *gp_attr;
 
 	if (cpy_attr == NULL) {
 		return NULL;
 	}
-	
-	gp_attr = get_attr_from_attrArr(cpy_attr->attributeID,
-					key->gp_attrs.attrs, key->gp_attrs.attrs_count);
-	
+
+	gp_attr = get_attr_from_attrArr(cpy_attr->attributeID, key->gp_attrs.attrs,
+					key->gp_attrs.attrs_count);
+
 	if (gp_attr == NULL) {
-		OT_LOG(LOG_ERR, "No GP key attribute to copy"
-		       "attribute (cpy_attr[%u])", cpy_attr->attributeID);
+		OT_LOG(LOG_ERR,
+		       "No GP key attribute to copy"
+		       "attribute (cpy_attr[%u])",
+		       cpy_attr->attributeID);
 		TEE_Panic(TEE_ERROR_GENERIC); /* Should never happen */
 	}
 
@@ -79,26 +78,22 @@ static TEE_Attribute *copy_attr2gpKeyAttr(struct gp_key *key,
 	if (cpy_attr->content.ref.length > key->key_max_length) {
 		OT_LOG_ERR("GP key too small for attribute (attributeID[%u]; "
 			   "provideLen[%lu]; maxLen[%lu])",
-			   cpy_attr->attributeID,
-			   cpy_attr->content.ref.length,
+			   cpy_attr->attributeID, cpy_attr->content.ref.length,
 			   gp_attr->content.ref.length);
 		TEE_Panic(TEE_ERROR_GENERIC); /* Should never happen */
 	}
 
 	gp_attr->content.ref.length = cpy_attr->content.ref.length;
-	TEE_MemMove(gp_attr->content.ref.buffer,
-		    cpy_attr->content.ref.buffer,
+	TEE_MemMove(gp_attr->content.ref.buffer, cpy_attr->content.ref.buffer,
 		    cpy_attr->content.ref.length);
 
 	return gp_attr;
 }
 
-static void copy_attr2mbedtlsMpi(mbedtls_mpi *mpi,
-				 TEE_Attribute *gp_attr,
-				 uint32_t maxRefSize)
+static void copy_attr2mbedtlsMpi(mbedtls_mpi *mpi, TEE_Attribute *gp_attr, uint32_t maxRefSize)
 {
 	size_t mpi_len;
-	
+
 	if (gp_attr == NULL || mpi == NULL) {
 		OT_LOG(LOG_ERR, "Panicking due mpi or gp_attr null");
 		TEE_Panic(TEE_ERROR_GENERIC); /* Should never happen */
@@ -107,22 +102,23 @@ static void copy_attr2mbedtlsMpi(mbedtls_mpi *mpi,
 	mpi_len = mbedtls_mpi_size(mpi);
 
 	if (mpi_len > maxRefSize) {
-		OT_LOG(LOG_ERR, "Internal error: mpi too big for reference (mpi[%lu]; "
-		       "refMaxLen[%u]; attrID[%u])", mpi_len, maxRefSize, gp_attr->attributeID);
-		TEE_Panic(TEE_ERROR_GENERIC);//Should never happen
+		OT_LOG(LOG_ERR,
+		       "Internal error: mpi too big for reference (mpi[%lu]; "
+		       "refMaxLen[%u]; attrID[%u])",
+		       mpi_len, maxRefSize, gp_attr->attributeID);
+		TEE_Panic(TEE_ERROR_GENERIC); // Should never happen
 	}
 
 	gp_attr->content.ref.length = mpi_len;
-	if (mbedtls_mpi_write_binary(mpi, gp_attr->content.ref.buffer, gp_attr->content.ref.length)) {
+	if (mbedtls_mpi_write_binary(mpi, gp_attr->content.ref.buffer,
+				     gp_attr->content.ref.length)) {
 		OT_LOG(LOG_ERR, "Panicking due mbedtls_mpi_read_binary failed");
 		TEE_Panic(TEE_ERROR_GENERIC);
 	}
 }
 
 /* Secret key attribute is used for AES, DES, DES3 and HMAC operations */
-static TEE_Result populate_secret_key(TEE_Attribute *attrs,
-				      uint32_t attrCount,
-				      struct gp_key *key)
+static TEE_Result populate_secret_key(TEE_Attribute *attrs, uint32_t attrCount, struct gp_key *key)
 {
 	TEE_Attribute *secret_attr;
 
@@ -144,22 +140,20 @@ static TEE_Result populate_secret_key(TEE_Attribute *attrs,
 	return TEE_SUCCESS;
 }
 
-static TEE_Result populate_rsa_key(TEE_Attribute *attrs,
-				   uint32_t attrCount,
-				   struct gp_key *key,
+static TEE_Result populate_rsa_key(TEE_Attribute *attrs, uint32_t attrCount, struct gp_key *key,
 				   uint32_t rsa_obj_type)
 {
-	//TODO: Add private key and parameters checks
+	// TODO: Add private key and parameters checks
 	struct rsa_components rsa_comp;
 	mbedtls_rsa_context rsa_ctx;
 	uint32_t rsa_max_comp_size;
 	TEE_Result rv_gp = TEE_ERROR_GENERIC;
-	
+
 	mbedtls_rsa_init(&rsa_ctx);
-	
+
 	get_valid_rsa_components(attrs, attrCount, &rsa_comp);
 
-	//Check components
+	// Check components
 
 	if (rsa_comp.modulo == NULL || rsa_comp.public_exp == NULL) {
 		OT_LOG_ERR("Panicking due missing RSA key TEE_ATTR_RSA_MODULUS or "
@@ -169,8 +163,8 @@ static TEE_Result populate_rsa_key(TEE_Attribute *attrs,
 
 	if (rsa_comp.modulo->content.ref.length > key->key_max_length) {
 		OT_LOG_ERR("Panicking due RSA key too big: reserved size [%u]; "
-			   "provided size [%lu]",key->key_max_length,
-			   rsa_comp.modulo->content.ref.length);
+			   "provided size [%lu]",
+			   key->key_max_length, rsa_comp.modulo->content.ref.length);
 		rv_gp = TEE_ERROR_BAD_PARAMETERS;
 		goto err;
 	}
@@ -180,9 +174,9 @@ static TEE_Result populate_rsa_key(TEE_Attribute *attrs,
 			   "OpenTEE limits public exponent to 4 bytes!");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
-	
+
 	rsa_max_comp_size = mbedtls_RSA_LONGEST_COMPONENT(key->key_max_length);
-	
+
 	if (key->gp_key_type == TEE_TYPE_RSA_KEYPAIR) {
 
 		if (rsa_comp.private_exp == NULL) {
@@ -198,14 +192,13 @@ static TEE_Result populate_rsa_key(TEE_Attribute *attrs,
 			rv_gp = TEE_ERROR_BAD_PARAMETERS;
 			goto err;
 		}
-		
-		if (rsa_comp.prime1 || rsa_comp.prime2 ||
-		    rsa_comp.coff ||
-		    rsa_comp.exp1 || rsa_comp.exp2) {
-			
-			if (rsa_comp.prime1 == NULL  || rsa_comp.prime2 == NULL  ||
-			    rsa_comp.coff == NULL  ||
-			    rsa_comp.exp1 == NULL  || rsa_comp.exp2 == NULL) {
+
+		if (rsa_comp.prime1 || rsa_comp.prime2 || rsa_comp.coff || rsa_comp.exp1 ||
+		    rsa_comp.exp2) {
+
+			if (rsa_comp.prime1 == NULL || rsa_comp.prime2 == NULL ||
+			    rsa_comp.coff == NULL || rsa_comp.exp1 == NULL ||
+			    rsa_comp.exp2 == NULL) {
 				OT_LOG_ERR("Panicking due missing RSA component "
 					   "(need to provide all or none)");
 				TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
@@ -217,7 +210,7 @@ static TEE_Result populate_rsa_key(TEE_Attribute *attrs,
 			    rsa_comp.exp2->content.ref.length > rsa_max_comp_size ||
 			    rsa_comp.coff->content.ref.length > rsa_max_comp_size) {
 				OT_LOG(LOG_ERR, "Panics due RSA some of the RSA components is too "
-				       "big (prime1/2 or exp1/2 or coff)");
+						"big (prime1/2 or exp1/2 or coff)");
 				TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 			}
 
@@ -229,7 +222,7 @@ static TEE_Result populate_rsa_key(TEE_Attribute *attrs,
 
 	// -- Parameters are OK --
 
-	//Test key
+	// Test key
 
 	if (!assign_rsa_key_to_ctx(attrs, attrCount, &rsa_ctx, rsa_obj_type)) {
 		OT_LOG_ERR("Key is not usable in OpenTEE");
@@ -237,7 +230,7 @@ static TEE_Result populate_rsa_key(TEE_Attribute *attrs,
 		goto err;
 	}
 
-	//Key is OK. Copy attributes to key.
+	// Key is OK. Copy attributes to key.
 	copy_attr2gpKeyAttr(key, rsa_comp.modulo);
 	copy_attr2gpKeyAttr(key, rsa_comp.public_exp);
 	copy_attr2gpKeyAttr(key, rsa_comp.prime1);
@@ -246,27 +239,25 @@ static TEE_Result populate_rsa_key(TEE_Attribute *attrs,
 	copy_attr2gpKeyAttr(key, rsa_comp.exp2);
 	copy_attr2gpKeyAttr(key, rsa_comp.coff);
 	copy_attr2gpKeyAttr(key, rsa_comp.private_exp);
-	
+
 	key->key_lenght = rsa_comp.modulo->content.ref.length;
 	rv_gp = TEE_SUCCESS;
- err:
+err:
 	mbedtls_rsa_free(&rsa_ctx);
 	return rv_gp;
 }
 
-static TEE_Result populate_ecc_key(TEE_Attribute *attrs,
-				   uint32_t attrCount,
-				   struct gp_key *key,
+static TEE_Result populate_ecc_key(TEE_Attribute *attrs, uint32_t attrCount, struct gp_key *key,
 				   uint32_t ecc_obj_type)
 {
-	//TODO: Add private key and parameters checks
+	// TODO: Add private key and parameters checks
 	struct ecc_components ecc_comp;
 	mbedtls_ecdsa_context ecc_ctx;
 	mbedtls_ecp_keypair ec;
 	mbedtls_ecp_group grp;
 	TEE_Result rv_gp = TEE_ERROR_GENERIC;
 
-	//mbedtls_ecdsa_init(&ecc_ctx);
+	// mbedtls_ecdsa_init(&ecc_ctx);
 
 	mbedtls_ecp_group_init(&grp);
 	mbedtls_ecdsa_init(&ecc_ctx);
@@ -274,7 +265,7 @@ static TEE_Result populate_ecc_key(TEE_Attribute *attrs,
 
 	get_valid_ecc_components(attrs, attrCount, &ecc_comp);
 
-	//Check components
+	// Check components
 
 	if (ecc_comp.x == NULL || ecc_comp.y == NULL || ecc_comp.curve == NULL) {
 		OT_LOG_ERR("Panicking due missing ECC component: "
@@ -289,8 +280,8 @@ static TEE_Result populate_ecc_key(TEE_Attribute *attrs,
 		TEE_Panic(TEE_ERROR_GENERIC);
 	}
 
-	//TODO Check lenghts
-	
+	// TODO Check lenghts
+
 	if (key->gp_key_type == TEE_TYPE_ECDSA_KEYPAIR ||
 	    key->gp_key_type == TEE_TYPE_ECDH_KEYPAIR) {
 
@@ -312,43 +303,42 @@ static TEE_Result populate_ecc_key(TEE_Attribute *attrs,
 
 	// -- Parameters are OK --
 
-	//Test key
+	// Test key
 	if (!assign_ecc_key_to_ctx(attrs, attrCount, &ecc_ctx, &ec, &grp, ecc_obj_type)) {
 		OT_LOG_ERR("Key is not usable in OpenTEE");
 		rv_gp = TEE_ERROR_GENERIC;
 		goto err;
 	}
 
-	//Key is OK. Copy attributes to key.
+	// Key is OK. Copy attributes to key.
 	copy_attr2gpKeyAttr(key, ecc_comp.x);
 	copy_attr2gpKeyAttr(key, ecc_comp.y);
 	copy_attr2gpKeyAttr(key, ecc_comp.curve);
 	copy_attr2gpKeyAttr(key, ecc_comp.private);
-	
+
 	key->key_lenght = ecc_comp.x->content.ref.length;
 	rv_gp = TEE_SUCCESS;
- err:
+err:
 	mbedtls_ecdsa_free(&ecc_ctx);
 	mbedtls_ecp_keypair_free(&ec);
 	mbedtls_ecp_group_free(&grp);
 	return rv_gp;
 }
 
-static int malloc_rsa_attrs(struct gp_key *key,
-			    uint32_t objectType,
-			    uint32_t maxObjectSize)
+static int malloc_rsa_attrs(struct gp_key *key, uint32_t objectType, uint32_t maxObjectSize)
 {
 	uint32_t rsa_comp_size;
 	int index = 0;
 
-	//TODO(improvement): Memory optimization. Reserve only need size. 
+	// TODO(improvement): Memory optimization. Reserve only need size.
 
 	rsa_comp_size = mbedtls_RSA_LONGEST_COMPONENT(maxObjectSize);
-	
+
 	/* Modulo: Modulo is key size */
 	/* Public exponent: e points to memory of 4 bytes in size (mbedtls RSA) */
 	if (malloc_attr(&key->gp_attrs.attrs[index++], TEE_ATTR_RSA_MODULUS, rsa_comp_size) ||
-	    malloc_attr(&key->gp_attrs.attrs[index++], TEE_ATTR_RSA_PUBLIC_EXPONENT, rsa_comp_size)) {
+	    malloc_attr(&key->gp_attrs.attrs[index++], TEE_ATTR_RSA_PUBLIC_EXPONENT,
+			rsa_comp_size)) {
 		goto err;
 	}
 
@@ -356,7 +346,8 @@ static int malloc_rsa_attrs(struct gp_key *key,
 		return 0;
 	}
 
-	if (malloc_attr(&key->gp_attrs.attrs[index++], TEE_ATTR_RSA_PRIVATE_EXPONENT, rsa_comp_size) ||
+	if (malloc_attr(&key->gp_attrs.attrs[index++], TEE_ATTR_RSA_PRIVATE_EXPONENT,
+			rsa_comp_size) ||
 	    malloc_attr(&key->gp_attrs.attrs[index++], TEE_ATTR_RSA_PRIME1, rsa_comp_size) ||
 	    malloc_attr(&key->gp_attrs.attrs[index++], TEE_ATTR_RSA_PRIME2, rsa_comp_size) ||
 	    malloc_attr(&key->gp_attrs.attrs[index++], TEE_ATTR_RSA_EXPONENT1, rsa_comp_size) ||
@@ -372,22 +363,21 @@ err:
 	return 1;
 }
 
-static int malloc_ecc_attrs(struct gp_key *key,
-			      uint32_t objectType,
-			      uint32_t maxObjectSize)
+static int malloc_ecc_attrs(struct gp_key *key, uint32_t objectType, uint32_t maxObjectSize)
 {
 	int index = 0;
 
-	//TODO(improvement): Memory optimization. Reserve only need size. 
+	// TODO(improvement): Memory optimization. Reserve only need size.
 
-	if (malloc_attr(&key->gp_attrs.attrs[index++], TEE_ATTR_ECC_PUBLIC_VALUE_X, maxObjectSize) ||
+	if (malloc_attr(&key->gp_attrs.attrs[index++], TEE_ATTR_ECC_PUBLIC_VALUE_X,
+			maxObjectSize) ||
 	    malloc_attr(&key->gp_attrs.attrs[index++], TEE_ATTR_ECC_CURVE, 0) ||
-	    malloc_attr(&key->gp_attrs.attrs[index++], TEE_ATTR_ECC_PUBLIC_VALUE_Y, maxObjectSize)) {
+	    malloc_attr(&key->gp_attrs.attrs[index++], TEE_ATTR_ECC_PUBLIC_VALUE_Y,
+			maxObjectSize)) {
 		goto err;
 	}
 
-	if (objectType == TEE_TYPE_ECDSA_PUBLIC_KEY ||
-	    objectType == TEE_TYPE_ECDH_PUBLIC_KEY) {
+	if (objectType == TEE_TYPE_ECDSA_PUBLIC_KEY || objectType == TEE_TYPE_ECDH_PUBLIC_KEY) {
 		return 0;
 	}
 
@@ -402,9 +392,7 @@ err:
 	return 1;
 }
 
-static int malloc_gp_key_struct(struct gp_key **key,
-				uint32_t objectType,
-				uint32_t maxObjectSize)
+static int malloc_gp_key_struct(struct gp_key **key, uint32_t objectType, uint32_t maxObjectSize)
 {
 	*key = (struct gp_key *)calloc(1, sizeof(struct gp_key));
 	if (*key == NULL) {
@@ -417,7 +405,7 @@ static int malloc_gp_key_struct(struct gp_key **key,
 	}
 
 	(*key)->gp_attrs.attrs =
-		(TEE_Attribute *)calloc(1, sizeof(TEE_Attribute) * (*key)->gp_attrs.attrs_count);
+	    (TEE_Attribute *)calloc(1, sizeof(TEE_Attribute) * (*key)->gp_attrs.attrs_count);
 	if ((*key)->gp_attrs.attrs == NULL) {
 		OT_LOG_ERR("Malloc failed");
 		goto err_2;
@@ -470,38 +458,36 @@ err_1:
 	return 1;
 }
 
-static TEE_Result gen_symmetric_key(struct gp_key *key,
-				    uint32_t keySize)
+static TEE_Result gen_symmetric_key(struct gp_key *key, uint32_t keySize)
 {
 	TEE_Attribute *sec_attr = NULL;
-	
-	sec_attr = get_attr_from_attrArr(TEE_ATTR_SECRET_VALUE, key->gp_attrs.attrs, key->gp_attrs.attrs_count);
+
+	sec_attr = get_attr_from_attrArr(TEE_ATTR_SECRET_VALUE, key->gp_attrs.attrs,
+					 key->gp_attrs.attrs_count);
 	if (sec_attr == NULL) {
 		OT_LOG(LOG_ERR, "TEE_ATTR_SECRET_VALUE not found");
 		TEE_Panic(TEE_ERROR_GENERIC);
 	}
-	
+
 	TEE_GenerateRandom(sec_attr->content.ref.buffer, keySize);
 	sec_attr->content.ref.length = keySize;
 	return TEE_SUCCESS;
 }
 
-static TEE_Result gen_rsa_keypair(struct gp_key *key,
-				  uint32_t keySize,
-				  TEE_Attribute *params,
+static TEE_Result gen_rsa_keypair(struct gp_key *key, uint32_t keySize, TEE_Attribute *params,
 				  uint32_t paramCount)
 {
-	//Initialized with default value,
-	//if user does not provide public exponent
-	//mbedtls_RSA_PUBLIC_EXP_t pub_exp = 65537;
+	// Initialized with default value,
+	// if user does not provide public exponent
+	// mbedtls_RSA_PUBLIC_EXP_t pub_exp = 65537;
 	int pub_exp = 65537;
 	TEE_Attribute *usr_rsa_public_exp = NULL;
 	int rv_mbedtls = 0;
 	unsigned int keySize_u_int = BYTE2BITS(keySize);
 	TEE_Result rv_gp;
 	mbedtls_rsa_context rsa_ctx;
-	
-	//For sanity sake all components listed! Clarify implementation.
+
+	// For sanity sake all components listed! Clarify implementation.
 	TEE_Attribute *rsa_public_exp = NULL;
 	TEE_Attribute *rsa_private_exp = NULL;
 	TEE_Attribute *rsa_modulus = NULL;
@@ -513,14 +499,15 @@ static TEE_Result gen_rsa_keypair(struct gp_key *key,
 
 	mbedtls_mpi N, P, Q, D, E, DP, DQ, QP;
 
-	//Convinience variables
+	// Convinience variables
 	TEE_Attribute *attrs = NULL;
 	uint32_t attrs_count = 0;
 
 	attrs = key->gp_attrs.attrs;
 	attrs_count = key->gp_attrs.attrs_count;
 
-	usr_rsa_public_exp = get_attr_from_attrArr(TEE_ATTR_RSA_PUBLIC_EXPONENT, params, paramCount);
+	usr_rsa_public_exp =
+	    get_attr_from_attrArr(TEE_ATTR_RSA_PUBLIC_EXPONENT, params, paramCount);
 	rsa_public_exp = get_attr_from_attrArr(TEE_ATTR_RSA_PUBLIC_EXPONENT, attrs, attrs_count);
 	rsa_private_exp = get_attr_from_attrArr(TEE_ATTR_RSA_PRIVATE_EXPONENT, attrs, attrs_count);
 	rsa_modulus = get_attr_from_attrArr(TEE_ATTR_RSA_MODULUS, attrs, attrs_count);
@@ -529,15 +516,15 @@ static TEE_Result gen_rsa_keypair(struct gp_key *key,
 	rsa_exponent1 = get_attr_from_attrArr(TEE_ATTR_RSA_EXPONENT1, attrs, attrs_count);
 	rsa_exponent2 = get_attr_from_attrArr(TEE_ATTR_RSA_EXPONENT2, attrs, attrs_count);
 	rsa_coefficient = get_attr_from_attrArr(TEE_ATTR_RSA_COEFFICIENT, attrs, attrs_count);
-	
-	//Internal sanity check. We should have all attributes in key
-	if (rsa_public_exp == NULL || rsa_private_exp == NULL ||
-	    rsa_prime1 == NULL || rsa_prime2 == NULL || rsa_exponent1 == NULL ||
-	    rsa_exponent2 == NULL || rsa_coefficient == NULL || rsa_modulus == NULL) {
+
+	// Internal sanity check. We should have all attributes in key
+	if (rsa_public_exp == NULL || rsa_private_exp == NULL || rsa_prime1 == NULL ||
+	    rsa_prime2 == NULL || rsa_exponent1 == NULL || rsa_exponent2 == NULL ||
+	    rsa_coefficient == NULL || rsa_modulus == NULL) {
 		OT_LOG_ERR("ERROR: Internal RSA key generation error (1)");
 		TEE_Panic(TEE_ERROR_GENERIC);
 	}
-	
+
 	if (usr_rsa_public_exp) {
 		if (usr_rsa_public_exp->content.ref.length > mbedtls_RSA_PUBLIC_EXP) {
 			OT_LOG_ERR("ERROR: Internal RSA public exponent limitation "
@@ -549,13 +536,13 @@ static TEE_Result gen_rsa_keypair(struct gp_key *key,
 
 		memcpy(&pub_exp, usr_rsa_public_exp->content.ref.buffer, mbedtls_RSA_PUBLIC_EXP);
 	} else {
-		//Already 65537 initialized!
+		// Already 65537 initialized!
 	}
 
 	mbedtls_rsa_init(&rsa_ctx);
-	rv_mbedtls = mbedtls_rsa_gen_key(&rsa_ctx, mbedtls_ctr_drbg_random,
-					 &ot_mbedtls_ctr_drbg, keySize_u_int, pub_exp);
-	if(rv_mbedtls != 0) {
+	rv_mbedtls = mbedtls_rsa_gen_key(&rsa_ctx, mbedtls_ctr_drbg_random, &ot_mbedtls_ctr_drbg,
+					 keySize_u_int, pub_exp);
+	if (rv_mbedtls != 0) {
 		print_mbedtls_to_syslog(rv_mbedtls);
 		OT_LOG_ERR("ERROR: Internal RSA key generation error (2)");
 		rv_gp = TEE_ERROR_GENERIC;
@@ -570,7 +557,7 @@ static TEE_Result gen_rsa_keypair(struct gp_key *key,
 	mbedtls_mpi_init(&DP);
 	mbedtls_mpi_init(&DQ);
 	mbedtls_mpi_init(&QP);
-	
+
 	rv_mbedtls = mbedtls_rsa_export(&rsa_ctx, &N, &P, &Q, &D, &E);
 	if (rv_mbedtls != 0) {
 		print_mbedtls_to_syslog(rv_mbedtls);
@@ -597,9 +584,9 @@ static TEE_Result gen_rsa_keypair(struct gp_key *key,
 	copy_attr2mbedtlsMpi(&QP, rsa_exponent2, key->key_max_length);
 
 	rv_gp = TEE_SUCCESS;
- err_1:
+err_1:
 	mbedtls_rsa_free(&rsa_ctx);
- err_2:
+err_2:
 	mbedtls_mpi_free(&N);
 	mbedtls_mpi_free(&P);
 	mbedtls_mpi_free(&Q);
@@ -613,10 +600,8 @@ static TEE_Result gen_rsa_keypair(struct gp_key *key,
 }
 
 static TEE_Result gen_ecc_keypair(struct gp_key *key,
-				  uint32_t keySize, //IN BITS!
-				  uint32_t ecc_type,
-				  TEE_Attribute *params,
-				  uint32_t paramCount)
+				  uint32_t keySize, // IN BITS!
+				  uint32_t ecc_type, TEE_Attribute *params, uint32_t paramCount)
 {
 	mbedtls_ecdsa_context ctx;
 	mbedtls_ecp_group grp;
@@ -630,12 +615,12 @@ static TEE_Result gen_ecc_keypair(struct gp_key *key,
 	TEE_Attribute *private = NULL;
 	TEE_Attribute *x = NULL;
 	TEE_Attribute *y = NULL;
-	
+
 	mbedtls_ecdsa_init(&ctx);
 	mbedtls_ecp_group_init(&grp);
 	mbedtls_mpi_init(&d);
 	mbedtls_ecp_point_init(&Q);
-	
+
 	usr_curve = get_attr_from_attrArr(TEE_ATTR_ECC_CURVE, params, paramCount);
 	if (usr_curve == NULL) {
 		OT_LOG_ERR("ECC key generation requires TEE_ATTR_ECC_CURVE parameter");
@@ -647,17 +632,22 @@ static TEE_Result gen_ecc_keypair(struct gp_key *key,
 	}
 
 	keySize = BITS2BYTE(keySize);
-	
+
 	if (keySize > key->key_max_length) {
 		OT_LOG_ERR("Generated key does not fit into object (keySize[%u]; "
-			   "maxKeySize[%u])", keySize, key->key_max_length);
+			   "maxKeySize[%u])",
+			   keySize, key->key_max_length);
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
-	
-	curve = get_attr_from_attrArr(TEE_ATTR_ECC_CURVE, key->gp_attrs.attrs, key->gp_attrs.attrs_count);
-	private = get_attr_from_attrArr(TEE_ATTR_ECC_PRIVATE_VALUE, key->gp_attrs.attrs, key->gp_attrs.attrs_count);
-	x = get_attr_from_attrArr(TEE_ATTR_ECC_PUBLIC_VALUE_X, key->gp_attrs.attrs, key->gp_attrs.attrs_count);
-	y = get_attr_from_attrArr(TEE_ATTR_ECC_PUBLIC_VALUE_Y, key->gp_attrs.attrs, key->gp_attrs.attrs_count);
+
+	curve = get_attr_from_attrArr(TEE_ATTR_ECC_CURVE, key->gp_attrs.attrs,
+				      key->gp_attrs.attrs_count);
+	private = get_attr_from_attrArr(TEE_ATTR_ECC_PRIVATE_VALUE, key->gp_attrs.attrs,
+					key->gp_attrs.attrs_count);
+	x = get_attr_from_attrArr(TEE_ATTR_ECC_PUBLIC_VALUE_X, key->gp_attrs.attrs,
+				  key->gp_attrs.attrs_count);
+	y = get_attr_from_attrArr(TEE_ATTR_ECC_PUBLIC_VALUE_Y, key->gp_attrs.attrs,
+				  key->gp_attrs.attrs_count);
 
 	if (curve == NULL || private == NULL || x == NULL || y == NULL) {
 		OT_LOG(LOG_ERR, "Internal error: missing ECC key component");
@@ -665,16 +655,16 @@ static TEE_Result gen_ecc_keypair(struct gp_key *key,
 	}
 
 	if (ecc_type == TEE_TYPE_ECDH_KEYPAIR) {
-		rv_mbedtls = mbedtls_ecp_group_load(&grp, gp_curve2mbedtls(usr_curve->content.value.a));
+		rv_mbedtls =
+		    mbedtls_ecp_group_load(&grp, gp_curve2mbedtls(usr_curve->content.value.a));
 		if (rv_mbedtls != 0) {
 			print_mbedtls_to_syslog(rv_mbedtls);
 			OT_LOG(LOG_ERR, "Internal crypto error: mbedtls curve load");
 			rv_gp = TEE_ERROR_GENERIC;
 			goto err;
 		}
-		
-		rv_mbedtls = mbedtls_ecdh_gen_public(&grp, &d, &Q,
-						     mbedtls_ctr_drbg_random,
+
+		rv_mbedtls = mbedtls_ecdh_gen_public(&grp, &d, &Q, mbedtls_ctr_drbg_random,
 						     &ot_mbedtls_ctr_drbg);
 		if (rv_mbedtls != 0) {
 			print_mbedtls_to_syslog(rv_mbedtls);
@@ -685,12 +675,11 @@ static TEE_Result gen_ecc_keypair(struct gp_key *key,
 
 		Q_ptr = &Q;
 		d_ptr = &d;
-		
+
 	} else if (ecc_type == TEE_TYPE_ECDSA_KEYPAIR) {
-		rv_mbedtls = mbedtls_ecdsa_genkey(&ctx,
-						  gp_curve2mbedtls(usr_curve->content.value.a),
-						  mbedtls_ctr_drbg_random,
-						  &ot_mbedtls_ctr_drbg);
+		rv_mbedtls =
+		    mbedtls_ecdsa_genkey(&ctx, gp_curve2mbedtls(usr_curve->content.value.a),
+					 mbedtls_ctr_drbg_random, &ot_mbedtls_ctr_drbg);
 		if (rv_mbedtls != 0) {
 			print_mbedtls_to_syslog(rv_mbedtls);
 			OT_LOG(LOG_ERR, "Internal crypto error: ECDSA key generation");
@@ -701,18 +690,18 @@ static TEE_Result gen_ecc_keypair(struct gp_key *key,
 		Q_ptr = &ctx.private_Q;
 		d_ptr = &ctx.private_d;
 	} else {
-		
+
 		OT_LOG(LOG_ERR, "Not support type");
 		TEE_Panic(TEE_ERROR_GENERIC);
 	}
-	
+
 	copy_attr2mbedtlsMpi(&Q_ptr->private_Y, y, key->key_max_length);
 	copy_attr2mbedtlsMpi(&Q_ptr->private_X, x, key->key_max_length);
 	copy_attr2mbedtlsMpi(d_ptr, private, key->key_max_length);
 	curve->content.value.a = usr_curve->content.value.a;
-	
+
 	rv_gp = TEE_SUCCESS;
- err:
+err:
 	mbedtls_mpi_free(&d);
 	mbedtls_ecp_point_free(&Q);
 	mbedtls_ecp_group_free(&grp);
@@ -720,16 +709,11 @@ static TEE_Result gen_ecc_keypair(struct gp_key *key,
 	return rv_gp;
 }
 
-
-
-
-
 /*
  * GP Transient API
  */
 
-TEE_Result TEE_AllocateTransientObject(uint32_t objectType,
-				       uint32_t maxObjectSize,
+TEE_Result TEE_AllocateTransientObject(uint32_t objectType, uint32_t maxObjectSize,
 				       TEE_ObjectHandle *object)
 {
 	if (object == NULL) {
@@ -740,7 +724,8 @@ TEE_Result TEE_AllocateTransientObject(uint32_t objectType,
 
 	if (valid_object_type_and_max_size(objectType, maxObjectSize)) {
 		OT_LOG_ERR("TEE_AllocateTransientObject not supported objectType"
-			   " [%u] OR/AND objectMaxSize [%u]", objectType, maxObjectSize);
+			   " [%u] OR/AND objectMaxSize [%u]",
+			   objectType, maxObjectSize);
 		return TEE_ERROR_NOT_SUPPORTED;
 	}
 
@@ -753,10 +738,10 @@ TEE_Result TEE_AllocateTransientObject(uint32_t objectType,
 
 	if (objectType != TEE_TYPE_DATA) {
 		if (malloc_gp_key_struct(&(*object)->key, objectType, BITS2BYTE(maxObjectSize))) {
-			goto out_of_mem_2; //Error msg printed
+			goto out_of_mem_2; // Error msg printed
 		}
 	}
-	
+
 	/* object info */
 	(*object)->objectInfo.objectUsage = 0xFFFFFFFF;
 	(*object)->objectInfo.maxObjectSize = maxObjectSize;
@@ -779,9 +764,10 @@ void TEE_FreeTransientObject(TEE_ObjectHandle object)
 	if (object == NULL) {
 		return;
 	}
-	
+
 	if (object->objectInfo.handleFlags & TEE_HANDLE_FLAG_PERSISTENT) {
-		OT_LOG_ERR("TEE_FreeTransientObject panics due trying to free persistant object\n");
+		OT_LOG_ERR("TEE_FreeTransientObject panics due trying to free persistant "
+			   "object\n");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
 
@@ -813,15 +799,13 @@ void TEE_ResetTransientObject(TEE_ObjectHandle object)
 
 	free_gp_key(object->key);
 
-	if (malloc_gp_key_struct(&object->key,
-				 object->objectInfo.objectType,
+	if (malloc_gp_key_struct(&object->key, object->objectInfo.objectType,
 				 object->objectInfo.maxObjectSize)) {
-		TEE_Panic(TEE_ERROR_OUT_OF_MEMORY); //Error msg printed
+		TEE_Panic(TEE_ERROR_OUT_OF_MEMORY); // Error msg printed
 	}
 }
 
-TEE_Result TEE_PopulateTransientObject(TEE_ObjectHandle object,
-				       TEE_Attribute *attrs,
+TEE_Result TEE_PopulateTransientObject(TEE_ObjectHandle object, TEE_Attribute *attrs,
 				       uint32_t attrCount)
 {
 	TEE_Result ret = TEE_SUCCESS;
@@ -841,7 +825,7 @@ TEE_Result TEE_PopulateTransientObject(TEE_ObjectHandle object,
 			   "populate persistant object (persistant object always initialzed)");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
-	
+
 	switch (object->objectInfo.objectType) {
 	case TEE_TYPE_AES:
 	case TEE_TYPE_HMAC_MD5:
@@ -855,16 +839,18 @@ TEE_Result TEE_PopulateTransientObject(TEE_ObjectHandle object,
 
 	case TEE_TYPE_RSA_PUBLIC_KEY:
 	case TEE_TYPE_RSA_KEYPAIR:
-		ret = populate_rsa_key(attrs, attrCount, object->key, object->objectInfo.objectType);
+		ret =
+		    populate_rsa_key(attrs, attrCount, object->key, object->objectInfo.objectType);
 		break;
 
 	case TEE_TYPE_ECDH_KEYPAIR:
 	case TEE_TYPE_ECDH_PUBLIC_KEY:
 	case TEE_TYPE_ECDSA_KEYPAIR:
 	case TEE_TYPE_ECDSA_PUBLIC_KEY:
-		ret = populate_ecc_key(attrs, attrCount, object->key, object->objectInfo.objectType);
+		ret =
+		    populate_ecc_key(attrs, attrCount, object->key, object->objectInfo.objectType);
 		break;
-		
+
 	default:
 		OT_LOG(LOG_ERR, "Not supported object type [%u]\n", object->objectInfo.objectType);
 		TEE_Panic(TEE_ERROR_GENERIC);
@@ -879,10 +865,7 @@ TEE_Result TEE_PopulateTransientObject(TEE_ObjectHandle object,
 	return ret;
 }
 
-void TEE_InitRefAttribute(TEE_Attribute *attr,
-			  uint32_t attributeID,
-			  void *buffer,
-			  size_t length)
+void TEE_InitRefAttribute(TEE_Attribute *attr, uint32_t attributeID, void *buffer, size_t length)
 {
 	if (attr == NULL || is_value_attribute(attributeID)) {
 		OT_LOG_ERR("Panicking due attribute null OR not a reference attribute\n");
@@ -894,10 +877,7 @@ void TEE_InitRefAttribute(TEE_Attribute *attr,
 	attr->content.ref.length = length;
 }
 
-void TEE_InitValueAttribute(TEE_Attribute *attr,
-			    uint32_t attributeID,
-			    uint32_t a,
-			    uint32_t b)
+void TEE_InitValueAttribute(TEE_Attribute *attr, uint32_t attributeID, uint32_t a, uint32_t b)
 {
 	if (attr == NULL || !is_value_attribute(attributeID)) {
 		OT_LOG_ERR("Panicking due attribute null OR not a VALUE attribute\n");
@@ -909,16 +889,15 @@ void TEE_InitValueAttribute(TEE_Attribute *attr,
 	attr->content.value.b = b;
 }
 
-void TEE_CopyObjectAttributes1(TEE_ObjectHandle destObject,
-			       TEE_ObjectHandle srcObject)
+void TEE_CopyObjectAttributes1(TEE_ObjectHandle destObject, TEE_ObjectHandle srcObject)
 {
-	//TODO: Function
-	
-	//Disabling function due not tested and it is missing functionality
-	
+	// TODO: Function
+
+	// Disabling function due not tested and it is missing functionality
+
 	OT_LOG(LOG_ERR, "TEE_CopyObjectAttributes1 not implemented");
 	TEE_Panic(TEE_ERROR_NOT_IMPLEMENTED);
-	
+
 	if (destObject == NULL || srcObject == NULL) {
 		OT_LOG_ERR("Panicking due destObject or srcObject NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
@@ -938,19 +917,19 @@ void TEE_CopyObjectAttributes1(TEE_ObjectHandle destObject,
 	/* Copy attributes, if possible */
 	if (destObject->objectInfo.objectType == srcObject->objectInfo.objectType) {
 
-		if (TEE_SUCCESS != TEE_PopulateTransientObject(destObject,
-							       srcObject->key->gp_attrs.attrs,
-							       srcObject->key->gp_attrs.attrs_count))
+		if (TEE_SUCCESS !=
+		    TEE_PopulateTransientObject(destObject, srcObject->key->gp_attrs.attrs,
+						srcObject->key->gp_attrs.attrs_count))
 			TEE_Panic(TEE_ERROR_GENERIC); /* Should never happen */
 
 	} else if (destObject->objectInfo.objectType == TEE_TYPE_RSA_PUBLIC_KEY &&
 		   srcObject->objectInfo.objectType == TEE_TYPE_RSA_KEYPAIR) {
 
-		//TODO: Error. Extract only public part!
+		// TODO: Error. Extract only public part!
 
-		if (TEE_SUCCESS != TEE_PopulateTransientObject(destObject,
-							       srcObject->key->gp_attrs.attrs,
-							       srcObject->key->gp_attrs.attrs_count))
+		if (TEE_SUCCESS !=
+		    TEE_PopulateTransientObject(destObject, srcObject->key->gp_attrs.attrs,
+						srcObject->key->gp_attrs.attrs_count))
 			TEE_Panic(TEE_ERROR_GENERIC); /* Should never happen */
 
 	} else if (destObject->objectInfo.objectType == TEE_TYPE_DSA_PUBLIC_KEY &&
@@ -976,9 +955,7 @@ void TEE_CopyObjectAttributes1(TEE_ObjectHandle destObject,
 	destObject->objectInfo.keySize = BYTE2BITS(srcObject->key->key_lenght);
 }
 
-TEE_Result TEE_GenerateKey(TEE_ObjectHandle object,
-			   uint32_t keySize,
-			   TEE_Attribute *params,
+TEE_Result TEE_GenerateKey(TEE_ObjectHandle object, uint32_t keySize, TEE_Attribute *params,
 			   uint32_t paramCount)
 {
 	TEE_Result ret = TEE_SUCCESS;
@@ -1000,7 +977,7 @@ TEE_Result TEE_GenerateKey(TEE_ObjectHandle object,
 			   BITS2BYTE(keySize), object->key->key_max_length);
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
-	
+
 	switch (object->objectInfo.objectType) {
 	case TEE_TYPE_AES:
 	case TEE_TYPE_HMAC_MD5:
@@ -1019,13 +996,14 @@ TEE_Result TEE_GenerateKey(TEE_ObjectHandle object,
 
 	case TEE_TYPE_ECDH_KEYPAIR:
 	case TEE_TYPE_ECDSA_KEYPAIR:
-		ret = gen_ecc_keypair(object->key, keySize,
-				      object->objectInfo.objectType, params, paramCount);
+		ret = gen_ecc_keypair(object->key, keySize, object->objectInfo.objectType, params,
+				      paramCount);
 		break;
 	default:
 		// Should never get here
 		OT_LOG_ERR("TEE_GenerateKey panics due object type not supported "
-			   "(objectType[%u])", object->objectInfo.objectType);
+			   "(objectType[%u])",
+			   object->objectInfo.objectType);
 		TEE_Panic(TEE_ERROR_GENERIC);
 	}
 

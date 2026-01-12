@@ -20,8 +20,8 @@
 #ifndef __CRYPTO_DIGEST_H__
 #define __CRYPTO_DIGEST_H__
 
-#include "../tee_crypto_api.h"
 #include "../../include/tee_shared_data_types.h"
+#include "../tee_crypto_api.h"
 
 TEE_Result init_gp_digest(TEE_OperationHandle operation);
 

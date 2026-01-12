@@ -14,27 +14,25 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdlib.h>
 
-#include "cryptoki.h"
 #include "commands.h"
+#include "cryptoki.h"
 #include "hal.h"
 
 /*!
  * \brief crypto_init
- * Function is collecting following crypto-init functions: C_EncryptInit, C_DecryptInit,
- * C_DigestInit, C_SignInit and C_VerifyInit.
+ * Function is collecting following crypto-init functions: C_EncryptInit,
+ * C_DecryptInit, C_DigestInit, C_SignInit and C_VerifyInit.
  * \param command_id invoked command from TEE
  * \param hSession see PKCS11
  * \param pMechanism see PKCS11
  * \param hKey see PKCS11.
  * \return
  */
-static CK_RV crypto_init(uint32_t command_id,
-			 CK_SESSION_HANDLE hSession,
-			 CK_MECHANISM_PTR pMechanism,
-			 CK_OBJECT_HANDLE hKey)
+static CK_RV crypto_init(uint32_t command_id, CK_SESSION_HANDLE hSession,
+			 CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLE hKey)
 {
 	if (hSession == CK_INVALID_HANDLE)
 		return CKR_SESSION_HANDLE_INVALID;
@@ -50,8 +48,8 @@ static CK_RV crypto_init(uint32_t command_id,
 
 /*!
  * \brief crypto
- * Function is collecting following crypto functions: C_Encryp, C_Decrypt, C_Digest, C_Sign and
- * C_Verify.
+ * Function is collecting following crypto functions: C_Encryp, C_Decrypt,
+ * C_Digest, C_Sign and C_Verify.
  * \param command_id invoked command from TEE
  * \param hSession see PKCS11
  * \param src is operation target buffer
@@ -60,12 +58,8 @@ static CK_RV crypto_init(uint32_t command_id,
  * \param dst_len is dst buffer length in bytes
  * \return
  */
-static CK_RV crypto(uint32_t command_id,
-		    CK_SESSION_HANDLE hSession,
-		    CK_BYTE_PTR src,
-		    CK_ULONG src_len,
-		    CK_BYTE_PTR dst,
-		    CK_ULONG_PTR dst_len)
+static CK_RV crypto(uint32_t command_id, CK_SESSION_HANDLE hSession, CK_BYTE_PTR src,
+		    CK_ULONG src_len, CK_BYTE_PTR dst, CK_ULONG_PTR dst_len)
 {
 	if (hSession == CK_INVALID_HANDLE)
 		return CKR_SESSION_HANDLE_INVALID;
@@ -78,8 +72,8 @@ static CK_RV crypto(uint32_t command_id,
 
 /*!
  * \brief crypto_update
- * Function is collecting following crypto functions: C_EncrypUpdate, C_DecryptUpdate,
- * C_DigestUpdate, C_SignUpdate and C_VerifyUpdate.
+ * Function is collecting following crypto functions: C_EncrypUpdate,
+ * C_DecryptUpdate, C_DigestUpdate, C_SignUpdate and C_VerifyUpdate.
  * \param command_id invoked command from TEE
  * \param hSession see PKCS11
  * \param src is operation target buffer
@@ -88,12 +82,8 @@ static CK_RV crypto(uint32_t command_id,
  * \param dst_len is dst buffer length in bytes
  * \return
  */
-static CK_RV crypto_update(uint32_t command_id,
-			   CK_SESSION_HANDLE hSession,
-			   CK_BYTE_PTR src,
-			   CK_ULONG src_len,
-			   CK_BYTE_PTR dst,
-			   CK_ULONG_PTR dst_len)
+static CK_RV crypto_update(uint32_t command_id, CK_SESSION_HANDLE hSession, CK_BYTE_PTR src,
+			   CK_ULONG src_len, CK_BYTE_PTR dst, CK_ULONG_PTR dst_len)
 {
 	if (hSession == CK_INVALID_HANDLE)
 		return CKR_SESSION_HANDLE_INVALID;
@@ -105,17 +95,15 @@ static CK_RV crypto_update(uint32_t command_id,
 }
 /*!
  * \brief crypto_final
- * Function is collecting following crypto functions: C_EncrypFinal, C_DecryptFinal,
- * C_DigestFinal, C_SignFinal and C_VerifyFinal.
+ * Function is collecting following crypto functions: C_EncrypFinal,
+ * C_DecryptFinal, C_DigestFinal, C_SignFinal and C_VerifyFinal.
  * \param command_id invoked command from TEE
  * \param hSession see PKCS11
  * \param dst operation output is placed into dst buffer
  * \param dst_len is dst buffer length in bytes
  * \return
  */
-static CK_RV crypto_final(uint32_t command_id,
-			  CK_SESSION_HANDLE hSession,
-			  CK_BYTE_PTR dst,
+static CK_RV crypto_final(uint32_t command_id, CK_SESSION_HANDLE hSession, CK_BYTE_PTR dst,
 			  CK_ULONG_PTR dst_len)
 {
 	if (hSession == CK_INVALID_HANDLE)
@@ -131,94 +119,69 @@ static CK_RV crypto_final(uint32_t command_id,
  * 11.8 ENCRYPTION FUNCTIONS
  */
 
-
 CK_RV C_EncryptInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLE hKey)
 {
 	return crypto_init(TEE_ENCRYPT_INIT, hSession, pMechanism, hKey);
 }
 
-CK_RV C_Encrypt(CK_SESSION_HANDLE hSession,
-		CK_BYTE_PTR pData,
-		CK_ULONG ulDataLen,
-		CK_BYTE_PTR pEncryptedData,
-		CK_ULONG_PTR pulEncryptedDataLen)
+CK_RV C_Encrypt(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
+		CK_BYTE_PTR pEncryptedData, CK_ULONG_PTR pulEncryptedDataLen)
 {
-	return crypto(TEE_ENCRYPT, hSession, pData,
-		      ulDataLen, pEncryptedData, pulEncryptedDataLen);
+	return crypto(TEE_ENCRYPT, hSession, pData, ulDataLen, pEncryptedData, pulEncryptedDataLen);
 }
 
-CK_RV C_EncryptUpdate(CK_SESSION_HANDLE hSession,
-		      CK_BYTE_PTR pPart,
-		      CK_ULONG ulPartLen,
-		      CK_BYTE_PTR pEncryptedPart,
-		      CK_ULONG_PTR pulEncryptedPartLen)
+CK_RV C_EncryptUpdate(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONG ulPartLen,
+		      CK_BYTE_PTR pEncryptedPart, CK_ULONG_PTR pulEncryptedPartLen)
 {
-	return crypto_update(TEE_ENCRYPT_UPDATE, hSession, pPart,
-			     ulPartLen, pEncryptedPart, pulEncryptedPartLen);
+	return crypto_update(TEE_ENCRYPT_UPDATE, hSession, pPart, ulPartLen, pEncryptedPart,
+			     pulEncryptedPartLen);
 }
 
-CK_RV C_EncryptFinal(CK_SESSION_HANDLE hSession,
-		     CK_BYTE_PTR pLastEncryptedPart,
+CK_RV C_EncryptFinal(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pLastEncryptedPart,
 		     CK_ULONG_PTR pulLastEncryptedPartLen)
 {
-	return crypto_final(TEE_ENCRYPT_FINAL, hSession,
-			    pLastEncryptedPart, pulLastEncryptedPartLen);
+	return crypto_final(TEE_ENCRYPT_FINAL, hSession, pLastEncryptedPart,
+			    pulLastEncryptedPartLen);
 }
-
 
 /*
  * 11.9 DECRYPTION FUNCTIONS
  */
-
 
 CK_RV C_DecryptInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLE hKey)
 {
 	return crypto_init(TEE_DECRYPT_INIT, hSession, pMechanism, hKey);
 }
 
-CK_RV C_Decrypt(CK_SESSION_HANDLE hSession,
-		CK_BYTE_PTR pEncryptedData,
-		CK_ULONG ulEncryptedDataLen,
-		CK_BYTE_PTR pData,
-		CK_ULONG_PTR pulDataLen)
+CK_RV C_Decrypt(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedData, CK_ULONG ulEncryptedDataLen,
+		CK_BYTE_PTR pData, CK_ULONG_PTR pulDataLen)
 {
-	return crypto(TEE_DECRYPT, hSession, pEncryptedData,
-		      ulEncryptedDataLen, pData, pulDataLen);
+	return crypto(TEE_DECRYPT, hSession, pEncryptedData, ulEncryptedDataLen, pData, pulDataLen);
 }
 
-CK_RV C_DecryptUpdate(CK_SESSION_HANDLE hSession,
-		      CK_BYTE_PTR pEncryptedPart,
-		      CK_ULONG ulEncryptedPartLen,
-		      CK_BYTE_PTR pPart,
-		      CK_ULONG_PTR pulPartLen)
+CK_RV C_DecryptUpdate(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedPart,
+		      CK_ULONG ulEncryptedPartLen, CK_BYTE_PTR pPart, CK_ULONG_PTR pulPartLen)
 {
-	return crypto_update(TEE_DECRYPT_UPDATE, hSession, pEncryptedPart,
-			     ulEncryptedPartLen, pPart, pulPartLen);
+	return crypto_update(TEE_DECRYPT_UPDATE, hSession, pEncryptedPart, ulEncryptedPartLen,
+			     pPart, pulPartLen);
 }
 
-CK_RV C_DecryptFinal(CK_SESSION_HANDLE hSession,
-		     CK_BYTE_PTR pLastPart,
-		     CK_ULONG_PTR pulLastPartLen)
+CK_RV C_DecryptFinal(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pLastPart, CK_ULONG_PTR pulLastPartLen)
 {
 	return crypto_final(TEE_DECRYPT_FINAL, hSession, pLastPart, pulLastPartLen);
 }
 
-
 /*
  * 11.10 MESSAGE DIGESTING FUNCTIONS
  */
-
 
 CK_RV C_DigestInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism)
 {
 	return crypto_init(TEE_DIGEST_INIT, hSession, pMechanism, NULL_PTR);
 }
 
-CK_RV C_Digest(CK_SESSION_HANDLE hSession,
-	       CK_BYTE_PTR pData,
-	       CK_ULONG ulDataLen,
-	       CK_BYTE_PTR pDigest,
-	       CK_ULONG_PTR pulDigestLen)
+CK_RV C_Digest(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
+	       CK_BYTE_PTR pDigest, CK_ULONG_PTR pulDigestLen)
 {
 	return crypto(TEE_DIGEST, hSession, pData, ulDataLen, pDigest, pulDigestLen);
 }
@@ -236,29 +199,22 @@ CK_RV C_DigestKey(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hKey)
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_DigestFinal(CK_SESSION_HANDLE hSession,
-		    CK_BYTE_PTR pDigest,
-		    CK_ULONG_PTR pulDigestLen)
+CK_RV C_DigestFinal(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pDigest, CK_ULONG_PTR pulDigestLen)
 {
 	return crypto_final(TEE_DIGEST_FINAL, hSession, pDigest, pulDigestLen);
 }
 
-
 /*
  * 11.11 SIGNING AND MACING FUNCTIONS
  */
-
 
 CK_RV C_SignInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLE hKey)
 {
 	return crypto_init(TEE_SIGN_INIT, hSession, pMechanism, hKey);
 }
 
-CK_RV C_Sign(CK_SESSION_HANDLE hSession,
-	     CK_BYTE_PTR pData,
-	     CK_ULONG ulDataLen,
-	     CK_BYTE_PTR pSignature,
-	     CK_ULONG_PTR pulSignatureLen)
+CK_RV C_Sign(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
+	     CK_BYTE_PTR pSignature, CK_ULONG_PTR pulSignatureLen)
 {
 	return crypto(TEE_SIGN, hSession, pData, ulDataLen, pSignature, pulSignatureLen);
 }
@@ -273,8 +229,7 @@ CK_RV C_SignFinal(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pSignature, CK_ULONG_P
 	return crypto_final(TEE_SIGN_FINAL, hSession, pSignature, pulSignatureLen);
 }
 
-CK_RV C_SignRecoverInit(CK_SESSION_HANDLE hSession,
-			CK_MECHANISM_PTR pMechanism,
+CK_RV C_SignRecoverInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
 			CK_OBJECT_HANDLE hKey)
 {
 	hSession = hSession;
@@ -284,11 +239,8 @@ CK_RV C_SignRecoverInit(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_SignRecover(CK_SESSION_HANDLE hSession,
-		    CK_BYTE_PTR pData,
-		    CK_ULONG ulDataLen,
-		    CK_BYTE_PTR pSignature,
-		    CK_ULONG_PTR pulSignatureLen)
+CK_RV C_SignRecover(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
+		    CK_BYTE_PTR pSignature, CK_ULONG_PTR pulSignatureLen)
 {
 	hSession = hSession;
 	pData = pData;
@@ -299,24 +251,17 @@ CK_RV C_SignRecover(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-
 /*
  * 11.12 FUNCTIONS FOR VERIFYING SIGNATURES AND MACS
  */
 
-
-CK_RV C_VerifyInit(CK_SESSION_HANDLE hSession,
-		   CK_MECHANISM_PTR pMechanism,
-		   CK_OBJECT_HANDLE hKey)
+CK_RV C_VerifyInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLE hKey)
 {
 	return crypto_init(TEE_VERIFY_INIT, hSession, pMechanism, hKey);
 }
 
-CK_RV C_Verify(CK_SESSION_HANDLE hSession,
-	       CK_BYTE_PTR pData,
-	       CK_ULONG ulDataLen,
-	       CK_BYTE_PTR pSignature,
-	       CK_ULONG ulSignatureLen)
+CK_RV C_Verify(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
+	       CK_BYTE_PTR pSignature, CK_ULONG ulSignatureLen)
 {
 	return crypto(TEE_VERIFY, hSession, pData, ulDataLen, pSignature, &ulSignatureLen);
 }
@@ -331,8 +276,7 @@ CK_RV C_VerifyFinal(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pSignature, CK_ULONG
 	return crypto_final(TEE_VERIFY_FINAL, hSession, pSignature, &ulSignatureLen);
 }
 
-CK_RV C_VerifyRecoverInit(CK_SESSION_HANDLE hSession,
-			  CK_MECHANISM_PTR pMechanism,
+CK_RV C_VerifyRecoverInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
 			  CK_OBJECT_HANDLE hKey)
 {
 	hSession = hSession;
@@ -342,11 +286,8 @@ CK_RV C_VerifyRecoverInit(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_VerifyRecover(CK_SESSION_HANDLE hSession,
-		      CK_BYTE_PTR pSignature,
-		      CK_ULONG ulSignatureLen,
-		      CK_BYTE_PTR pData,
-		      CK_ULONG_PTR pulDataLen)
+CK_RV C_VerifyRecover(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pSignature, CK_ULONG ulSignatureLen,
+		      CK_BYTE_PTR pData, CK_ULONG_PTR pulDataLen)
 {
 	hSession = hSession;
 	pSignature = pSignature;
@@ -357,17 +298,12 @@ CK_RV C_VerifyRecover(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-
 /*
  * 11.13 DUAL-FUNCTION CRYPTOGRAPHIC FUNCTIONS
  */
 
-
-CK_RV C_DigestEncryptUpdate(CK_SESSION_HANDLE hSession,
-			    CK_BYTE_PTR pPart,
-			    CK_ULONG ulPartLen,
-			    CK_BYTE_PTR pEncryptedPart,
-			    CK_ULONG_PTR pulEncryptedPartLen)
+CK_RV C_DigestEncryptUpdate(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONG ulPartLen,
+			    CK_BYTE_PTR pEncryptedPart, CK_ULONG_PTR pulEncryptedPartLen)
 {
 	hSession = hSession;
 	pPart = pPart;
@@ -377,11 +313,8 @@ CK_RV C_DigestEncryptUpdate(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_DecryptDigestUpdate(CK_SESSION_HANDLE hSession,
-			    CK_BYTE_PTR pEncryptedPart,
-			    CK_ULONG ulEncryptedPartLen,
-			    CK_BYTE_PTR pPart,
-			    CK_ULONG_PTR pulPartLen)
+CK_RV C_DecryptDigestUpdate(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedPart,
+			    CK_ULONG ulEncryptedPartLen, CK_BYTE_PTR pPart, CK_ULONG_PTR pulPartLen)
 {
 	hSession = hSession;
 	pEncryptedPart = pEncryptedPart;
@@ -391,11 +324,8 @@ CK_RV C_DecryptDigestUpdate(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_SignEncryptUpdate(CK_SESSION_HANDLE hSession,
-			  CK_BYTE_PTR pPart,
-			  CK_ULONG ulPartLen,
-			  CK_BYTE_PTR pEncryptedPart,
-			  CK_ULONG_PTR pulEncryptedPartLen)
+CK_RV C_SignEncryptUpdate(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONG ulPartLen,
+			  CK_BYTE_PTR pEncryptedPart, CK_ULONG_PTR pulEncryptedPartLen)
 {
 	hSession = hSession;
 	pPart = pPart;
@@ -405,11 +335,8 @@ CK_RV C_SignEncryptUpdate(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_DecryptVerifyUpdate(CK_SESSION_HANDLE hSession,
-			    CK_BYTE_PTR pEncryptedPart,
-			    CK_ULONG ulEncryptedPartLen,
-			    CK_BYTE_PTR pPart,
-			    CK_ULONG_PTR pulPartLen)
+CK_RV C_DecryptVerifyUpdate(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedPart,
+			    CK_ULONG ulEncryptedPartLen, CK_BYTE_PTR pPart, CK_ULONG_PTR pulPartLen)
 {
 	hSession = hSession;
 	pEncryptedPart = pEncryptedPart;
@@ -418,18 +345,13 @@ CK_RV C_DecryptVerifyUpdate(CK_SESSION_HANDLE hSession,
 	pulPartLen = pulPartLen;
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
-
 
 /*
  * 11.14 KEY MANAGEMENT FUNCTIONS
  */
 
-
-CK_RV C_GenerateKey(CK_SESSION_HANDLE hSession,
-		    CK_MECHANISM_PTR pMechanism,
-		    CK_ATTRIBUTE_PTR pTemplate,
-		    CK_ULONG ulCount,
-		    CK_OBJECT_HANDLE_PTR phKey)
+CK_RV C_GenerateKey(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
+		    CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount, CK_OBJECT_HANDLE_PTR phKey)
 {
 	hSession = hSession;
 	pMechanism = pMechanism;
@@ -439,14 +361,10 @@ CK_RV C_GenerateKey(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_GenerateKeyPair(CK_SESSION_HANDLE hSession,
-			CK_MECHANISM_PTR pMechanism,
-			CK_ATTRIBUTE_PTR pPublicKeyTemplate,
-			CK_ULONG ulPublicKeyAttributeCount,
-			CK_ATTRIBUTE_PTR pPrivateKeyTemplate,
-			CK_ULONG ulPrivateKeyAttributeCount,
-			CK_OBJECT_HANDLE_PTR phPublicKey,
-			CK_OBJECT_HANDLE_PTR phPrivateKey)
+CK_RV C_GenerateKeyPair(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
+			CK_ATTRIBUTE_PTR pPublicKeyTemplate, CK_ULONG ulPublicKeyAttributeCount,
+			CK_ATTRIBUTE_PTR pPrivateKeyTemplate, CK_ULONG ulPrivateKeyAttributeCount,
+			CK_OBJECT_HANDLE_PTR phPublicKey, CK_OBJECT_HANDLE_PTR phPrivateKey)
 {
 	hSession = hSession;
 	pMechanism = pMechanism;
@@ -459,11 +377,8 @@ CK_RV C_GenerateKeyPair(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_WrapKey(CK_SESSION_HANDLE hSession,
-		CK_MECHANISM_PTR pMechanism,
-		CK_OBJECT_HANDLE hWrappingKey,
-		CK_OBJECT_HANDLE hKey,
-		CK_BYTE_PTR pWrappedKey,
+CK_RV C_WrapKey(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
+		CK_OBJECT_HANDLE hWrappingKey, CK_OBJECT_HANDLE hKey, CK_BYTE_PTR pWrappedKey,
 		CK_ULONG_PTR pulWrappedKeyLen)
 {
 	hSession = hSession;
@@ -475,13 +390,9 @@ CK_RV C_WrapKey(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_UnwrapKey(CK_SESSION_HANDLE hSession,
-		  CK_MECHANISM_PTR pMechanism,
-		  CK_OBJECT_HANDLE hUnwrappingKey,
-		  CK_BYTE_PTR pWrappedKey,
-		  CK_ULONG ulWrappedKeyLen,
-		  CK_ATTRIBUTE_PTR pTemplate,
-		  CK_ULONG ulAttributeCount,
+CK_RV C_UnwrapKey(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
+		  CK_OBJECT_HANDLE hUnwrappingKey, CK_BYTE_PTR pWrappedKey,
+		  CK_ULONG ulWrappedKeyLen, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulAttributeCount,
 		  CK_OBJECT_HANDLE_PTR phKey)
 {
 	hSession = hSession;
@@ -495,11 +406,8 @@ CK_RV C_UnwrapKey(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_DeriveKey(CK_SESSION_HANDLE hSession,
-		  CK_MECHANISM_PTR pMechanism,
-		  CK_OBJECT_HANDLE hBaseKey,
-		  CK_ATTRIBUTE_PTR pTemplate,
-		  CK_ULONG ulAttributeCount,
+CK_RV C_DeriveKey(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
+		  CK_OBJECT_HANDLE hBaseKey, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulAttributeCount,
 		  CK_OBJECT_HANDLE_PTR phKey)
 {
 	hSession = hSession;
@@ -511,11 +419,9 @@ CK_RV C_DeriveKey(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-
 /*
  * 11.15 RANDOM NUMBER GENERATOR FUNCTIONS
  */
-
 
 CK_RV C_SeedRandom(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pSeed, CK_ULONG ulSeedLen)
 {

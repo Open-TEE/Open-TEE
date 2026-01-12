@@ -17,8 +17,8 @@
 #ifndef __TEE_EPOLL_WRAPPER__
 #define __TEE_EPOLL_WRAPPER__
 
-#include <sys/epoll.h>
 #include <stdint.h>
+#include <sys/epoll.h>
 
 /*!
  * \brief init_epoll
@@ -41,7 +41,8 @@ int epoll_reg_fd(int fd, uint32_t events);
  * Register a file descriptor with epoll and store the data in data.ptr
  * \param fd The file descriptor to monitor
  * \param events The events on the descriptor to monitor
- * \param data The data to be stored in the data.ptr element, which will be checked on return
+ * \param data The data to be stored in the data.ptr element, which will be
+ * checked on return
  * \return 0 on success -1 otherwise
  */
 int epoll_reg_data(int fd, uint32_t events, void *data);
@@ -56,7 +57,8 @@ int epoll_unreg(int fd);
 
 /*!
  * \brief wrap_epoll_wait
- * Call a blocking wait for an epoll event to occur on of of the monitored descriptors
+ * Call a blocking wait for an epoll event to occur on of of the monitored
+ * descriptors
  * \param events The events that are currently active in the epoll monitor
  * \param max_events The max number of events to return in a single go
  * \return 0 on success

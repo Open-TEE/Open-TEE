@@ -14,9 +14,9 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include "tee_internal_api.h"
-#include "ta2ta_conn_test_app_ctrl.h"
 #include "print_functions.h"
+#include "ta2ta_conn_test_app_ctrl.h"
+#include "tee_internal_api.h"
 
 static uint32_t basic_ta2ta_connection()
 {
@@ -38,16 +38,14 @@ static uint32_t basic_ta2ta_connection()
 	params[1].value.a = open_value_a_in;
 	params[1].value.b = 0;
 
-	gp_rv = TEE_OpenTASession((TEE_UUID *)&ta2ta_uuid,
-				  TEE_TIMEOUT_INFINITE,
-				  paramTypes, params,
+	gp_rv = TEE_OpenTASession((TEE_UUID *)&ta2ta_uuid, TEE_TIMEOUT_INFINITE, paramTypes, params,
 				  &session, &retOrigin);
 	if (gp_rv != TEE_SUCCESS) {
 		PRI_FAIL("Opensession failed : 0x%x", gp_rv);
 		goto err_1;
 	}
 
-	//Check params open session return params
+	// Check params open session return params
 	if (params[0].memref.size != OPEN_DATA_OUT_LEN) {
 		PRI_FAIL("Not expected lenght");
 		goto err_2;
@@ -68,7 +66,7 @@ static uint32_t basic_ta2ta_connection()
 		goto err_2;
 	}
 
-	//Initialize invoke params
+	// Initialize invoke params
 	TEE_MemFill(params, 0, sizeof(TEE_Param) * 4);
 
 	paramTypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INPUT, TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -84,13 +82,11 @@ static uint32_t basic_ta2ta_connection()
 	params[2].value.a = 0;
 	params[2].value.b = invoke_value_b_in;
 
-	params[3].value.a = 123123; //Discarded
-	params[3].value.b = 565656; //Discarded
+	params[3].value.a = 123123; // Discarded
+	params[3].value.b = 565656; // Discarded
 
-	gp_rv = TEE_InvokeTACommand(session, TEE_TIMEOUT_INFINITE,
-				    CMD_INVOKE_PARAMS_TEST,
-				    paramTypes, params,
-				    &retOrigin);
+	gp_rv = TEE_InvokeTACommand(session, TEE_TIMEOUT_INFINITE, CMD_INVOKE_PARAMS_TEST,
+				    paramTypes, params, &retOrigin);
 	if (gp_rv != TEE_SUCCESS) {
 		PRI_FAIL("Invoke cmd failed : 0x%x", gp_rv);
 		goto err_2;
@@ -118,9 +114,9 @@ static uint32_t basic_ta2ta_connection()
 
 	fn_rv = 0;
 
- err_2:
+err_2:
 	TEE_CloseTASession(session);
- err_1:
+err_1:
 
 	if (fn_rv == 0)
 		PRI_OK("-");
@@ -142,7 +138,6 @@ uint32_t ta2ta_test(uint32_t loop_count)
 			test_have_fail = 1;
 			break;
 		}
-
 	}
 
 	PRI_STR("----Test-has-reached-end----\n");

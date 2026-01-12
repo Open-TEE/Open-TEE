@@ -16,8 +16,8 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -25,32 +25,31 @@
 
 #include "com_protocol.h"
 #include "dynamic_loader.h"
-#include "ta_exit_states.h"
 #include "ta_ctl_resources.h"
+#include "ta_exit_states.h"
 #include "ta_internal_thread.h"
-#include "tee_data_types.h"
-#include "tee_cancellation.h"
 #include "ta_io_thread.h"
+#include "tee_cancellation.h"
+#include "tee_data_types.h"
 #include "tee_list.h"
 #include "tee_logging.h"
 
 /* The client names for the params */
-#define TEEC_NONE			0x00000000
-#define TEEC_VALUE_INPUT		0x00000001
-#define TEEC_VALUE_OUTPUT		0x00000002
-#define TEEC_VALUE_INOUT		0x00000003
-#define TEEC_MEMREF_TEMP_INPUT		0x00000005
-#define TEEC_MEMREF_TEMP_OUTPUT		0x00000006
-#define TEEC_MEMREF_TEMP_INOUT		0x00000007
-#define TEEC_MEMREF_WHOLE		0x0000000C
-#define TEEC_MEMREF_PARTIAL_INPUT	0x0000000D
-#define TEEC_MEMREF_PARTIAL_OUTPUT	0x0000000E
-#define TEEC_MEMREF_PARTIAL_INOUT	0x0000000F
-#define TEEC_MEM_INPUT			0x00000001
-#define TEEC_MEM_OUTPUT			0x00000002
+#define TEEC_NONE 0x00000000
+#define TEEC_VALUE_INPUT 0x00000001
+#define TEEC_VALUE_OUTPUT 0x00000002
+#define TEEC_VALUE_INOUT 0x00000003
+#define TEEC_MEMREF_TEMP_INPUT 0x00000005
+#define TEEC_MEMREF_TEMP_OUTPUT 0x00000006
+#define TEEC_MEMREF_TEMP_INOUT 0x00000007
+#define TEEC_MEMREF_WHOLE 0x0000000C
+#define TEEC_MEMREF_PARTIAL_INPUT 0x0000000D
+#define TEEC_MEMREF_PARTIAL_OUTPUT 0x0000000E
+#define TEEC_MEMREF_PARTIAL_INOUT 0x0000000F
+#define TEEC_MEM_INPUT 0x00000001
+#define TEEC_MEM_OUTPUT 0x00000002
 
-
-#define SESSION_STATE_ACTIVE		0x000000F0
+#define SESSION_STATE_ACTIVE 0x000000F0
 
 struct __TEE_TASessionHandle {
 	uint64_t sess_id;
@@ -64,10 +63,10 @@ struct ta_shared_mem {
 	uint32_t type; /* TEE_PARAM_XXXX */
 };
 
-#define INIT_TA_SHM_STRUCT(ta_shm_struct)			\
-	do {							\
-		(ta_shm_struct).addr = MAP_FAILED;		\
-		(ta_shm_struct).type = TEE_PARAM_TYPE_NONE;	\
+#define INIT_TA_SHM_STRUCT(ta_shm_struct)                                                          \
+	do {                                                                                       \
+		(ta_shm_struct).addr = MAP_FAILED;                                                 \
+		(ta_shm_struct).type = TEE_PARAM_TYPE_NONE;                                        \
 	} while (0);
 
 #define FOR_EACH_TA_SHM(i) for (i = 0; i < 4; ++i)
@@ -211,7 +210,8 @@ static void free_all_shm(struct ta_shared_mem *ta_shm_mem)
 {
 	int i;
 
-	FOR_EACH_TA_SHM(i) {
+	FOR_EACH_TA_SHM(i)
+	{
 
 		if (ta_shm_mem[i].type == TEE_PARAM_TYPE_NONE)
 			continue;
@@ -226,7 +226,8 @@ static void ta2ta_com_msg_op_to_params(uint32_t paramTypes, TEE_Param *params,
 {
 	int i;
 
-	FOR_EACH_TA_SHM(i) {
+	FOR_EACH_TA_SHM(i)
+	{
 
 		if (TEE_PARAM_TYPE_GET(paramTypes, i) == TEE_PARAM_TYPE_VALUE_INOUT ||
 		    TEE_PARAM_TYPE_GET(paramTypes, i) == TEE_PARAM_TYPE_VALUE_OUTPUT) {
@@ -308,9 +309,8 @@ static TEE_Result get_shm_from_manager_and_map_region(struct ta_shared_mem *ta_s
 
 	memcpy(ta_shm_mem->shm_uuid, open_shm->name, SHM_MEM_NAME_LEN);
 
-	ta_shm_mem->addr = mmap(NULL, ta_shm_mem->original_size,
-				(PROT_WRITE | PROT_READ), MAP_SHARED,
-				open_shm->msg_hdr.shareable_fd[0], 0);
+	ta_shm_mem->addr = mmap(NULL, ta_shm_mem->original_size, (PROT_WRITE | PROT_READ),
+				MAP_SHARED, open_shm->msg_hdr.shareable_fd[0], 0);
 	if (ta_shm_mem->addr == MAP_FAILED) {
 		OT_LOG(LOG_ERR, "Failed to MMAP (errno [%d])", errno);
 		ret = TEEC_ERROR_OUT_OF_MEMORY;
@@ -333,7 +333,8 @@ static TEE_Result map_and_cpy_parameters(uint32_t paramTypes, TEE_Param *params,
 
 	memset(operation, 0, sizeof(struct com_msg_operation));
 
-	FOR_EACH_TA_SHM(i) {
+	FOR_EACH_TA_SHM(i)
+	{
 
 		if (TEE_PARAM_TYPE_GET(paramTypes, i) == TEE_PARAM_TYPE_NONE)
 			continue;
@@ -341,8 +342,8 @@ static TEE_Result map_and_cpy_parameters(uint32_t paramTypes, TEE_Param *params,
 		if (TEE_PARAM_TYPE_GET(paramTypes, i) == TEE_PARAM_TYPE_VALUE_INOUT ||
 		    TEE_PARAM_TYPE_GET(paramTypes, i) == TEE_PARAM_TYPE_VALUE_INPUT ||
 		    TEE_PARAM_TYPE_GET(paramTypes, i) == TEE_PARAM_TYPE_VALUE_OUTPUT) {
-			memcpy(&operation->params[i].param.value,
-			       &params[i].value, sizeof(params[i].value));
+			memcpy(&operation->params[i].param.value, &params[i].value,
+			       sizeof(params[i].value));
 			continue;
 		}
 
@@ -353,7 +354,7 @@ static TEE_Result map_and_cpy_parameters(uint32_t paramTypes, TEE_Param *params,
 		/* Check parameters */
 		if (!params[i].memref.size && params[i].memref.buffer) {
 			OT_LOG(LOG_ERR, "Error: Buffer size-param is ZERO and "
-			       "buffer-param is not NULL");
+					"buffer-param is not NULL");
 			ret = TEE_ERROR_BAD_PARAMETERS;
 			break;
 		}
@@ -383,8 +384,8 @@ static TEE_Result map_and_cpy_parameters(uint32_t paramTypes, TEE_Param *params,
 		operation->params[i].param.memref.size = params[i].memref.size;
 
 		/* Copy shm uuid to operation */
-		memcpy(operation->params[i].param.memref.shm_area,
-		       ta_shm_mems[i].shm_uuid, SHM_MEM_NAME_LEN);
+		memcpy(operation->params[i].param.memref.shm_area, ta_shm_mems[i].shm_uuid,
+		       SHM_MEM_NAME_LEN);
 	}
 
 	operation->paramTypes = paramTypes;
@@ -429,7 +430,8 @@ static TEE_Result wait_and_handle_open_sess_resp(uint32_t paramTypes, TEE_Param 
 		*returnOrigin = resp_open_msg->return_origin;
 
 	if (ret != TEE_SUCCESS)
-		goto err_ret; /* Open session was not success, free session and set it NULL */
+		goto err_ret; /* Open session was not success, free session and set it NULL
+			       */
 
 	(*session)->sess_id = resp_open_msg->msg_hdr.sess_id;
 	(*session)->session_state = SESSION_STATE_ACTIVE;
@@ -521,11 +523,12 @@ err_msg:
 
 /*
  *
- * returnPayload - returnPayload->data needs to be free by the caller if it is assigned
+ * returnPayload - returnPayload->data needs to be free by the caller if it is
+ * assigned
  */
 
-static TEE_Result wait_and_handle_invoke_mgr_cmd_resp(
-		struct com_mgr_invoke_cmd_payload *returnPayload)
+static TEE_Result
+wait_and_handle_invoke_mgr_cmd_resp(struct com_mgr_invoke_cmd_payload *returnPayload)
 {
 	struct com_msg_invoke_mgr_cmd *resp_invoke_msg = NULL;
 	TEE_Result ret = TEEC_ERROR_BAD_PARAMETERS;
@@ -549,8 +552,7 @@ static TEE_Result wait_and_handle_invoke_mgr_cmd_resp(
 
 			returnPayload->data = TEE_Malloc(returnPayload->size, 0);
 			/* copy from data offset, resp_msg + payload offset + data offset */
-			memcpy(returnPayload->data,
-			       &resp_invoke_msg->payload.data,
+			memcpy(returnPayload->data, &resp_invoke_msg->payload.data,
 			       returnPayload->size);
 		} else {
 			returnPayload->size = 0;
@@ -589,7 +591,6 @@ static int open_shared_mem(int fd, void **buffer, uint32_t size, bool isOutput)
 	else
 		flag |= O_RDONLY; /* It is an inbuffer only so we just need read access */
 
-
 #ifndef ANDROID
 	if (fstat(fd, &file_stat) == -1) {
 		OT_LOG(LOG_ERR, "Failed to stat the shared memory region");
@@ -612,7 +613,8 @@ static int open_shared_mem(int fd, void **buffer, uint32_t size, bool isOutput)
 		goto unlinkExit;
 	}
 
-	/* We have finished with the file handle as it has been mapped so don't leak it */
+	/* We have finished with the file handle as it has been mapped so don't leak
+	 * it */
 	close(fd);
 
 	*buffer = address;
@@ -631,7 +633,8 @@ static TEE_Result copy_params_to_com_msg_op(struct com_msg_operation *operation,
 	TEE_Result ret = TEE_SUCCESS;
 	int i;
 
-	FOR_EACH_TA_PARAM(i) {
+	FOR_EACH_TA_PARAM(i)
+	{
 
 		if (TEE_PARAM_TYPE_GET(tee_param_types, i) == TEE_PARAM_TYPE_VALUE_OUTPUT ||
 		    TEE_PARAM_TYPE_GET(tee_param_types, i) == TEE_PARAM_TYPE_VALUE_INOUT) {
@@ -639,8 +642,7 @@ static TEE_Result copy_params_to_com_msg_op(struct com_msg_operation *operation,
 			/* We only have to copy back the output values, because the memory
 			 * types point to shared memory so they are updated directly in place.
 			 */
-			memcpy(&operation->params[i].param.value,
-			       &params[i].value,
+			memcpy(&operation->params[i].param.value, &params[i].value,
 			       sizeof(params[i].value));
 
 		} else if (TEE_PARAM_TYPE_GET(tee_param_types, i) == TEE_PARAM_TYPE_MEMREF_INPUT ||
@@ -672,10 +674,11 @@ static int map_TEEC_param_types_to_TEE(struct com_msg_operation *operation, uint
 {
 	int types[4] = {0}, i;
 
-	FOR_EACH_TA_PARAM(i) {
+	FOR_EACH_TA_PARAM(i)
+	{
 
 		/* convert the TEEC types to the TEE internal types */
-		if (TEE_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_NONE ) {
+		if (TEE_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_NONE) {
 
 			types[i] = TEE_PARAM_TYPE_NONE;
 
@@ -700,21 +703,28 @@ static int map_TEEC_param_types_to_TEE(struct com_msg_operation *operation, uint
 		} else if (TEE_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_VALUE_INPUT) {
 			types[i] = TEE_PARAM_TYPE_VALUE_INPUT;
 
-		} else if (TEE_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_PARTIAL_INOUT ||
+		} else if (TEE_PARAM_TYPE_GET(operation->paramTypes, i) ==
+			       TEEC_MEMREF_PARTIAL_INOUT ||
 			   TEE_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_INOUT ||
-			   TEE_PARAM_TYPE_GET(operation->paramTypes, i) == TEE_PARAM_TYPE_MEMREF_INOUT) {
+			   TEE_PARAM_TYPE_GET(operation->paramTypes, i) ==
+			       TEE_PARAM_TYPE_MEMREF_INOUT) {
 
 			types[i] = TEE_PARAM_TYPE_MEMREF_INOUT;
 
-		} else if (TEE_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_PARTIAL_INPUT ||
+		} else if (TEE_PARAM_TYPE_GET(operation->paramTypes, i) ==
+			       TEEC_MEMREF_PARTIAL_INPUT ||
 			   TEE_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_INPUT ||
-			   TEE_PARAM_TYPE_GET(operation->paramTypes, i) == TEE_PARAM_TYPE_MEMREF_INPUT) {
+			   TEE_PARAM_TYPE_GET(operation->paramTypes, i) ==
+			       TEE_PARAM_TYPE_MEMREF_INPUT) {
 
 			types[i] = TEE_PARAM_TYPE_MEMREF_INPUT;
 
-		} else if (TEE_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_PARTIAL_OUTPUT ||
-			   TEE_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_OUTPUT ||
-			   TEE_PARAM_TYPE_GET(operation->paramTypes, i) == TEE_PARAM_TYPE_MEMREF_OUTPUT) {
+		} else if (TEE_PARAM_TYPE_GET(operation->paramTypes, i) ==
+			       TEEC_MEMREF_PARTIAL_OUTPUT ||
+			   TEE_PARAM_TYPE_GET(operation->paramTypes, i) ==
+			       TEEC_MEMREF_TEMP_OUTPUT ||
+			   TEE_PARAM_TYPE_GET(operation->paramTypes, i) ==
+			       TEE_PARAM_TYPE_MEMREF_OUTPUT) {
 
 			types[i] = TEE_PARAM_TYPE_MEMREF_OUTPUT;
 
@@ -751,7 +761,8 @@ static int copy_com_msg_op_to_param(struct com_msg_operation *operation, TEE_Par
 		return 1;
 	}
 
-	FOR_EACH_TA_PARAM(i) {
+	FOR_EACH_TA_PARAM(i)
+	{
 
 		i_param_type = TEE_PARAM_TYPE_GET(*tee_param_types, i);
 
@@ -762,8 +773,8 @@ static int copy_com_msg_op_to_param(struct com_msg_operation *operation, TEE_Par
 		} else if (i_param_type == TEE_PARAM_TYPE_VALUE_INOUT ||
 			   i_param_type == TEE_PARAM_TYPE_VALUE_INPUT) {
 
-			memcpy(&params[i].value,
-			       &operation->params[i].param.value, sizeof(params[i].value));
+			memcpy(&params[i].value, &operation->params[i].param.value,
+			       sizeof(params[i].value));
 
 		} else if (i_param_type == TEE_PARAM_TYPE_MEMREF_OUTPUT ||
 			   i_param_type == TEE_PARAM_TYPE_MEMREF_INOUT ||
@@ -778,11 +789,10 @@ static int copy_com_msg_op_to_param(struct com_msg_operation *operation, TEE_Par
 
 			params[i].memref.size = operation->params[i].param.memref.size;
 
-			/* if there is some failure opening the shared memory just fail graefully */
-			if (open_shared_mem(fds[n++],
-					    &params[i].memref.buffer,
-					    operation->params[i].param.memref.size,
-					    isOutput) == -1)
+			/* if there is some failure opening the shared memory just fail graefully
+			 */
+			if (open_shared_mem(fds[n++], &params[i].memref.buffer,
+					    operation->params[i].param.memref.size, isOutput) == -1)
 				ret = -1;
 
 		} else {
@@ -820,7 +830,7 @@ static void open_session(struct ta_task *in_task)
 
 	/* convert the paramaters from the message into TA format params */
 	if (copy_com_msg_op_to_param(&open_msg->operation, params, &paramTypes,
-		open_msg->msg_hdr.shareable_fd) == -1) {
+				     open_msg->msg_hdr.shareable_fd) == -1) {
 		OT_LOG(LOG_ERR, "Failed to copy operation");
 		open_msg->return_code_open_session = TEE_ERROR_NO_DATA;
 		open_msg->return_origin = TEE_ORIGIN_TEE;
@@ -828,14 +838,14 @@ static void open_session(struct ta_task *in_task)
 	}
 
 	/* Do the task */
-	open_msg->return_code_open_session = interface->open_session(paramTypes, params,
-								     (void **)&open_msg->sess_ctx);
+	open_msg->return_code_open_session =
+	    interface->open_session(paramTypes, params, (void **)&open_msg->sess_ctx);
 
 	set_exec_operation_id(0);
 
 	/* Copy the data back from the TA to the client */
 	ret = copy_params_to_com_msg_op(&open_msg->operation, params, paramTypes);
-	if  (ret != TEEC_SUCCESS)
+	if (ret != TEEC_SUCCESS)
 		open_msg->return_code_open_session = ret;
 
 	open_msg->return_origin = TEE_ORIGIN_TRUSTED_APP;
@@ -866,7 +876,7 @@ static void invoke_cmd(struct ta_task *in_task)
 
 	/* convert the paramaters from the message into TA format params */
 	if (copy_com_msg_op_to_param(&invoke_msg->operation, params, &paramTypes,
-			invoke_msg->msg_hdr.shareable_fd)) {
+				     invoke_msg->msg_hdr.shareable_fd)) {
 		OT_LOG(LOG_ERR, "Failed to copy operation");
 		invoke_msg->return_code = TEE_ERROR_NO_DATA;
 		invoke_msg->return_origin = TEE_ORIGIN_TEE;
@@ -900,7 +910,8 @@ static void notify_io_process_termination(int exit_value)
 	/* notify the I/O thread that destroy entry is executed */
 	if (write(termination_fd, &termination, sizeof(uint64_t)) == -1) {
 		OT_LOG(LOG_ERR, "Failed to write termination fd");
-		exit(TA_EXIT_PANICKED); /* Can't be sure if IO is getting message -> term proccess*/
+		exit(TA_EXIT_PANICKED); /* Can't be sure if IO is getting message -> term
+					   proccess*/
 	}
 }
 #endif
@@ -1019,8 +1030,8 @@ static int map_create_entry_exit_value(TEE_Result ret)
 }
 
 TEE_Result ta_open_ta_session(TEE_UUID *destination, uint32_t cancellationRequestTimeout,
-				     uint32_t paramTypes, TEE_Param *params,
-				     TEE_TASessionHandle *session, uint32_t *returnOrigin)
+			      uint32_t paramTypes, TEE_Param *params, TEE_TASessionHandle *session,
+			      uint32_t *returnOrigin)
 {
 	struct ta_task *new_ta_task = NULL;
 	struct com_msg_open_session *open_msg = NULL;
@@ -1042,11 +1053,9 @@ TEE_Result ta_open_ta_session(TEE_UUID *destination, uint32_t cancellationReques
 	}
 
 	/* Initialize used ta shared memorys */
-	FOR_EACH_TA_SHM(i) {
-		INIT_TA_SHM_STRUCT(ta_shm[i])
-	}
+	FOR_EACH_TA_SHM(i){INIT_TA_SHM_STRUCT(ta_shm[i])}
 
-	*session = calloc(1, sizeof(struct __TEE_TASessionHandle));
+	    *session = calloc(1, sizeof(struct __TEE_TASessionHandle));
 	if (!*session) {
 		OT_LOG(LOG_ERR, "out of memory");
 		goto err_1;
@@ -1121,7 +1130,7 @@ void ta_close_ta_session(TEE_TASessionHandle session)
 
 	/* Message header */
 	((struct com_msg_close_session *)new_ta_task->msg)->msg_hdr.msg_name =
-			COM_MSG_NAME_CLOSE_SESSION;
+	    COM_MSG_NAME_CLOSE_SESSION;
 	((struct com_msg_close_session *)new_ta_task->msg)->msg_hdr.msg_type = COM_TYPE_QUERY;
 	((struct com_msg_close_session *)new_ta_task->msg)->msg_hdr.sess_id = session->sess_id;
 
@@ -1130,10 +1139,9 @@ void ta_close_ta_session(TEE_TASessionHandle session)
 	wait_and_handle_close_session_resp(session);
 }
 
-TEE_Result ta_invoke_ta_command(TEE_TASessionHandle session,
-				       uint32_t cancellationRequestTimeout,
-				       uint32_t commandID, uint32_t paramTypes, TEE_Param *params,
-				       uint32_t *returnOrigin)
+TEE_Result ta_invoke_ta_command(TEE_TASessionHandle session, uint32_t cancellationRequestTimeout,
+				uint32_t commandID, uint32_t paramTypes, TEE_Param *params,
+				uint32_t *returnOrigin)
 {
 	struct ta_task *new_ta_task = NULL;
 	struct com_msg_invoke_cmd *invoke_msg = NULL;
@@ -1153,9 +1161,7 @@ TEE_Result ta_invoke_ta_command(TEE_TASessionHandle session,
 	}
 
 	/* Initialize used ta shared memorys */
-	FOR_EACH_TA_SHM(i) {
-		INIT_TA_SHM_STRUCT(ta_shm[i])
-	}
+	FOR_EACH_TA_SHM(i){INIT_TA_SHM_STRUCT(ta_shm[i])}
 
 	new_ta_task = calloc(1, sizeof(struct ta_task));
 	if (!new_ta_task) {
@@ -1240,8 +1246,8 @@ TEE_Result ta_invoke_mgr_command(uint32_t cancellationRequestTimeout, uint32_t c
 	if (sendPayload) {
 		invoke_msg->payload.size = sendPayload->size;
 		if (invoke_msg->payload.size > 0) {
-			memcpy(&invoke_msg->payload.data,
-			       sendPayload->data, invoke_msg->payload.size);
+			memcpy(&invoke_msg->payload.data, sendPayload->data,
+			       invoke_msg->payload.size);
 		}
 	}
 

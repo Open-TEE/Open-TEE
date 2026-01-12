@@ -14,21 +14,20 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
+#include "ta2ta_conn_test_app_ctrl.h"
 #include "tee_internal_api.h"
 #include "tee_logging.h"
-#include "ta2ta_conn_test_app_ctrl.h"
 
 #ifdef TA_PLUGIN
 #include "tee_ta_properties.h"
 
 /* UUID must be unique */
-SET_TA_PROPERTIES(
-	{ 0x12345678, 0x8765, 0x4321, { 'T', 'A', '2', 'T', 'A', '0', '0', '0'} }, /* UUID */
-		512, /* dataSize */
-		255, /* stackSize */
-		1, /* singletonInstance */
-		1, /* multiSession */
-		0) /* instanceKeepAlive */
+SET_TA_PROPERTIES({0x12345678, 0x8765, 0x4321, {'T', 'A', '2', 'T', 'A', '0', '0', '0'}}, /* UUID */
+		  512, /* dataSize */
+		  255, /* stackSize */
+		  1,   /* singletonInstance */
+		  1,   /* multiSession */
+		  0)   /* instanceKeepAlive */
 #endif
 
 static uint32_t create_entry_counter = 0;
@@ -42,8 +41,7 @@ static TEE_Result has_create_entry_called_once()
 	return TEE_ERROR_GENERIC;
 }
 
-static TEE_Result invoke_params_test(uint32_t paramTypes,
-				     TEE_Param params[4])
+static TEE_Result invoke_params_test(uint32_t paramTypes, TEE_Param params[4])
 {
 	if (TEE_PARAM_TYPE_GET(TEE_PARAM_TYPE_MEMREF_INPUT, 1)) {
 		OT_LOG_ERR("Not expected param type at 1");
@@ -100,7 +98,7 @@ static TEE_Result invoke_params_test(uint32_t paramTypes,
 		return TEE_ERROR_GENERIC;
 	}
 
-	//Fill Response
+	// Fill Response
 	TEE_MemMove(params[1].memref.buffer, invoke_data_out, INVOKE_DATA_OUT_LEN);
 	params[1].memref.size = INVOKE_DATA_OUT_LEN;
 
@@ -118,13 +116,9 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 	return TEE_SUCCESS;
 }
 
-void TA_EXPORT TA_DestroyEntryPoint(void)
-{
-	OT_LOG(LOG_INFO, "Calling the Destroy entry point");
-}
+void TA_EXPORT TA_DestroyEntryPoint(void) { OT_LOG(LOG_INFO, "Calling the Destroy entry point"); }
 
-TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
-					      TEE_Param params[4],
+TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes, TEE_Param params[4],
 					      void **sessionContext)
 {
 	sessionContext = sessionContext;
@@ -173,10 +167,8 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 	OT_LOG(LOG_INFO, "Calling the Close session entry point");
 }
 
-TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
-						uint32_t commandID,
-						uint32_t paramTypes,
-						TEE_Param params[4])
+TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t commandID,
+						uint32_t paramTypes, TEE_Param params[4])
 {
 	sessionContext = sessionContext;
 

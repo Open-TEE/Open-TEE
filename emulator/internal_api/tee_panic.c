@@ -17,19 +17,18 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
+#include <execinfo.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <execinfo.h>
 
-
-#include "tee_panic.h"
 #include "tee_logging.h"
+#include "tee_panic.h"
 
 void TEE_Panic(TEE_Result panicCode)
 {
-	void* callstack[128];
+	void *callstack[128];
 	int i, frames = backtrace(callstack, 128);
-	char** strs = backtrace_symbols(callstack, frames);
+	char **strs = backtrace_symbols(callstack, frames);
 
 	printf("P A N I C !\n");
 
@@ -42,6 +41,6 @@ void TEE_Panic(TEE_Result panicCode)
 	free(strs);
 
 	OT_LOG_ERR("TEE_Panic: Stacktrace END\n");
-	
+
 	exit(panicCode);
 }

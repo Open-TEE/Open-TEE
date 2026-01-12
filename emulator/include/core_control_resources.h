@@ -33,7 +33,8 @@
 
 /*!
  * \brief The core_control struct
- * A structure that defines many states that are shared between the core, launcher and manager
+ * A structure that defines many states that are shared between the core,
+ * launcher and manager
  */
 struct core_control {
 	volatile sig_atomic_t sig_vector;
@@ -44,7 +45,7 @@ struct core_control {
 	struct emulator_config *opentee_conf;
 	void (*reset_signal_self_pipe)(void);
 	void (*fn_cleanup_launher)(void); /* Can be used only when flag GRACEFUL_TERMINATION def*/
-	void (*fn_cleanup_core)(void); /* Can be used only when flag GRACEFUL_TERMINATION def*/
+	void (*fn_cleanup_core)(void);	  /* Can be used only when flag GRACEFUL_TERMINATION def*/
 	int comm_sock_fd;
 	int pid_file_fd;
 };

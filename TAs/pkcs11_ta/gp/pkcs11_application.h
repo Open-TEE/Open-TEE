@@ -21,8 +21,8 @@
 #ifndef __PKCS11_APPLICATION_H__
 #define __PKCS11_APPLICATION_H__
 
-#include "token_conf.h"
 #include "cryptoki.h"
+#include "token_conf.h"
 
 #include <stdint.h>
 
@@ -52,8 +52,8 @@ CK_RV allocate_application(struct application **new_app, uint64_t *nonce);
 
 /*!
  * \brief delete_application
- * An application has closed its control socket and this means that it has disconnected so
- * free up any remaining resources.
+ * An application has closed its control socket and this means that it has
+ * disconnected so free up any remaining resources.
  * \param nonce The applications ID
  */
 void delete_application(struct application *old_app);
@@ -66,8 +66,7 @@ void delete_application(struct application *old_app);
  * \param session The new session that is connected to the application
  * \return 0 on success
  */
-CK_RV create_session_handle(struct application *app,
-			    CK_FLAGS flags,
+CK_RV create_session_handle(struct application *app, CK_FLAGS flags,
 			    struct pkcs11_session **session);
 
 /*!
@@ -78,14 +77,13 @@ CK_RV create_session_handle(struct application *app,
  * \param session a pointer to the session if it exists
  * \return 0 on success
  */
-CK_RV app_get_session(struct application *app,
-		      uint32_t session_id,
+CK_RV app_get_session(struct application *app, uint32_t session_id,
 		      struct pkcs11_session **session);
 
 /*!
  * \brief app_check_login_status
- * Determine if all sessions are closed for this application.  If they are then the application
- * is logged out page 119 of the spec
+ * Determine if all sessions are closed for this application.  If they are then
+ * the application is logged out page 119 of the spec
  * \sa C_CloseSession
  * \param app The application for which the status should be ckecked
  */
@@ -93,7 +91,8 @@ void app_check_login_status(struct application *app);
 
 /*!
  * \brief foreach_session
- * Iterate over all the sessions associated with an application and perform the callback on each
+ * Iterate over all the sessions associated with an application and perform the
+ * callback on each
  * \param app The application the sessions are associated with
  * \param cb The callback function to call
  * \return 0 on success
@@ -102,7 +101,8 @@ CK_RV foreach_session(struct application *app, foreach_session_cb_t cb);
 
 /*!
  * \brief application_set_logged_in
- * Set the application state to logged in and set the state of each session accordingly
+ * Set the application state to logged in and set the state of each session
+ * accordingly
  * \param app The application the sessions are associated with
  * \param user_type The type of login that we have
  * \return 0 on success
@@ -122,7 +122,6 @@ void application_set_logout(struct application *app);
  * \param session_id id of queried session
  * \return CKR_OK in case of logged in. CKR_USER_NOT_LOGGED_IN if not logged in.
  */
-CK_RV is_session_logged_in(struct application *app,
-			   uint32_t session_id);
+CK_RV is_session_logged_in(struct application *app, uint32_t session_id);
 
 #endif // __PKCS11_APPLICATION_H__

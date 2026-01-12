@@ -14,11 +14,11 @@
 ** limitations under the License.					   **
 *****************************************************************************/
 
-#include <sys/time.h>
-#include <string.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <string.h>
 #include <sys/select.h>
+#include <sys/time.h>
 
 #include "tee_time_api.h"
 
@@ -73,10 +73,10 @@ TEE_Result TEE_GetTAPersistentTime(TEE_Time *time)
 	/* Get the current time */
 	gettimeofday(&tv, NULL);
 
-	/* check if the current time is less than the mark time. This would indicate that
-	 * the clock has been reset, so we can no longer trust it as a source thus we must request a
-	 * reset */
-	if (timercmp(&tv, &mark_time, < ))
+	/* check if the current time is less than the mark time. This would indicate
+	 * that the clock has been reset, so we can no longer trust it as a source
+	 * thus we must request a reset */
+	if (timercmp(&tv, &mark_time, <))
 		return TEE_ERROR_TIME_NEEDS_RESET;
 
 	/* Calculate the delta between now and when the persistent time was set */
@@ -88,7 +88,8 @@ TEE_Result TEE_GetTAPersistentTime(TEE_Time *time)
 	time->seconds = tv.tv_sec;
 	time->millis = tv.tv_usec * 1000;
 
-	/* TODO store the persistent time and base time into a file and reload them on TA boot */
+	/* TODO store the persistent time and base time into a file and reload them on
+	 * TA boot */
 
 	return TEE_SUCCESS;
 }
@@ -98,8 +99,9 @@ TEE_Result TEE_SetTAPersistentTime(TEE_Time *time)
 	if (time == NULL)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	/* mark the current time when this function is called so we can use it to calculate the
-	 * amount of time that has past when we call get persistent time */
+	/* mark the current time when this function is called so we can use it to
+	 * calculate the amount of time that has past when we call get persistent time
+	 */
 	gettimeofday(&mark_time, NULL);
 
 	persistent_time.tv_sec = time->seconds;
@@ -110,7 +112,4 @@ TEE_Result TEE_SetTAPersistentTime(TEE_Time *time)
 	return TEE_SUCCESS;
 }
 
-void TEE_GetREETime(TEE_Time *time)
-{
-	TEE_GetSystemTime(time);
-}
+void TEE_GetREETime(TEE_Time *time) { TEE_GetSystemTime(time); }

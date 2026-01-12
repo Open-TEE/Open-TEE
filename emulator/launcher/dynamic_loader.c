@@ -22,8 +22,8 @@
 #include "tee_logging.h"
 
 #include <dlfcn.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 static void fill_internal_api_callbacks(struct internal_api_callbacks *calls)
 {

@@ -14,8 +14,8 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include "callbacks.h"
 #include "tee_cancellation.h"
+#include "callbacks.h"
 #include "tee_logging.h"
 #include "tee_panic.h"
 

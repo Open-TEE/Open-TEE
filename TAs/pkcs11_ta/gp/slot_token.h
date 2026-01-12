@@ -31,8 +31,8 @@
 /*!
  * \brief initialize_token
  * Initialize the global token;
- * \param from_user Set to True if C_InitToken is used to invoke this function, false if the init
- * is being called as part of the TA initialization
+ * \param from_user Set to True if C_InitToken is used to invoke this function,
+ * false if the init is being called as part of the TA initialization
  * \param paramTypes Format of the data sent from the userspace
  * \param params The in/out buffers to hold the token info
  * \return 0 on success
@@ -59,7 +59,8 @@ TEE_Result get_mechanism_list(uint32_t paramTypes, TEE_Param params[4]);
 
 /*!
  * \brief is_token_write_protected
- * Determine if the token is write protected, hence if we can only open RO sessions
+ * Determine if the token is write protected, hence if we can only open RO
+ * sessions
  * \return true if the token is write protected
  */
 bool is_token_write_protected();
@@ -76,7 +77,8 @@ CK_RV mechanism_supported(CK_MECHANISM_TYPE mech_type, CK_ULONG key_size, TEE_Op
 
 /*!
  * \brief check_password
- * Check that the password that is being supplied matches the password that is stored
+ * Check that the password that is being supplied matches the password that is
+ * stored
  * \param user_type Either User or SO
  * \param passwd The password
  * \param passwd_len Its length

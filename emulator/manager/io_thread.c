@@ -19,15 +19,15 @@
 
 #include <errno.h>
 #include <signal.h>
-#include <string.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include "com_protocol.h"
 #include "core_control_resources.h"
-#include "io_thread.h"
 #include "extern_resources.h"
+#include "io_thread.h"
 #include "tee_list.h"
 #include "tee_logging.h"
 
@@ -38,8 +38,8 @@ static void notify_logic_fd_err(int err_nro, proc_t proc)
 {
 	struct manager_msg *new_man_msg = NULL;
 
-	/* Possible defect: If we can not signal to logic thread about FD err, process is
-	 * not been removed from manager. */
+	/* Possible defect: If we can not signal to logic thread about FD err, process
+	 * is not been removed from manager. */
 	new_man_msg = calloc(1, sizeof(struct manager_msg));
 	if (!new_man_msg) {
 		OT_LOG(LOG_ERR, "Out of memory\n");
@@ -84,7 +84,8 @@ static void proc_fd_err(int err_nro, proc_t proc)
 
 /*!
  * \brief check_proc_fd_epoll_status
- * Checks process fd status and acts according to status. Function checks epoll events (== status)
+ * Checks process fd status and acts according to status. Function checks epoll
+ * events (== status)
  * \param event
  * \return
  */
@@ -125,7 +126,8 @@ static void io_fd_err(int err_nro, int fd)
 
 /*!
  * \brief check_event_fd_epoll_status
- * Checks event fd status and acts according to status. For example event_outbound_queue_fd.
+ * Checks event fd status and acts according to status. For example
+ * event_outbound_queue_fd.
  * \param event
  * \return
  */
@@ -151,10 +153,9 @@ static void send_msg(proc_t send_to, void *msg, int msg_len)
 
 	msg_header = msg;
 
-	if (com_send_msg(send_to->sockfd, msg, msg_len,
-			msg_header->shareable_fd, msg_header->shareable_fd_count) != msg_len)
+	if (com_send_msg(send_to->sockfd, msg, msg_len, msg_header->shareable_fd,
+			 msg_header->shareable_fd_count) != msg_len)
 		proc_fd_err(errno, send_to);
-
 }
 
 static void send_err_msg(proc_t proc, uint32_t err, uint32_t err_origin)
@@ -264,7 +265,8 @@ void handle_out_queue(struct epoll_event *event)
 
 	if (!list_is_empty(&outbound_queue_list)) {
 
-		LIST_FOR_EACH_SAFE(pos, la, &outbound_queue_list) {
+		LIST_FOR_EACH_SAFE(pos, la, &outbound_queue_list)
+		{
 			handled_msg = LIST_ENTRY(pos, struct manager_msg, list);
 			if (!handled_msg)
 				continue;
@@ -393,7 +395,8 @@ void handle_close_sock(struct epoll_event *event)
 
 	if (!list_is_empty(&socks_to_close_list)) {
 
-		LIST_FOR_EACH_SAFE(pos, la, &socks_to_close_list) {
+		LIST_FOR_EACH_SAFE(pos, la, &socks_to_close_list)
+		{
 			fd_to_close = LIST_ENTRY(pos, struct sock_to_close, list);
 			list_unlink(&fd_to_close->list);
 			close(fd_to_close->sockfd);
@@ -419,7 +422,8 @@ void manager_check_signal(struct core_control *control_params, struct epoll_even
 	if (cpy_sig_vec & TEE_SIG_CHILD) {
 
 		/* Possible defect: If we can not signal to logic thread about SIGCHLD,
-		 * process is not reapet. It might get reapet when TA proc causes FD event */
+		 * process is not reapet. It might get reapet when TA proc causes FD event
+		 */
 		new_man_msg = calloc(1, sizeof(struct manager_msg));
 		if (!new_man_msg) {
 			OT_LOG(LOG_ERR, "Out of memory\n");
@@ -436,7 +440,7 @@ void manager_check_signal(struct core_control *control_params, struct epoll_even
 		/* Note: No message len needed, because this is not send out */
 
 		((struct com_msg_proc_status_change *)new_man_msg->msg)->msg_hdr.msg_name =
-				COM_MSG_NAME_PROC_STATUS_CHANGE;
+		    COM_MSG_NAME_PROC_STATUS_CHANGE;
 
 		add_man_msg_inbound_queue_and_notify(new_man_msg);
 	}
@@ -444,7 +448,8 @@ void manager_check_signal(struct core_control *control_params, struct epoll_even
 	if (cpy_sig_vec & (TEE_SIG_TERM | TEE_SIG_INT)) {
 
 		/* Possible defect: If we can not signal to logic thread about SIGCHLD,
-		 * process is not reapet. It might get reapet when TA proc causes FD event */
+		 * process is not reapet. It might get reapet when TA proc causes FD event
+		 */
 		new_man_msg = calloc(1, sizeof(struct manager_msg));
 		if (!new_man_msg) {
 			OT_LOG(LOG_ERR, "Out of memory\n");
@@ -461,7 +466,7 @@ void manager_check_signal(struct core_control *control_params, struct epoll_even
 		/* Note: No message len needed, because this is not send out */
 
 		((struct com_msg_proc_status_change *)new_man_msg->msg)->msg_hdr.msg_name =
-				COM_MSG_NAME_MANAGER_TERMINATION;
+		    COM_MSG_NAME_MANAGER_TERMINATION;
 
 		add_man_msg_inbound_queue_and_notify(new_man_msg);
 	}
@@ -479,7 +484,8 @@ int check_if_valid_proc_in_msg(struct manager_msg *msg)
 		OT_LOG(LOG_ERR, "Failed to lock the mutex");
 		goto skip;
 	}
-	LIST_FOR_EACH(pos, &ca_list) {
+	LIST_FOR_EACH(pos, &ca_list)
+	{
 
 		proc = LIST_ENTRY(pos, struct __proc, list);
 		if (proc == msg->proc) {
@@ -496,7 +502,8 @@ int check_if_valid_proc_in_msg(struct manager_msg *msg)
 		OT_LOG(LOG_ERR, "Failed to lock the mutex");
 		goto skip;
 	}
-	LIST_FOR_EACH(pos, &ta_list) {
+	LIST_FOR_EACH(pos, &ta_list)
+	{
 
 		proc = LIST_ENTRY(pos, struct __proc, list);
 		if (proc == msg->proc) {
@@ -563,7 +570,8 @@ void clear_man_msg_from_inbound_outbound_queues(proc_t proc_to_clear)
 	/* removing messages for the proc */
 	if (!list_is_empty(&inbound_queue_list)) {
 
-		LIST_FOR_EACH_SAFE(pos, la, &inbound_queue_list) {
+		LIST_FOR_EACH_SAFE(pos, la, &inbound_queue_list)
+		{
 			handled_msg = LIST_ENTRY(pos, struct manager_msg, list);
 			if (!handled_msg)
 				continue;
@@ -590,7 +598,8 @@ void clear_man_msg_from_inbound_outbound_queues(proc_t proc_to_clear)
 	/* removing messages from the proc */
 	if (!list_is_empty(&outbound_queue_list)) {
 
-		LIST_FOR_EACH_SAFE(pos, la, &outbound_queue_list) {
+		LIST_FOR_EACH_SAFE(pos, la, &outbound_queue_list)
+		{
 			handled_msg = LIST_ENTRY(pos, struct manager_msg, list);
 			if (!handled_msg)
 				continue;

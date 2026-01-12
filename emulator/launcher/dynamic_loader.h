@@ -21,7 +21,8 @@
 
 /*!
  * \brief The ta_interface struct
- * These are the entry points for a trusted application section 4.3 of the specification
+ * These are the entry points for a trusted application section 4.3 of the
+ * specification
  */
 struct ta_interface {
 	TA_CreateEntryPoint_t create;		   /*!< Initialize the TA */
@@ -36,21 +37,23 @@ struct ta_interface {
 
 /*!
  * \brief load_ta
- *  Attempt to load a trusted application from Disk.  On success the callbacks structure will
- * be populated with the entry points into the applet and the create callback will have been called
- * to initialize the TA.  This function will create the memory for the callback struct which must
- * be freed by a call to \sa unload_ta when it is no longer required.
+ *  Attempt to load a trusted application from Disk.  On success the callbacks
+ * structure will be populated with the entry points into the applet and the
+ * create callback will have been called to initialize the TA.  This function
+ * will create the memory for the callback struct which must be freed by a call
+ * to \sa unload_ta when it is no longer required.
  * \param ta_so_name The TA file to load
- * \param callbacks The structure that is to be created and populated with the entry points to the
- * TA
+ * \param callbacks The structure that is to be created and populated with the
+ * entry points to the TA
  * \return TEE_SUCCESS on success, or another value to indicate any errors.
  */
 TEE_Result load_ta(const char *ta_so_name, struct ta_interface **callbacks);
 
 /*!
  * \brief unload_ta
- * Unload the TA and free any resources that it may have consumed.  As part of this process the
- * destroy callback from the TA will be called to allow it to finalize any internal content
+ * Unload the TA and free any resources that it may have consumed.  As part of
+ * this process the destroy callback from the TA will be called to allow it to
+ * finalize any internal content
  * \param callbacks A pointer to the TA interface structure that is to be freed
  */
 void unload_ta(struct ta_interface *callbacks);

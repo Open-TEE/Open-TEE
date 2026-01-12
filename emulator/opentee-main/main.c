@@ -19,26 +19,26 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <dlfcn.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <linux/limits.h>
+#include <pthread.h>
+#include <signal.h>
 #include <stdlib.h>
-#include <sys/types.h>
+#include <sys/eventfd.h>
+#include <sys/prctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <dlfcn.h>
-#include <sys/prctl.h>
-#include <pthread.h>
-#include <sys/eventfd.h>
-#include <errno.h>
-#include <linux/limits.h>
+#include <sys/types.h>
 #include <syslog.h>
 #include <unistd.h>
 
-#include "subprocess.h"
+#include "args.h"
 #include "conf_parser.h"
 #include "core_control_resources.h"
+#include "subprocess.h"
 #include "tee_logging.h"
-#include "args.h"
 
 #ifdef ANDROID
 #include "android_defines.h"
@@ -97,7 +97,8 @@ static void reset_signal_self_pipe()
 	uint64_t event;
 
 	if (read(control_params.self_pipe_fd, &event, sizeof(uint64_t)) == -1) {
-		/* EAGAIN == fd is zero and because it is set as non blocking, it returns EAGAIN */
+		/* EAGAIN == fd is zero and because it is set as non blocking, it returns
+		 * EAGAIN */
 		if (errno != EAGAIN) {
 			OT_LOG(LOG_ERR, "Failed to reset control_params.self_pipe_fd\n");
 			/* TODO: See what is causing it! */
@@ -146,7 +147,8 @@ static int daemonize(void)
 
 	umask(0);
 
-	/* Close open file descriptors, only 3 *should* be open as the process just started */
+	/* Close open file descriptors, only 3 *should* be open as the process just
+	 * started */
 	for (fd = 0; fd < 100; fd++)
 		close(fd);
 
@@ -188,13 +190,14 @@ int load_lib(char *path, main_loop_cb *callback)
 
 /*!
  * \brief check_create_pid_file
- * Check the existance of a PID file and try to aquire a lock on it, if we fail to lock the file
- * then it probably means that another instance of this program is already running and it must be
- * killed first
+ * Check the existance of a PID file and try to aquire a lock on it, if we fail
+ * to lock the file then it probably means that another instance of this program
+ * is already running and it must be killed first
  * \param proc_name The name of this process e.e. argv[0]
- * \param write_pid Should we write the pid of this process? if false we will just check if we can
- * aquire a lock and will close the fd of the pid file before returning, if true we will write
- * to the pid file and keep the file handle to the pid file open, hence holding the lock.
+ * \param write_pid Should we write the pid of this process? if false we will
+ * just check if we can aquire a lock and will close the fd of the pid file
+ * before returning, if true we will write to the pid file and keep the file
+ * handle to the pid file open, hence holding the lock.
  * \return 0 on success
  */
 int check_create_pid_file(char *proc_name_a0, char *def_pid_dir, bool write_pid)
@@ -207,11 +210,12 @@ int check_create_pid_file(char *proc_name_a0, char *def_pid_dir, bool write_pid)
 	char pid_dir[100] = {0};
 	char *proc_name = basename(proc_name_a0);
 
-	/* determine if the directory /var/run/opentee exists, this is the preferred place
-	 * for daemon run files, i.e. when running in production this is where we will
-	 * store the information, but when developing Open-TEE engine itself or on Android we will just 
-	 * use the dir provided either via runtime arguments (-p) or the one provided via compile 
-	 * argument -DDEFAULT_PID_FILE for fast and easy starts and stops of processes.
+	/* determine if the directory /var/run/opentee exists, this is the preferred
+	 * place for daemon run files, i.e. when running in production this is where
+	 * we will store the information, but when developing Open-TEE engine itself
+	 * or on Android we will just use the dir provided either via runtime
+	 * arguments (-p) or the one provided via compile argument -DDEFAULT_PID_FILE
+	 * for fast and easy starts and stops of processes.
 	 */
 	memcpy(pid_dir, def_pid_dir, strnlen(def_pid_dir, sizeof(pid_dir) - 1));
 	/* if the pid directory doesn't exist, try to create it. */
@@ -221,7 +225,7 @@ int check_create_pid_file(char *proc_name_a0, char *def_pid_dir, bool write_pid)
 			ret = -1;
 			goto out;
 		}
-	}	
+	}
 
 	if (snprintf(pid_file, MAX_PATH_NAME, "%s/%s.pid", pid_dir, proc_name) == MAX_PATH_NAME) {
 		printf("problems with snprintf, overflow\n");
@@ -243,8 +247,8 @@ int check_create_pid_file(char *proc_name_a0, char *def_pid_dir, bool write_pid)
 
 	if (fcntl(fd, F_SETLK, &lock) == -1) {
 		if (errno == EACCES || errno == EAGAIN) {
-			printf("\"%s\" is already running, pid file (%s) is locked!!\n",
-			       proc_name, pid_file);
+			printf("\"%s\" is already running, pid file (%s) is locked!!\n", proc_name,
+			       pid_file);
 		} else {
 			printf("Failed to lock pid_file (%s): %s\n", pid_file, strerror(errno));
 		}

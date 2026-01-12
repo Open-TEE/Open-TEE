@@ -19,17 +19,17 @@
 #define __TA_DIR_WATCH_H__
 
 /*! \file ta_dir_watch.h
-    \brief This is a bit stand alone module and it is only meant to use in OpenTEE manager process.
-    How to use this module:
+    \brief This is a bit stand alone module and it is only meant to use in
+   OpenTEE manager process. How to use this module:
     1. Define variable for fd (probaly INT)
     2. Call ta_dir_watch_init()
     3. Have a loop where you have epoll_wait() function call
     4. If epoll event occurred (data in fd), call ta_dir_watch_event()
 */
 
+#include "core_control_resources.h"
 #include "epoll_wrapper.h"
 #include "tee_ta_properties.h"
-#include "core_control_resources.h"
 
 #define TA_MAX_FILE_NAME 255
 
@@ -45,7 +45,8 @@ struct trusted_app_propertie {
  * \brief ta_dir_watch_init
  * Initializes structeres and register structures
  * \param control_params Paramaters that control the core process
- * \param man_ta_dir_watch_fd Returns fd, which will be written if file system operation occured
+ * \param man_ta_dir_watch_fd Returns fd, which will be written if file system
+ * operation occured
  * \return On success 0
  */
 int ta_dir_watch_init(struct core_control *control_params, int *man_ta_dir_watch_fd);
@@ -60,8 +61,8 @@ void ta_dir_watch_cleanup();
  * \brief ta_dir_watch_event
  * Function handles inotification event.
  * \param e_event Epoll event for checking epoll status
- * \param man_ta_dir_watch_fd Manager ta_dir_watch notify fd. FD might get closed and then
- * re-init, if inotify overflow occurs
+ * \param man_ta_dir_watch_fd Manager ta_dir_watch notify fd. FD might get
+ * closed and then re-init, if inotify overflow occurs
  */
 void ta_dir_watch_event(struct epoll_event *e_event, int *man_ta_dir_watch_fd);
 

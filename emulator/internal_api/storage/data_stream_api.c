@@ -17,27 +17,24 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include <stdlib.h>
 #include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <string.h>
 
-#include "tee_panic.h"
-#include "tee_storage_api.h"
+#include "com_protocol.h"
 #include "object_handle.h"
+#include "opentee_internal_api.h"
 #include "storage_utils.h"
 #include "tee_logging.h"
-#include "com_protocol.h"
-#include "opentee_internal_api.h"
+#include "tee_panic.h"
+#include "tee_storage_api.h"
 #include "tee_time_api.h"
 
-TEE_Result TEE_ReadObjectData(TEE_ObjectHandle object,
-			      void *buffer,
-			      size_t size,
-			      size_t *count)
+TEE_Result TEE_ReadObjectData(TEE_ObjectHandle object, void *buffer, size_t size, size_t *count)
 {
 	struct com_mgr_invoke_cmd_payload payload, returnPayload;
 	struct com_mrg_transfer_data_persistent *transfer_s;
@@ -56,8 +53,10 @@ TEE_Result TEE_ReadObjectData(TEE_ObjectHandle object,
 		OT_LOG_ERR("TEE_ReadObjectData panics due object not persistant object");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (!(object->objectInfo.handleFlags & TEE_DATA_FLAG_ACCESS_READ)) {
-		//Note: Flag is also forced at the manager! In other word this check is duplicate.
-		OT_LOG_ERR("TEE_ReadObjectData panics due missing rights (no TEE_DATA_FLAG_ACCESS_READ)");
+		// Note: Flag is also forced at the manager! In other word this check is
+		// duplicate.
+		OT_LOG_ERR("TEE_ReadObjectData panics due missing rights (no "
+			   "TEE_DATA_FLAG_ACCESS_READ)");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
 
@@ -75,23 +74,24 @@ TEE_Result TEE_ReadObjectData(TEE_ObjectHandle object,
 	transfer_s->dataPosition = object->per_object.data_position;
 	transfer_s->dataSize = size;
 
-	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE,
-				   COM_MGR_CMD_ID_READ_OBJ_DATA,
-				   &payload, &returnPayload);
+	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_READ_OBJ_DATA, &payload,
+				   &returnPayload);
 	if (ret != TEE_SUCCESS) {
 		goto err;
 	}
 
 	transfer_s = returnPayload.data;
-	
+
 	object->per_object.data_position = transfer_s->dataPosition;
 	*count = transfer_s->dataSize;
-	memcpy(buffer, (uint8_t *)returnPayload.data + sizeof(struct com_mrg_transfer_data_persistent), *count);
+	memcpy(buffer,
+	       (uint8_t *)returnPayload.data + sizeof(struct com_mrg_transfer_data_persistent),
+	       *count);
 
- err:
+err:
 	free(payload.data);
 	free(returnPayload.data);
-	
+
 	if (ret == TEE_ERROR_ACCESS_DENIED) {
 		OT_LOG_ERR("TEE_ReadObjectData panics due access right violation");
 		TEE_Panic(TEE_ERROR_ACCESS_DENIED);
@@ -103,13 +103,11 @@ TEE_Result TEE_ReadObjectData(TEE_ObjectHandle object,
 	return ret;
 }
 
-TEE_Result TEE_WriteObjectData(TEE_ObjectHandle object,
-			       void *buffer,
-			       size_t size)
+TEE_Result TEE_WriteObjectData(TEE_ObjectHandle object, void *buffer, size_t size)
 {
 	struct com_mgr_invoke_cmd_payload payload, returnPayload;
 	TEE_Result ret = TEE_SUCCESS;
-	
+
 	if (object == NULL) {
 		OT_LOG_ERR("TEE_WriteObjectData panics due object NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
@@ -128,31 +126,30 @@ TEE_Result TEE_WriteObjectData(TEE_ObjectHandle object,
 		return TEE_ERROR_OUT_OF_MEMORY;
 	}
 
-	//Fill message
+	// Fill message
 	((struct com_mrg_transfer_data_persistent *)payload.data)->objectIDLen =
-		object->per_object.obj_id_len;
+	    object->per_object.obj_id_len;
 	memcpy(&((struct com_mrg_transfer_data_persistent *)payload.data)->objectID,
 	       &object->per_object.obj_id, object->per_object.obj_id_len);
 	((struct com_mrg_transfer_data_persistent *)payload.data)->dataPosition =
-		object->per_object.data_position;
+	    object->per_object.data_position;
 	((struct com_mrg_transfer_data_persistent *)payload.data)->dataSize = size;
-	memcpy((uint8_t *)payload.data + sizeof(struct com_mrg_transfer_data_persistent),
-	       buffer, size);
+	memcpy((uint8_t *)payload.data + sizeof(struct com_mrg_transfer_data_persistent), buffer,
+	       size);
 
-	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE,
-				   COM_MGR_CMD_ID_WRITE_OBJ_DATA,
-				   &payload, &returnPayload);
+	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_WRITE_OBJ_DATA, &payload,
+				   &returnPayload);
 	if (ret != TEE_SUCCESS) {
 		goto err;
 	}
-	
-	object->per_object.data_position =
-		((struct com_mrg_transfer_data_persistent *)returnPayload.data)->dataPosition;
 
- err:
+	object->per_object.data_position =
+	    ((struct com_mrg_transfer_data_persistent *)returnPayload.data)->dataPosition;
+
+err:
 	free(payload.data);
 	free(returnPayload.data);
-	
+
 	if (ret == TEE_ERROR_ACCESS_DENIED) {
 		OT_LOG_ERR("TEE_WriteObjectData panics due access right violation");
 		TEE_Panic(TEE_ERROR_ACCESS_DENIED);
@@ -164,8 +161,7 @@ TEE_Result TEE_WriteObjectData(TEE_ObjectHandle object,
 	return ret;
 }
 
-TEE_Result TEE_TruncateObjectData(TEE_ObjectHandle object,
-				  size_t size)
+TEE_Result TEE_TruncateObjectData(TEE_ObjectHandle object, size_t size)
 {
 	struct com_mgr_invoke_cmd_payload payload, returnPayload;
 	TEE_Result ret = TEE_SUCCESS;
@@ -186,28 +182,27 @@ TEE_Result TEE_TruncateObjectData(TEE_ObjectHandle object,
 	}
 
 	((struct com_mrg_transfer_data_persistent *)payload.data)->objectIDLen =
-		object->per_object.obj_id_len;
+	    object->per_object.obj_id_len;
 	memcpy(&((struct com_mrg_transfer_data_persistent *)payload.data)->objectID,
 	       &object->per_object.obj_id, object->per_object.obj_id_len);
 	((struct com_mrg_transfer_data_persistent *)payload.data)->dataSize = size;
 	((struct com_mrg_transfer_data_persistent *)payload.data)->dataPosition =
-		object->per_object.data_position;
-	
-	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE,
-				   COM_MGR_CMD_ID_TRUNCATE_OBJ_DATA,
-				   &payload, &returnPayload);
+	    object->per_object.data_position;
+
+	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_TRUNCATE_OBJ_DATA, &payload,
+				   &returnPayload);
 
 	if (ret != TEE_SUCCESS) {
 		goto err;
 	}
 
 	object->per_object.data_position =
-		((struct com_mrg_transfer_data_persistent *)returnPayload.data)->dataPosition;
+	    ((struct com_mrg_transfer_data_persistent *)returnPayload.data)->dataPosition;
 
- err:
+err:
 	free(payload.data);
 	free(returnPayload.data);
-	
+
 	if (ret == TEE_ERROR_ACCESS_DENIED) {
 		OT_LOG_ERR("TEE_TruncateObjectData panics due access right violation");
 		TEE_Panic(TEE_ERROR_ACCESS_DENIED);
@@ -219,30 +214,28 @@ TEE_Result TEE_TruncateObjectData(TEE_ObjectHandle object,
 	return ret;
 }
 
-TEE_Result TEE_SeekObjectData(TEE_ObjectHandle object,
-			      int32_t offset,
-			      TEE_Whence whence)
+TEE_Result TEE_SeekObjectData(TEE_ObjectHandle object, int32_t offset, TEE_Whence whence)
 {
 	uint32_t begin;
 	uint32_t end;
 	uint32_t pos;
 	TEE_ObjectInfo info;
 	TEE_Result ret;
-	
+
 	if (object == NULL) {
 		OT_LOG_ERR("TEE_SeekObjectData panics due object handle NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
-	}  else if (!(object->objectInfo.handleFlags & TEE_HANDLE_FLAG_PERSISTENT)) {
+	} else if (!(object->objectInfo.handleFlags & TEE_HANDLE_FLAG_PERSISTENT)) {
 		OT_LOG_ERR("TEE_SeekObjectData panics due not a persistant object");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
 
-	//TODO: Extract size query from TEE_GetObjectInfo1
+	// TODO: Extract size query from TEE_GetObjectInfo1
 	ret = TEE_GetObjectInfo1(object, &info);
 	if (ret != TEE_SUCCESS) {
 		return ret;
 	}
-	
+
 	begin = 0;
 	end = info.dataSize;
 	pos = info.dataPosition;

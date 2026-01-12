@@ -21,7 +21,8 @@
 #ifndef TOKEN_CONF_H
 #define TOKEN_CONF_H
 
-/* The max number of sessions that each application can have simultaneously open */
+/* The max number of sessions that each application can have simultaneously open
+ */
 #define MAX_SESSIONS 5
 
 #define MAX_PIN_LEN 64

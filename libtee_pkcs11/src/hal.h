@@ -17,14 +17,15 @@
 #ifndef __HAL_H_
 #define __HAL_H_
 
-#include <stdint.h>
-#include <stdbool.h>
-#include "cryptoki.h"
 #include "commands.h"
+#include "cryptoki.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 /*!
  * \brief hal_initialize_context
- * Create a context towards the TEE, this is generally achieved by opening the TEE device
+ * Create a context towards the TEE, this is generally achieved by opening the
+ * TEE device
  * \return 0 on success
  */
 CK_RV hal_initialize_context();
@@ -54,9 +55,7 @@ CK_RV hal_init_token(CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen, CK_UTF8CHAR_PTR pL
  * \param hKey
  * \return
  */
-CK_RV hal_crypto_init(uint32_t command_id,
-		      CK_SESSION_HANDLE hSession,
-		      CK_MECHANISM_PTR pMechanism,
+CK_RV hal_crypto_init(uint32_t command_id, CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
 		      CK_OBJECT_HANDLE hKey);
 
 /*!
@@ -70,12 +69,8 @@ CK_RV hal_crypto_init(uint32_t command_id,
  * \param dst_len is dst buffer length in bytes
  * \return
  */
-CK_RV hal_crypto(uint32_t command_id,
-		 CK_SESSION_HANDLE hSession,
-		 CK_BYTE_PTR src,
-		 CK_ULONG src_len,
-		 CK_BYTE_PTR dst,
-		 CK_ULONG_PTR dst_len);
+CK_RV hal_crypto(uint32_t command_id, CK_SESSION_HANDLE hSession, CK_BYTE_PTR src, CK_ULONG src_len,
+		 CK_BYTE_PTR dst, CK_ULONG_PTR dst_len);
 
 /*!
  * \brief hal_verify_crypto
@@ -87,15 +82,13 @@ CK_RV hal_crypto(uint32_t command_id,
  * \param sig_len
  * \return
  */
-CK_RV hal_verify_crypto(CK_SESSION_HANDLE hSession,
-			CK_BYTE_PTR msg,
-			CK_ULONG msg_len,
-			CK_BYTE_PTR sig,
-			CK_ULONG sig_len);
+CK_RV hal_verify_crypto(CK_SESSION_HANDLE hSession, CK_BYTE_PTR msg, CK_ULONG msg_len,
+			CK_BYTE_PTR sig, CK_ULONG sig_len);
 
 /*!
  * \brief hal_get_info
- * A generic function to populate an info structure (CK_SLOT_INFO, CK_TOKEN_INFO)
+ * A generic function to populate an info structure (CK_SLOT_INFO,
+ * CK_TOKEN_INFO)
  * \param command_id The command to invoke
  * \param data The data structure that is to be populated
  * \param data_size The size of the structure that is to be populated
@@ -145,9 +138,7 @@ CK_RV hal_get_session_info(CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo
  * \param ulPinLen The length of the pin
  * \return 0 on success
  */
-CK_RV hal_login(CK_SESSION_HANDLE hSession,
-		CK_USER_TYPE userType,
-		CK_UTF8CHAR_PTR pPin,
+CK_RV hal_login(CK_SESSION_HANDLE hSession, CK_USER_TYPE userType, CK_UTF8CHAR_PTR pPin,
 		CK_ULONG ulPinLen);
 
 /*!
@@ -174,9 +165,7 @@ bool is_lib_initialized();
  * \param phObject
  * \return
  */
-CK_RV hal_create_object(CK_SESSION_HANDLE hSession,
-			CK_ATTRIBUTE_PTR pTemplate,
-			CK_ULONG ulCount,
+CK_RV hal_create_object(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount,
 			CK_OBJECT_HANDLE_PTR phObject);
 
 /*!
@@ -200,8 +189,8 @@ CK_RV hal_init_pin(CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pPin, CK_ULONG ul
 
 /*!
  * \brief hal_set_pin
- * Change the Pin for the currently logged in user or the CKU_USER pin if the session is not logged
- * in
+ * Change the Pin for the currently logged in user or the CKU_USER pin if the
+ * session is not logged in
  * \param hSession The current valid session
  * \param pOldPin The old pin being replaced or NULL if trusted UI
  * \param ulOldLen the len or 0 if pOldPin is NULL
@@ -209,11 +198,8 @@ CK_RV hal_init_pin(CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pPin, CK_ULONG ul
  * \param ulNewLen the len or 0 if pNewPin is NULL
  * \return 0 on success
  */
-CK_RV hal_set_pin(CK_SESSION_HANDLE hSession,
-		  CK_UTF8CHAR_PTR pOldPin,
-		  CK_ULONG ulOldLen,
-		  CK_UTF8CHAR_PTR pNewPin,
-		  CK_ULONG ulNewLen);
+CK_RV hal_set_pin(CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pOldPin, CK_ULONG ulOldLen,
+		  CK_UTF8CHAR_PTR pNewPin, CK_ULONG ulNewLen);
 
 /*!
  * \brief hal_generate_random
@@ -234,11 +220,9 @@ CK_RV hal_generate_random(CK_SESSION_HANDLE hSession, CK_BYTE_PTR RandomData, CK
  * \param ulCount
  * \return
  */
-CK_RV hal_get_or_set_object_attr(uint32_t command_id,
-                                 CK_SESSION_HANDLE hSession,
-                                 CK_OBJECT_HANDLE hObject,
-                                 CK_ATTRIBUTE_PTR pTemplate,
-                                 CK_ULONG ulCount);
+CK_RV hal_get_or_set_object_attr(uint32_t command_id, CK_SESSION_HANDLE hSession,
+				 CK_OBJECT_HANDLE hObject, CK_ATTRIBUTE_PTR pTemplate,
+				 CK_ULONG ulCount);
 
 /*!
  * \brief hal_find_objects_init
@@ -247,8 +231,7 @@ CK_RV hal_get_or_set_object_attr(uint32_t command_id,
  * \param ulCount
  * \return
  */
-CK_RV hal_find_objects_init(CK_SESSION_HANDLE hSession,
-			    CK_ATTRIBUTE_PTR pTemplate,
+CK_RV hal_find_objects_init(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pTemplate,
 			    CK_ULONG ulCount);
 /*!
  * \brief hal_find_objects
@@ -258,10 +241,8 @@ CK_RV hal_find_objects_init(CK_SESSION_HANDLE hSession,
  * \param pulObjectCount
  * \return
  */
-CK_RV hal_find_objects(CK_SESSION_HANDLE hSession,
-		       CK_OBJECT_HANDLE_PTR phObject,
-		       CK_ULONG ulMaxObjectCount,
-		       CK_ULONG_PTR pulObjectCount);
+CK_RV hal_find_objects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR phObject,
+		       CK_ULONG ulMaxObjectCount, CK_ULONG_PTR pulObjectCount);
 
 /*!
  * \brief hal_find_objects_final
@@ -271,4 +252,3 @@ CK_RV hal_find_objects(CK_SESSION_HANDLE hSession,
 CK_RV hal_find_objects_final(CK_SESSION_HANDLE hSession);
 
 #endif // HAL_H
-

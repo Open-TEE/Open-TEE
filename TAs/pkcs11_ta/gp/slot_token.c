@@ -22,11 +22,11 @@
 
 #include "tee_internal_api.h"
 
-#include "slot_token.h"
-#include "cryptoki.h"
 #include "commands.h"
-#include "token_conf.h"
 #include "compat.h"
+#include "cryptoki.h"
+#include "slot_token.h"
+#include "token_conf.h"
 
 /* should be read from secure storage */
 CK_TOKEN_INFO g_token;
@@ -35,185 +35,55 @@ static char SO_PASSWORD_ID[] = "password0";
 static char USER_PASSWORD_ID[] = "password1";
 static char TOKEN_STORE[] = "TOKEN_STORE";
 
-/* TODO this is just a dummy place holder, it must be filled with real mechanisms */
+/* TODO this is just a dummy place holder, it must be filled with real
+ * mechanisms */
 struct mechanisms g_supported_algos[] = {
-{
-	.algo = CKM_AES_CBC,
-	.info = {
-		.ulMinKeySize = 128,
-		.ulMaxKeySize = 256,
-		.flags = CKF_HW | CKF_ENCRYPT | CKF_DECRYPT
-	}
-},
-{
-	.algo =  CKM_MD5_RSA_PKCS,
-	.info = {
-		.ulMinKeySize = 256,
-		.ulMaxKeySize = 2048,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =   CKM_SHA1_RSA_PKCS,
-	.info = {
-		.ulMinKeySize = 256,
-		.ulMaxKeySize = 2048,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =   CKM_SHA256_RSA_PKCS,
-	.info = {
-		.ulMinKeySize = 256,
-		.ulMaxKeySize = 2048,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =   CKM_SHA384_RSA_PKCS,
-	.info = {
-		.ulMinKeySize = 256,
-		.ulMaxKeySize = 2048,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =   CKM_SHA512_RSA_PKCS,
-	.info = {
-		.ulMinKeySize = 256,
-		.ulMaxKeySize = 2048,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =   CKM_MD5,
-	.info = {
-		.ulMinKeySize = 0,
-		.ulMaxKeySize = 0,
-		.flags = CKF_HW | CKF_DIGEST
-	}
-},
-{
-	.algo =    CKM_SHA_1,
-	.info = {
-		.ulMinKeySize = 0,
-		.ulMaxKeySize = 0,
-		.flags = CKF_HW | CKF_DIGEST
-	}
-},
-{
-	.algo =    CKM_SHA256,
-	.info = {
-		.ulMinKeySize = 0,
-		.ulMaxKeySize = 0,
-		.flags = CKF_HW | CKF_DIGEST
-	}
-},
-{
-	.algo =    CKM_SHA384,
-	.info = {
-		.ulMinKeySize = 0,
-		.ulMaxKeySize = 0,
-		.flags = CKF_HW | CKF_DIGEST
-	}
-},
-{
-	.algo =    CKM_SHA512,
-	.info = {
-		.ulMinKeySize = 0,
-		.ulMaxKeySize = 0,
-		.flags = CKF_HW | CKF_DIGEST
-	}
-},
-{
-	.algo =   CKM_MD5_HMAC,
-	.info = {
-		.ulMinKeySize = 64,
-		.ulMaxKeySize = 512,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =    CKM_SHA_1_HMAC,
-	.info = {
-		.ulMinKeySize = 80,
-		.ulMaxKeySize = 512,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =    CKM_SHA256_HMAC,
-	.info = {
-		.ulMinKeySize = 192,
-		.ulMaxKeySize = 1024,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =    CKM_SHA384_HMAC,
-	.info = {
-		.ulMinKeySize = 256,
-		.ulMaxKeySize = 1024,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =    CKM_SHA512_HMAC,
-	.info = {
-		.ulMinKeySize = 256,
-		.ulMaxKeySize = 1024,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =   CKM_MD5_HMAC_GENERAL,
-	.info = {
-		.ulMinKeySize = 64,
-		.ulMaxKeySize = 512,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =    CKM_SHA_1_HMAC,
-	.info = {
-		.ulMinKeySize = 80,
-		.ulMaxKeySize = 512,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =    CKM_SHA256_HMAC_GENERAL,
-	.info = {
-		.ulMinKeySize = 192,
-		.ulMaxKeySize = 1024,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =    CKM_SHA384_HMAC_GENERAL,
-	.info = {
-		.ulMinKeySize = 256,
-		.ulMaxKeySize = 1024,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =    CKM_SHA512_HMAC_GENERAL,
-	.info = {
-		.ulMinKeySize = 256,
-		.ulMaxKeySize = 1024,
-		.flags = CKF_HW | CKF_SIGN | CKF_VERIFY
-	}
-},
-{
-	.algo =     CKM_RSA_PKCS,
-	.info = {
-		.ulMinKeySize = 256,
-		.ulMaxKeySize = 2048,
-		.flags = CKF_HW | CKF_ENCRYPT | CKF_DECRYPT
-	}
-}
-};
+    {.algo = CKM_AES_CBC,
+     .info = {.ulMinKeySize = 128,
+	      .ulMaxKeySize = 256,
+	      .flags = CKF_HW | CKF_ENCRYPT | CKF_DECRYPT}},
+    {.algo = CKM_MD5_RSA_PKCS,
+     .info = {.ulMinKeySize = 256, .ulMaxKeySize = 2048, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_SHA1_RSA_PKCS,
+     .info = {.ulMinKeySize = 256, .ulMaxKeySize = 2048, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_SHA256_RSA_PKCS,
+     .info = {.ulMinKeySize = 256, .ulMaxKeySize = 2048, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_SHA384_RSA_PKCS,
+     .info = {.ulMinKeySize = 256, .ulMaxKeySize = 2048, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_SHA512_RSA_PKCS,
+     .info = {.ulMinKeySize = 256, .ulMaxKeySize = 2048, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_MD5, .info = {.ulMinKeySize = 0, .ulMaxKeySize = 0, .flags = CKF_HW | CKF_DIGEST}},
+    {.algo = CKM_SHA_1,
+     .info = {.ulMinKeySize = 0, .ulMaxKeySize = 0, .flags = CKF_HW | CKF_DIGEST}},
+    {.algo = CKM_SHA256,
+     .info = {.ulMinKeySize = 0, .ulMaxKeySize = 0, .flags = CKF_HW | CKF_DIGEST}},
+    {.algo = CKM_SHA384,
+     .info = {.ulMinKeySize = 0, .ulMaxKeySize = 0, .flags = CKF_HW | CKF_DIGEST}},
+    {.algo = CKM_SHA512,
+     .info = {.ulMinKeySize = 0, .ulMaxKeySize = 0, .flags = CKF_HW | CKF_DIGEST}},
+    {.algo = CKM_MD5_HMAC,
+     .info = {.ulMinKeySize = 64, .ulMaxKeySize = 512, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_SHA_1_HMAC,
+     .info = {.ulMinKeySize = 80, .ulMaxKeySize = 512, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_SHA256_HMAC,
+     .info = {.ulMinKeySize = 192, .ulMaxKeySize = 1024, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_SHA384_HMAC,
+     .info = {.ulMinKeySize = 256, .ulMaxKeySize = 1024, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_SHA512_HMAC,
+     .info = {.ulMinKeySize = 256, .ulMaxKeySize = 1024, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_MD5_HMAC_GENERAL,
+     .info = {.ulMinKeySize = 64, .ulMaxKeySize = 512, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_SHA_1_HMAC,
+     .info = {.ulMinKeySize = 80, .ulMaxKeySize = 512, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_SHA256_HMAC_GENERAL,
+     .info = {.ulMinKeySize = 192, .ulMaxKeySize = 1024, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_SHA384_HMAC_GENERAL,
+     .info = {.ulMinKeySize = 256, .ulMaxKeySize = 1024, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_SHA512_HMAC_GENERAL,
+     .info = {.ulMinKeySize = 256, .ulMaxKeySize = 1024, .flags = CKF_HW | CKF_SIGN | CKF_VERIFY}},
+    {.algo = CKM_RSA_PKCS,
+     .info = {
+	 .ulMinKeySize = 256, .ulMaxKeySize = 2048, .flags = CKF_HW | CKF_ENCRYPT | CKF_DECRYPT}}};
 
 static uint32_t read_token_from_storage(CK_TOKEN_INFO *token)
 {
@@ -256,8 +126,8 @@ static uint32_t create_update_token_storage(CK_TOKEN_INFO *token)
 		return TEE_ERROR_BAD_PARAMETERS;
 
 	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, TOKEN_STORE, TEE_StrLen(TOKEN_STORE),
-					 TEE_DATA_FLAG_ACCESS_WRITE | TEE_DATA_FLAG_OVERWRITE,
-					 NULL, (void *)token, sizeof(CK_TOKEN_INFO), NULL);
+					 TEE_DATA_FLAG_ACCESS_WRITE | TEE_DATA_FLAG_OVERWRITE, NULL,
+					 (void *)token, sizeof(CK_TOKEN_INFO), NULL);
 	if (ret != TEE_SUCCESS)
 		return TEE_ERROR_STORAGE_NO_SPACE;
 
@@ -276,7 +146,7 @@ static void populate_token(CK_TOKEN_INFO *token)
 
 	TEE_MemFill(token->serialNumber, ' ', sizeof(token->serialNumber));
 	TEE_MemMove((char *)token->serialNumber, "1234567890123456",
-		TEE_StrLen("1234567890123456"));
+		    TEE_StrLen("1234567890123456"));
 
 	token->flags = CKF_RNG | CKF_LOGIN_REQUIRED;
 	token->ulMaxSessionCount = MAX_SESSIONS;
@@ -344,7 +214,8 @@ TEE_Result get_token_info(uint32_t paramTypes, TEE_Param params[4])
 
 	if (params[1].value.a < sizeof(CK_TOKEN_INFO)) {
 		params[1].value.a = sizeof(CK_TOKEN_INFO);
-		return TEE_ERROR_SHORT_BUFFER; /* not enough space to return the token info */
+		return TEE_ERROR_SHORT_BUFFER; /* not enough space to return the token info
+						*/
 	}
 
 	TEE_MemMove(params[0].memref.buffer, (uint8_t *)&g_token, sizeof(g_token));
@@ -364,7 +235,8 @@ TEE_Result get_mechanism_list(uint32_t paramTypes, TEE_Param params[4])
 
 	if (params[1].value.a < sizeof(g_supported_algos)) {
 		params[1].value.a = sizeof(g_supported_algos);
-		return TEE_ERROR_SHORT_BUFFER; /* not enough space to return the mechanism list */
+		return TEE_ERROR_SHORT_BUFFER; /* not enough space to return the mechanism
+						  list */
 	}
 
 	TEE_MemMove(params[0].memref.buffer, (uint8_t *)g_supported_algos,
@@ -376,10 +248,7 @@ TEE_Result get_mechanism_list(uint32_t paramTypes, TEE_Param params[4])
 	return 0;
 }
 
-bool is_token_write_protected()
-{
-	return g_token.flags & CKF_WRITE_PROTECTED;
-}
+bool is_token_write_protected() { return g_token.flags & CKF_WRITE_PROTECTED; }
 
 CK_RV mechanism_supported(CK_MECHANISM_TYPE mech_type, CK_ULONG key_size, TEE_OperationMode mode)
 {
@@ -390,9 +259,8 @@ CK_RV mechanism_supported(CK_MECHANISM_TYPE mech_type, CK_ULONG key_size, TEE_Op
 		if (g_supported_algos[i].algo == mech_type) {
 
 			/* Some operation does not require a key */
-			if (key_size != 0 &&
-			    !(g_supported_algos[i].info.ulMinKeySize < key_size ||
-			      g_supported_algos[i].info.ulMaxKeySize > key_size))
+			if (key_size != 0 && !(g_supported_algos[i].info.ulMinKeySize < key_size ||
+					       g_supported_algos[i].info.ulMaxKeySize > key_size))
 				return CKR_MECHANISM_INVALID;
 
 			switch (mode) {
@@ -519,8 +387,8 @@ CK_RV set_password(CK_USER_TYPE user_type, const char *passwd, uint32_t passwd_l
 	}
 
 	ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, ID, id_len,
-					 TEE_DATA_FLAG_ACCESS_WRITE | TEE_DATA_FLAG_OVERWRITE,
-					 NULL, (void *)passwd, passwd_len, NULL);
+					 TEE_DATA_FLAG_ACCESS_WRITE | TEE_DATA_FLAG_OVERWRITE, NULL,
+					 (void *)passwd, passwd_len, NULL);
 	if (ret != TEE_SUCCESS)
 		return CKR_USER_PIN_NOT_INITIALIZED;
 

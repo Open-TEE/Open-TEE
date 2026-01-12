@@ -20,8 +20,8 @@
 #ifndef __CRYPTO_UTILS_H__
 #define __CRYPTO_UTILS_H__
 
-#include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
 
 #include "../tee_crypto_api.h"
 #include "../tee_data_types.h"

@@ -17,11 +17,10 @@
 #ifndef __SIGN_ECDSA_256_CTRL_H__
 #define __SIGN_ECDSA_256_CTRL_H__
 
+#include "tee_shared_data_types.h"
 #include <stdint.h>
 
-const TEEC_UUID uuid = {
-     0x12345678, 0x8765, 0x4321, { 'S', 'I', 'G', 'N', 'S', 'I', 'G', 'N'}
-};
+const TEEC_UUID uuid = {0x12345678, 0x8765, 0x4321, {'S', 'I', 'G', 'N', 'S', 'I', 'G', 'N'}};
 
 #define SIGN_ECDSA_256_SIGN 1234
 

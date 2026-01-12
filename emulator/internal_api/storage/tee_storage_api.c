@@ -17,21 +17,19 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "com_protocol.h"
+#include "opentee_internal_api.h"
 #include "storage/object_handle.h"
 #include "storage/storage_utils.h"
 #include "tee_logging.h"
-#include "tee_storage_api.h"
 #include "tee_panic.h"
-#include "com_protocol.h"
-#include "opentee_internal_api.h"
+#include "tee_storage_api.h"
 #include "tee_time_api.h"
 
-
-static TEE_Attribute *get_attr_from_arr(struct gp_attributes *gp_attrs,
-					uint32_t attributeID)
+static TEE_Attribute *get_attr_from_arr(struct gp_attributes *gp_attrs, uint32_t attributeID)
 {
 	uint32_t i;
 
@@ -43,8 +41,7 @@ static TEE_Attribute *get_attr_from_arr(struct gp_attributes *gp_attrs,
 	return NULL;
 }
 
-static TEE_Result check_attribute_rights(TEE_ObjectHandle object,
-					 uint32_t attributeID)
+static TEE_Result check_attribute_rights(TEE_ObjectHandle object, uint32_t attributeID)
 {
 	if (!(object->objectInfo.handleFlags & TEE_HANDLE_FLAG_INITIALIZED)) {
 		OT_LOG(LOG_ERR, "Object not initialized\n");
@@ -59,16 +56,17 @@ static TEE_Result check_attribute_rights(TEE_ObjectHandle object,
 		return TEE_SUCCESS;
 	}
 
-	OT_LOG_ERR("Attribute is protected and usage restrict extraction (no TEE_USAGE_EXTRACTABLE)");
+	OT_LOG_ERR("Attribute is protected and usage restrict extraction (no "
+		   "TEE_USAGE_EXTRACTABLE)");
 	return TEE_ERROR_BAD_STATE;
 }
 
-TEE_Result TEE_GetObjectInfo1(TEE_ObjectHandle object,
-			      TEE_ObjectInfo *objectInfo)
+TEE_Result TEE_GetObjectInfo1(TEE_ObjectHandle object, TEE_ObjectInfo *objectInfo)
 {
 	struct com_mgr_invoke_cmd_payload payload, returnPayload;
-	TEE_Result ret = TEE_ERROR_GENERIC;;
-	
+	TEE_Result ret = TEE_ERROR_GENERIC;
+	;
+
 	if (object == NULL) {
 		OT_LOG_ERR("TEE_GetObjectInfo1 panics due object NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
@@ -81,13 +79,13 @@ TEE_Result TEE_GetObjectInfo1(TEE_ObjectHandle object,
 	memcpy(objectInfo, &object->objectInfo, sizeof(TEE_ObjectInfo));
 
 	// keySize
-	if (object->objectInfo.objectType !=
-	    TEE_TYPE_DATA && object->objectInfo.handleFlags & TEE_HANDLE_FLAG_INITIALIZED) {
+	if (object->objectInfo.objectType != TEE_TYPE_DATA &&
+	    object->objectInfo.handleFlags & TEE_HANDLE_FLAG_INITIALIZED) {
 		objectInfo->keySize = BYTE2BITS(object->key->key_lenght);
 	} else {
 		objectInfo->keySize = 0;
 	}
-	
+
 	if (object->objectInfo.handleFlags & TEE_HANDLE_FLAG_PERSISTENT) {
 		objectInfo->maxObjectSize = objectInfo->keySize;
 
@@ -101,10 +99,9 @@ TEE_Result TEE_GetObjectInfo1(TEE_ObjectHandle object,
 		memcpy(((struct com_mrg_transfer_data_persistent *)payload.data)->objectID,
 		       object->per_object.obj_id, object->per_object.obj_id_len);
 		((struct com_mrg_transfer_data_persistent *)payload.data)->objectIDLen =
-			object->per_object.obj_id_len;
-		
-		ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE,
-					   COM_MGR_CMD_ID_OBJECTINFO,
+		    object->per_object.obj_id_len;
+
+		ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_OBJECTINFO,
 					   &payload, &returnPayload);
 		if (ret != TEE_SUCCESS) {
 			OT_LOG_ERR("TEE_GetObjectInfo1 failed to query size");
@@ -112,7 +109,8 @@ TEE_Result TEE_GetObjectInfo1(TEE_ObjectHandle object,
 		}
 
 		objectInfo->dataPosition = object->per_object.data_position;
-		objectInfo->dataSize = ((struct com_mrg_transfer_data_persistent *)returnPayload.data)->dataSize;
+		objectInfo->dataSize =
+		    ((struct com_mrg_transfer_data_persistent *)returnPayload.data)->dataSize;
 
 		free(payload.data);
 		free(returnPayload.data);
@@ -121,12 +119,11 @@ TEE_Result TEE_GetObjectInfo1(TEE_ObjectHandle object,
 	return ret;
 }
 
-TEE_Result TEE_RestrictObjectUsage1(TEE_ObjectHandle object,
-				    uint32_t objectUsage)
+TEE_Result TEE_RestrictObjectUsage1(TEE_ObjectHandle object, uint32_t objectUsage)
 {
-	//TODO(maybe): Check from spec if flags needs
-	//update at the storage if persistant_object
-	
+	// TODO(maybe): Check from spec if flags needs
+	// update at the storage if persistant_object
+
 	if (object == NULL) {
 		return TEE_SUCCESS;
 	}
@@ -136,9 +133,7 @@ TEE_Result TEE_RestrictObjectUsage1(TEE_ObjectHandle object,
 	return TEE_SUCCESS;
 }
 
-TEE_Result TEE_GetObjectBufferAttribute(TEE_ObjectHandle object,
-					uint32_t attributeID,
-					void *buffer,
+TEE_Result TEE_GetObjectBufferAttribute(TEE_ObjectHandle object, uint32_t attributeID, void *buffer,
 					size_t *size)
 {
 	TEE_Result gp_rv = TEE_SUCCESS;
@@ -152,7 +147,7 @@ TEE_Result TEE_GetObjectBufferAttribute(TEE_ObjectHandle object,
 
 	gp_rv = check_attribute_rights(object, attributeID);
 	if (gp_rv != TEE_SUCCESS) {
-		TEE_Panic(gp_rv); //Error msg log
+		TEE_Panic(gp_rv); // Error msg log
 	}
 
 	attr = get_attr_from_arr(&object->key->gp_attrs, attributeID);
@@ -160,10 +155,11 @@ TEE_Result TEE_GetObjectBufferAttribute(TEE_ObjectHandle object,
 		OT_LOG_ERR("Attribute not found [%u]\n", attributeID);
 		return TEE_ERROR_ITEM_NOT_FOUND;
 	}
-	
+
 	if (attr->content.ref.length > *size || attr->content.ref.buffer == NULL) {
-		OT_LOG_ERR("TEE_GetObjectBufferAttribute: buffer too short (attribute size in bytes[%lu])",
-		       attr->content.ref.length);
+		OT_LOG_ERR("TEE_GetObjectBufferAttribute: buffer too short (attribute size "
+			   "in bytes[%lu])",
+			   attr->content.ref.length);
 		*size = attr->content.ref.length;
 		return TEE_ERROR_SHORT_BUFFER;
 	}
@@ -174,9 +170,7 @@ TEE_Result TEE_GetObjectBufferAttribute(TEE_ObjectHandle object,
 	return gp_rv;
 }
 
-TEE_Result TEE_GetObjectValueAttribute(TEE_ObjectHandle object,
-				       uint32_t attributeID,
-				       uint32_t *a,
+TEE_Result TEE_GetObjectValueAttribute(TEE_ObjectHandle object, uint32_t attributeID, uint32_t *a,
 				       uint32_t *b)
 {
 	TEE_Result gp_rv = TEE_SUCCESS;
@@ -190,25 +184,25 @@ TEE_Result TEE_GetObjectValueAttribute(TEE_ObjectHandle object,
 
 	gp_rv = check_attribute_rights(object, attributeID);
 	if (gp_rv != TEE_SUCCESS) {
-		TEE_Panic(gp_rv); //Error logged
+		TEE_Panic(gp_rv); // Error logged
 	}
-	
+
 	attr = get_attr_from_arr(&object->key->gp_attrs, attributeID);
 	if (attr == NULL) {
 		OT_LOG_ERR("Attribute not found [%u]\n", attributeID);
 		return TEE_ERROR_ITEM_NOT_FOUND;
 	}
-	
+
 	/* Attribute found */
 
 	if (a != NULL) {
 		*a = attr->content.value.a;
 	}
-	
+
 	if (b != NULL) {
 		*b = attr->content.value.b;
 	}
-	
+
 	return gp_rv;
 }
 

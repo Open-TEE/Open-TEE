@@ -16,11 +16,11 @@
 
 #include <errno.h>
 #include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/eventfd.h>
 #include <sys/prctl.h>
-#include <stdio.h>
 #include <syslog.h>
 
 #ifdef ANDROID
@@ -32,15 +32,16 @@
 #include "core_control_resources.h"
 #include "dynamic_loader.h"
 #include "epoll_wrapper.h"
-#include "ta_exit_states.h"
 #include "ta_ctl_resources.h"
+#include "ta_exit_states.h"
 #include "ta_internal_thread.h"
 #include "ta_io_thread.h"
 #include "ta_process.h"
 #include "ta_signal_handler.h"
 #include "tee_logging.h"
 
-/* we have 2 threads to synchronize so we can achieve this with static condition and statix mutex */
+/* we have 2 threads to synchronize so we can achieve this with static condition
+ * and statix mutex */
 pthread_mutex_t tasks_in_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t tasks_out_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
@@ -55,27 +56,29 @@ pthread_mutex_t executed_operation_id_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* Logic thread update to here what is executed operation ID */
 uint64_t executed_operation_id;
 
-/* Not creating own message queue for response messages, because only one message can be
- * at time. So only one response message can be received */
+/* Not creating own message queue for response messages, because only one
+ * message can be at time. So only one response message can be received */
 void *response_msg;
 
 /* Interface TA funcitons */
 struct ta_interface *interface;
 
-/* Use eventfd to notify the io_thread that the TA thread has finished processing a task */
+/* Use eventfd to notify the io_thread that the TA thread has finished
+ * processing a task */
 int event_fd;
 
-/* Graceful is an extra and in normal operation this is obsolite. This is for debuging.
- * Graceful termination is working after create entry point call! If TA is failing to set up
- * framework, resources is not released by this process. */
+/* Graceful is an extra and in normal operation this is obsolite. This is for
+ * debuging. Graceful termination is working after create entry point call! If
+ * TA is failing to set up framework, resources is not released by this process.
+ */
 #ifdef GRACEFUL_TERMINATION
-	/* Logic thread will signal throug termination_fd to io thread that destroy entry point has
-	 * been executed and this process need to be clean up */
-	int termination_fd;
+/* Logic thread will signal throug termination_fd to io thread that destroy
+ * entry point has been executed and this process need to be clean up */
+int termination_fd;
 
-	/* Variable is storing exit value. Logic thread is deciding exit value and this is
-	 * used by IO thread when it is cleaned up all resources */
-	int graceful_exit_value;
+/* Variable is storing exit value. Logic thread is deciding exit value and this
+ * is used by IO thread when it is cleaned up all resources */
+int graceful_exit_value;
 #endif
 
 /* These are for tasks received from the caller going to the TA */
@@ -102,7 +105,8 @@ static void clear_queues()
 	/* Done Queue */
 	if (!list_is_empty(&tasks_out_list)) {
 
-		LIST_FOR_EACH_SAFE(pos, la, &tasks_out_list) {
+		LIST_FOR_EACH_SAFE(pos, la, &tasks_out_list)
+		{
 			queue_task = LIST_ENTRY(pos, struct ta_task, list);
 			list_unlink(&queue_task->list);
 			free_task(queue_task);
@@ -112,7 +116,8 @@ static void clear_queues()
 	/* Todo queue */
 	if (!list_is_empty(&tasks_in_list)) {
 
-		LIST_FOR_EACH_SAFE(pos, la, &tasks_in_list) {
+		LIST_FOR_EACH_SAFE(pos, la, &tasks_in_list)
+		{
 			queue_task = LIST_ENTRY(pos, struct ta_task, list);
 			list_unlink(&queue_task->list);
 			free_task(queue_task);
@@ -164,16 +169,17 @@ int ta_process_loop(void *arg)
 		exit(TA_EXIT_LAUNCH_FAILED);
 	}
 
-	/* Note: All signal are blocked. Prepare allow set when we can accept signals */
+	/* Note: All signal are blocked. Prepare allow set when we can accept signals
+	 */
 	if (sigemptyset(&sig_empty_set)) {
 		OT_LOG(LOG_ERR, "Sigempty set failed: %s", strerror(errno));
 		exit(TA_EXIT_LAUNCH_FAILED);
 	}
 
 	/* create an eventfd, that will allow the writer to increment the count by 1
-	 * for each new event, and the reader to decrement by 1 each time, this will allow the
-	 * reader to be notified for each new event, as opposed to being notified just once that
-	 * there are "event(s)" pending*/
+	 * for each new event, and the reader to decrement by 1 each time, this will
+	 * allow the reader to be notified for each new event, as opposed to being
+	 * notified just once that there are "event(s)" pending*/
 	event_fd = eventfd(0, EFD_SEMAPHORE);
 	if (event_fd == -1) {
 		OT_LOG(LOG_ERR, "Failed to initialize eventfd");
@@ -220,9 +226,9 @@ int ta_process_loop(void *arg)
 		exit(TA_EXIT_LAUNCH_FAILED);
 	}
 
-	/* limitation: CA can not determ if TA is launched or not, because framework is calling
-	 * create entry point and open session function. Those functions return values is mapped
-	 * into one return value. */
+	/* limitation: CA can not determ if TA is launched or not, because framework
+	 * is calling create entry point and open session function. Those functions
+	 * return values is mapped into one return value. */
 
 	/* Launch worker thread and pass open session message as a parameter */
 	ret = pthread_create(&ta_logic_thread, &attr, ta_internal_thread, open_msg);
@@ -288,7 +294,8 @@ termination:
 	/* Remove all messages from queues */
 	clear_queues();
 
-	/* Assuming that mutex will be destroyed. If not, this process will be terminated anyway */
+	/* Assuming that mutex will be destroyed. If not, this process will be
+	 * terminated anyway */
 	pthread_mutex_destroy(&tasks_in_list_mutex);
 	pthread_mutex_destroy(&tasks_out_list_mutex);
 	pthread_mutex_destroy(&block_internal_thread_mutex);

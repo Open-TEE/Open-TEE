@@ -15,9 +15,9 @@
 *****************************************************************************/
 
 #include "tee_memory.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 static void *instance_data;
 
@@ -41,9 +41,9 @@ TEE_Result TEE_CheckMemoryAccessRights(uint32_t accessFlags, void *buf, size_t s
 		return TEEC_ERROR_ITEM_NOT_FOUND;
 
 	while (getline(&line, &dummy, fd) != -1) {
-		/* Ensure that we can read the first 3 elements of the line and that the address
-		 * that we are searching for falls with in the memory region define by the first
-		 * 2 paramaters
+		/* Ensure that we can read the first 3 elements of the line and that the
+		 * address that we are searching for falls with in the memory region define
+		 * by the first 2 paramaters
 		 */
 		if (sscanf(line, "%lx-%lx %4s", &region_start, &region_end, perms) != 3 ||
 		    !((uintptr_t)buf < region_end && region_start <= (uintptr_t)buf)) {
@@ -59,11 +59,10 @@ TEE_Result TEE_CheckMemoryAccessRights(uint32_t accessFlags, void *buf, size_t s
 		if (perms[3] == 's')
 			shared = TEE_MEMORY_ACCESS_ANY_OWNER;
 
-		/* if we have a shared memory address then we must be allowed to access it based
-		 * on the accessFlags. Section 4.11.1 defines the following as the logic for this:
-		 *         Allowed                  Shared Lib                    Result
-		 *           true                      true                         Allowed
-		 *           false                     true                         Denied
+		/* if we have a shared memory address then we must be allowed to access it
+		 * based on the accessFlags. Section 4.11.1 defines the following as the
+		 * logic for this: Allowed                  Shared Lib Result true true
+		 * Allowed false                     true                         Denied
 		 *           true                      false (local mem address)    Allowed
 		 *           false                     false (      "          )    Allowed
 		 */
@@ -77,15 +76,9 @@ TEE_Result TEE_CheckMemoryAccessRights(uint32_t accessFlags, void *buf, size_t s
 	return (mem_perms == accessFlags) ? TEEC_SUCCESS : TEEC_ERROR_ACCESS_DENIED;
 }
 
-void TEE_SetInstanceData(void *instanceData)
-{
-	instance_data = instanceData;
-}
+void TEE_SetInstanceData(void *instanceData) { instance_data = instanceData; }
 
-void *TEE_GetInstanceData()
-{
-	return instance_data;
-}
+void *TEE_GetInstanceData() { return instance_data; }
 
 void *TEE_Malloc(size_t size, uint32_t hint)
 {
@@ -93,27 +86,19 @@ void *TEE_Malloc(size_t size, uint32_t hint)
 	return calloc(size, sizeof(uint8_t));
 }
 
-void *TEE_Realloc(void *buffer, uint32_t newSize) // TODO HMM the newSize should be size_t
+void *TEE_Realloc(void *buffer,
+		  uint32_t newSize) // TODO HMM the newSize should be size_t
 {
 	return realloc(buffer, newSize);
 }
 
-void TEE_Free(void *buffer)
-{
-	free(buffer);
-}
+void TEE_Free(void *buffer) { free(buffer); }
 
-void TEE_MemMove(void *dest, void *src, uint32_t size)
-{
-	memmove(dest, src, size);
-}
+void TEE_MemMove(void *dest, void *src, uint32_t size) { memmove(dest, src, size); }
 
 int32_t TEE_MemCompare(void *buffer1, void *buffer2, uint32_t size)
 {
 	return memcmp(buffer1, buffer2, size);
 }
 
-void TEE_MemFill(void *buffer, uint32_t x, uint32_t size)
-{
-	memset(buffer, x, size);
-}
+void TEE_MemFill(void *buffer, uint32_t x, uint32_t size) { memset(buffer, x, size); }

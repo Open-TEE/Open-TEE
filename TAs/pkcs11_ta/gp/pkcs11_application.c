@@ -19,15 +19,15 @@
 *****************************************************************************/
 
 #include "pkcs11_application.h"
-#include "token_conf.h"
 #include "compat.h"
+#include "cryptoki.h"
 #include "pkcs11_session.h"
 #include "slot_token.h"
 #include "tee_list.h"
-#include "cryptoki.h"
+#include "token_conf.h"
 
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #define PUBLIC_USER 0xFF
 
@@ -43,7 +43,8 @@ static struct application app_pool[MAX_APPS];
 
 /*!
  * \brief calculate_state
- * determine the state of a session based on the logged in status and requested flags
+ * determine the state of a session based on the logged in status and requested
+ * flags
  * \param user The currently logged in user
  * \param flags The flags of the session (RW or RO)
  * \return
@@ -74,7 +75,8 @@ CK_RV initialize_apps()
 CK_RV allocate_application(struct application **new_app, uint64_t *nonce)
 {
 	int i;
-	/* this is a filthy hack should be replaced with a proper nonce generation routine */
+	/* this is a filthy hack should be replaced with a proper nonce generation
+	 * routine */
 	static uint64_t base_nonce = 11223344556677;
 
 	if (new_app == NULL || nonce == NULL)
@@ -167,7 +169,8 @@ void app_check_login_status(struct application *app)
 			return;
 	}
 
-	/* If we get here then there are currently no open sessions so we fallback to public mode */
+	/* If we get here then there are currently no open sessions so we fallback to
+	 * public mode */
 	app->user = PUBLIC_USER;
 }
 
@@ -191,16 +194,15 @@ CK_RV application_set_logged_in(struct application *app, CK_USER_TYPE user_type)
 	if (app == NULL)
 		return CKR_ARGUMENTS_BAD;
 
-	/* TODO check all the possible configurations for logging, what SO and USER combinations
-	 * are allowed
+	/* TODO check all the possible configurations for logging, what SO and USER
+	 * combinations are allowed
 	 */
 	app->user = user_type;
 
 	for (i = 0; i < MAX_SESSIONS; i++) {
 		if (app->sessions[i].is_initialized == true) {
 			app->sessions[i].sessionInfo.state =
-					calculate_state(user_type,
-							app->sessions[i].sessionInfo.flags);
+			    calculate_state(user_type, app->sessions[i].sessionInfo.flags);
 		}
 	}
 
@@ -224,8 +226,7 @@ void application_set_logout(struct application *app)
 	}
 }
 
-CK_RV is_session_logged_in(struct application *app,
-			   uint32_t session_id)
+CK_RV is_session_logged_in(struct application *app, uint32_t session_id)
 {
 	struct pkcs11_session *session;
 	CK_RV ck_rv;

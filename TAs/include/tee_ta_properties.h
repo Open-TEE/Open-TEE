@@ -22,26 +22,26 @@
  *
  * Example:
  * SET_TA_PROPERTIES({ 0x3E93632E, 0xA710, 0x469E,  \
- *        { 0xAC, 0xC8, 0x5E, 0xDF, 0x8C, 0x85, 0x90, 0xE1 } }, 512, 255, 1, 1, 1)
+ *        { 0xAC, 0xC8, 0x5E, 0xDF, 0x8C, 0x85, 0x90, 0xE1 } }, 512, 255, 1, 1,
+ * 1)
  */
 
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "tee_shared_data_types.h"
 
 #define PROPERTY_SEC_NAME ".ta_properties"
 
 #define SET_TA_PROPERTIES(...)                                                                     \
-	struct gpd_ta_config ta_pro __attribute__((section(PROPERTY_SEC_NAME))) = { __VA_ARGS__ };
+	struct gpd_ta_config ta_pro __attribute__((section(PROPERTY_SEC_NAME))) = {__VA_ARGS__};
 
 /*!
-* \brief The gpd_ta_config struct
-* This structure defines the Standard Configuration Properties of an applet as outlined in
-* table 4-11 of the Internal API spec
-*/
-struct gpd_ta_config
-{
+ * \brief The gpd_ta_config struct
+ * This structure defines the Standard Configuration Properties of an applet as
+ * outlined in table 4-11 of the Internal API spec
+ */
+struct gpd_ta_config {
 	TEE_UUID appID;
 	size_t dataSize;
 	size_t stackSize;

@@ -38,9 +38,8 @@ struct arguments {
 #endif
 #endif
 
-#define DEFAULT_ARGUMENTS {.foreground = false, \
-			   .config_file = DEFAULT_CONFIG_FILE, \
-			   .pid_dir = DEFAULT_PID_FILE}
+#define DEFAULT_ARGUMENTS                                                                          \
+	{.foreground = false, .config_file = DEFAULT_CONFIG_FILE, .pid_dir = DEFAULT_PID_FILE}
 
 void args_parse(int argc, char **argv, struct arguments *args);
 

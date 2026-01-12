@@ -14,12 +14,12 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include <libelf.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <unistd.h>
 #include <fcntl.h>
+#include <libelf.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "elf_read.h"
 #include "tee_logging.h"
@@ -59,7 +59,6 @@ bool get_data_from_elf(const char *elf_file, const char *sec_name, void *buf, si
 
 	if (elf_kind(file) != ELF_K_ELF)
 		goto end; /* No error message, this might cause log fill */
-
 
 	if (elf_getshdrstrndx(file, &shstrndx) != 0) {
 		OT_LOG(LOG_ERR, "elf getshdrstrndx : %s", elf_errmsg(elf_errno()));

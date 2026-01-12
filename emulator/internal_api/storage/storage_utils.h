@@ -22,15 +22,16 @@
 
 #include <stdio.h>
 
+#include "crypto/operation_handle.h"
 #include "tee_data_types.h"
 #include "tee_storage_api.h"
-#include "crypto/operation_handle.h"
 
 #define BITS2BYTE(bits) ((bits + 7) / 8)
 #define BYTE2BITS(bits) ((bits) * 8)
 
-//TODO: Move this to manager
-//#define TEE_MAX_DATA_SIZE (TEE_DATA_MAX_POSITION - sizeof(struct ss_object_meta_info))
+// TODO: Move this to manager
+// #define TEE_MAX_DATA_SIZE (TEE_DATA_MAX_POSITION - sizeof(struct
+// ss_object_meta_info))
 #define TEE_MAX_DATA_SIZE TEE_DATA_MAX_POSITION
 
 int keysize_in_bytes(uint32_t key_in_bits);
@@ -51,8 +52,6 @@ void free_object_handle(TEE_ObjectHandle object);
 
 void close_persistan_object(void *objectID, uint32_t objectIDLen);
 
-TEE_Attribute *get_attr_from_attrArr(uint32_t ID,
-				     TEE_Attribute *attrs,
-				     uint32_t attrCount);
+TEE_Attribute *get_attr_from_attrArr(uint32_t ID, TEE_Attribute *attrs, uint32_t attrCount);
 
 #endif /* __STORAGE_UTILS_H__ */

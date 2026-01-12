@@ -23,9 +23,9 @@ struct __TEE_ObjectEnumHandle {
 	uint32_t ID;
 };
 
+#include "com_protocol.h"
 #include "tee_data_types.h"
 #include "tee_storage_api.h"
-#include "com_protocol.h"
 
 /* ta to manager commands */
 
@@ -49,8 +49,6 @@ struct __TEE_ObjectEnumHandle {
 #define COM_MGR_CMD_ID_SEEK_OBJ_DATA 0x0E
 
 #define COM_MGR_CMD_ID_WRITE_CREATE_INIT_DATA 0x0F
-
-
 
 struct com_mrg_open_persistent {
 	uint32_t storageID;
@@ -105,8 +103,9 @@ struct com_mrg_enum_command_next {
  *
  * commandID - command to manager
  * payload - data to pass to command
- * returnPayload - if payload is returned, caller of this function need to free returnPayload->data
- * returnOrigin - error status from the command executed by manager
+ * returnPayload - if payload is returned, caller of this function need to free
+ * returnPayload->data returnOrigin - error status from the command executed by
+ * manager
  */
 
 TEE_Result TEE_InvokeMGRCommand(uint32_t cancellationRequestTimeout, uint32_t commandID,

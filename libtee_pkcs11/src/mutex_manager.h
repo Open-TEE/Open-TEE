@@ -21,15 +21,14 @@
 
 /*!
  * \brief init_mutex_callbacks
- * If the calling application wishes to register it's own callbacks we must register and store them
+ * If the calling application wishes to register it's own callbacks we must
+ * register and store them
  * \param create [IN] The callback to create a mutex
  * \param destroy [IN] The callback to destroy a mutex
  * \param lock [IN] The callback to aquire the mutex
  * \param unlock [IN] The callback to release the mutex
  */
-void init_mutex_callbacks(CK_CREATEMUTEX create,
-			  CK_DESTROYMUTEX destroy,
-			  CK_LOCKMUTEX lock,
+void init_mutex_callbacks(CK_CREATEMUTEX create, CK_DESTROYMUTEX destroy, CK_LOCKMUTEX lock,
 			  CK_UNLOCKMUTEX unlock);
 
 /*!

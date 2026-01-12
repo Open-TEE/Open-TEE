@@ -26,4 +26,3 @@
 int TEE_StrLen(const char *s);
 
 #endif // COMPAT_H
-

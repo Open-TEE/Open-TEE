@@ -14,16 +14,15 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/sysinfo.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/sysinfo.h>
 
 #ifdef ANDROID
 #include <cutils/ashmem.h>
@@ -36,10 +35,11 @@
 #include "tee_logging.h"
 
 /*!
- * \brief generate_random_path Generate a path, that can be used for a shared memory path
- * Memory for the path will be allocated in this function but it is the callers responsibility
- * to free the memory when finished.
- * \param name [OUT] the path that is created by this function, need to be atleast SHM_MEM_NAME_LEN
+ * \brief generate_random_path Generate a path, that can be used for a shared
+ * memory path Memory for the path will be allocated in this function but it is
+ * the callers responsibility to free the memory when finished.
+ * \param name [OUT] the path that is created by this function, need to be
+ * atleast SHM_MEM_NAME_LEN
  * \return 0 on success, 1 in case of error
  */
 static int generate_random_path(char *name)
@@ -51,12 +51,12 @@ static int generate_random_path(char *name)
 	clock_gettime(CLOCK_BOOTTIME, &boottime);
 	clock_gettime(CLOCK_REALTIME, &realtime);
 
-	memset(name, 't', SHM_MEM_NAME_LEN-1);
+	memset(name, 't', SHM_MEM_NAME_LEN - 1);
 	name[0] = '/';
-	name[SHM_MEM_NAME_LEN-1] = 0;
-	sprintf(name+1, "%llu", (unsigned long long)boottime.tv_sec);
-	sprintf(name+15, "%llu", (unsigned long long)realtime.tv_nsec);
-	sprintf(name+30, "%llu", (unsigned long long)realtime.tv_sec);
+	name[SHM_MEM_NAME_LEN - 1] = 0;
+	sprintf(name + 1, "%llu", (unsigned long long)boottime.tv_sec);
+	sprintf(name + 15, "%llu", (unsigned long long)realtime.tv_nsec);
+	sprintf(name + 30, "%llu", (unsigned long long)realtime.tv_sec);
 
 	/* strip null characters back to t , except terminating */
 	while (n--) {
@@ -66,7 +66,6 @@ static int generate_random_path(char *name)
 
 	return 0;
 }
-
 
 void open_shm_region(struct manager_msg *man_msg)
 {
@@ -100,7 +99,8 @@ void open_shm_region(struct manager_msg *man_msg)
 		goto err_1;
 	}
 
-	/* Store shm uuid to manager. This will be needed if CA/TA process crashes unexpectedly */
+	/* Store shm uuid to manager. This will be needed if CA/TA process crashes
+	 * unexpectedly */
 	memcpy(new_shm->name, open_shm->name, SHM_MEM_NAME_LEN);
 	new_shm->size = open_shm->size;
 
@@ -129,7 +129,8 @@ void open_shm_region(struct manager_msg *man_msg)
 
 #endif /* not ANDROID */
 
-	/* We have finished with the file handle as it has been mapped so don't leak it */
+	/* We have finished with the file handle as it has been mapped so don't leak
+	 * it */
 	list_add_after(&new_shm->list, &man_msg->proc->shm_mem.list);
 	open_shm->msg_hdr.shareable_fd[0] = fd;
 	open_shm->msg_hdr.shareable_fd_count = 1;
@@ -156,7 +157,8 @@ void unlink_shm_region(struct manager_msg *man_msg)
 	struct proc_shm_mem *shm_entry;
 	struct list_head *pos, *la;
 
-	LIST_FOR_EACH_SAFE(pos, la, &man_msg->proc->shm_mem.list) {
+	LIST_FOR_EACH_SAFE(pos, la, &man_msg->proc->shm_mem.list)
+	{
 
 		shm_entry = LIST_ENTRY(pos, struct proc_shm_mem, list);
 		if (!strncmp(shm_entry->name, unlink_shm->name, SHM_MEM_NAME_LEN)) {
@@ -176,7 +178,8 @@ void unlink_all_shm_region(proc_t proc)
 	struct proc_shm_mem *shm_entry;
 	struct list_head *pos, *la;
 
-	LIST_FOR_EACH_SAFE(pos, la, &proc->shm_mem.list) {
+	LIST_FOR_EACH_SAFE(pos, la, &proc->shm_mem.list)
+	{
 		shm_entry = LIST_ENTRY(pos, struct proc_shm_mem, list);
 		list_unlink(&shm_entry->list);
 		close(shm_entry->fd);

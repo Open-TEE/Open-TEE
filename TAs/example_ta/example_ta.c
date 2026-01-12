@@ -6,16 +6,9 @@
 
 #include "tee_internal_api.h"
 
+TEE_Result TA_EXPORT TA_CreateEntryPoint(void) { return TEE_SUCCESS; }
 
-TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
-{
-	return TEE_SUCCESS;
-}
-
-void TA_EXPORT TA_DestroyEntryPoint(void)
-{
-
-}
+void TA_EXPORT TA_DestroyEntryPoint(void) {}
 
 TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes, TEE_Param params[4],
 					      void **sessionContext)
@@ -27,10 +20,7 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes, TEE_Param par
 	return TEE_SUCCESS;
 }
 
-void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
-{
-	sessionContext = sessionContext;
-}
+void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext) { sessionContext = sessionContext; }
 
 TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t commandID,
 						uint32_t paramTypes, TEE_Param params[4])

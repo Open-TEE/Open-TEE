@@ -24,8 +24,10 @@ typedef int (*main_loop_cb)(struct core_control *control_paramaters);
 /*!
  * \brief lib_main_loop
  * This is the main processing loop of the library that is being loaded.
- * \param control_paramaters Paramaters that define the running of the core processes
- * \return This function should never return unless a major error occurs, and then -1.
+ * \param control_paramaters Paramaters that define the running of the core
+ * processes
+ * \return This function should never return unless a major error occurs, and
+ * then -1.
  */
 int lib_main_loop(struct core_control *control_paramaters);
 

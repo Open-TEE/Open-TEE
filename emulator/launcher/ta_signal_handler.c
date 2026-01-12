@@ -14,8 +14,8 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include <signal.h>
 #include "ta_signal_handler.h"
+#include <signal.h>
 
 void ta_signal_handler(struct core_control *control_params)
 {

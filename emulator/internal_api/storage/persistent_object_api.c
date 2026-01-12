@@ -23,13 +23,13 @@
 #include <unistd.h>
 
 #include "crypto/operation_handle.h"
-#include "opentee_internal_api.h"
-#include "tee_time_api.h"
-#include "tee_panic.h"
-#include "tee_storage_api.h"
 #include "object_handle.h"
+#include "opentee_internal_api.h"
 #include "storage_utils.h"
 #include "tee_logging.h"
+#include "tee_panic.h"
+#include "tee_storage_api.h"
+#include "tee_time_api.h"
 
 static void inc_offset(unsigned char **mem_in, size_t offset)
 {
@@ -40,28 +40,27 @@ static void inc_offset(unsigned char **mem_in, size_t offset)
 
 static size_t memcpy_ret_n(void *dest, void *src, size_t n)
 {
-	if (dest != NULL){
+	if (dest != NULL) {
 		memcpy(dest, src, n);
 	}
 
 	return n;
 }
 
-static TEE_Result deserialize_gp_attribute(unsigned char *mem_in,
-					   struct gp_attributes *attributes)
+static TEE_Result deserialize_gp_attribute(unsigned char *mem_in, struct gp_attributes *attributes)
 {
 	uint32_t n = 0;
 	TEE_Attribute attr = {0};
 
-	//Counter part: serialize_gp_attribute
+	// Counter part: serialize_gp_attribute
 
-	//Function will malloc gp_attribute buffers.
-	//NOTE!!! NOT GP COMPLIENT. Buffer sizes are not maxObjectSizes!
+	// Function will malloc gp_attribute buffers.
+	// NOTE!!! NOT GP COMPLIENT. Buffer sizes are not maxObjectSizes!
 
 	if (attributes == NULL && mem_in == NULL) {
 		return TEE_SUCCESS;
 	}
-	
+
 	memcpy_ret_n(&attributes->attrs_count, mem_in, sizeof(attributes->attrs_count));
 	mem_in += sizeof(attributes->attrs_count);
 
@@ -77,60 +76,63 @@ static TEE_Result deserialize_gp_attribute(unsigned char *mem_in,
 	for (n = 0; n < attributes->attrs_count; ++n) {
 		memcpy_ret_n(&attributes->attrs[n].attributeID, mem_in, sizeof(attr.attributeID));
 		mem_in += sizeof(attr.attributeID);
-		
+
 		if (is_value_attribute(attr.attributeID)) {
-			memcpy_ret_n(&attributes->attrs[n].content.value.a, mem_in, sizeof(attr.content.value.a));
+			memcpy_ret_n(&attributes->attrs[n].content.value.a, mem_in,
+				     sizeof(attr.content.value.a));
 			mem_in += sizeof(attr.content.value.a);
 
-			memcpy_ret_n(&attributes->attrs[n].content.value.b, mem_in, sizeof(attr.content.value.b));
+			memcpy_ret_n(&attributes->attrs[n].content.value.b, mem_in,
+				     sizeof(attr.content.value.b));
 			mem_in += sizeof(attr.content.value.b);
 		} else {
-			memcpy_ret_n(&attributes->attrs[n].content.ref.length, mem_in, sizeof(attr.content.ref.length));
+			memcpy_ret_n(&attributes->attrs[n].content.ref.length, mem_in,
+				     sizeof(attr.content.ref.length));
 			mem_in += sizeof(attr.content.ref.length);
 
-			attributes->attrs[n].content.ref.buffer = calloc(1, attributes->attrs[n].content.ref.length);
+			attributes->attrs[n].content.ref.buffer =
+			    calloc(1, attributes->attrs[n].content.ref.length);
 			if (attributes->attrs[n].content.ref.buffer == NULL) {
 				goto err;
 			}
 
-			memcpy_ret_n(attributes->attrs[n].content.ref.buffer,
-				     mem_in, attributes->attrs[n].content.ref.length);
+			memcpy_ret_n(attributes->attrs[n].content.ref.buffer, mem_in,
+				     attributes->attrs[n].content.ref.length);
 			mem_in += attributes->attrs[n].content.ref.length;
 		}
 	}
 
 	return TEE_SUCCESS;
- err:
+err:
 	free_gp_attributes(attributes);
 	return TEE_ERROR_OUT_OF_MEMORY;
 }
 
-static size_t serialize_gp_attribute(struct gp_attributes *attributes,
-				     unsigned char *mem_in)
+static size_t serialize_gp_attribute(struct gp_attributes *attributes, unsigned char *mem_in)
 {
 	TEE_Attribute *attr = NULL;
 	uint32_t n = 0;
 	size_t offset = 0;
 
-	//If mem_in is NULL, functio serialization size
-	//Note: using offset variable rather pointer arithmetic.
+	// If mem_in is NULL, functio serialization size
+	// Note: using offset variable rather pointer arithmetic.
 
-	//Strategy
+	// Strategy
 	//
-	// What (size of what)
-	//################################
-	//# attr count (sizeof)
-	//#---------------------------------
-	//# attrID     (sizeof)
-	//#----------------------------------
-	//# (if VALUE     else REF
-	//#  a (sizeof)    |  lenght (sizeof)
-	//#-----------------------
-	//#  b (sizeof)    |  buffer (lenght)
-	//#-----------------------------------
-	//# attrID.. (as many as attr count)
-	//#--...
-	
+	//  What (size of what)
+	// ################################
+	// # attr count (sizeof)
+	// #---------------------------------
+	// # attrID     (sizeof)
+	// #----------------------------------
+	// # (if VALUE     else REF
+	// #  a (sizeof)    |  lenght (sizeof)
+	// #-----------------------
+	// #  b (sizeof)    |  buffer (lenght)
+	// #-----------------------------------
+	// # attrID.. (as many as attr count)
+	// #--...
+
 	if (attributes == NULL) {
 		return offset;
 	}
@@ -141,7 +143,7 @@ static size_t serialize_gp_attribute(struct gp_attributes *attributes,
 
 	offset += memcpy_ret_n(mem_in, &attributes->attrs_count, sizeof(attributes->attrs_count));
 	inc_offset(&mem_in, sizeof(attributes->attrs_count));
-	
+
 	for (n = 0; n < attributes->attrs_count; ++n) {
 
 		attr = &attributes->attrs[n];
@@ -150,16 +152,20 @@ static size_t serialize_gp_attribute(struct gp_attributes *attributes,
 		inc_offset(&mem_in, sizeof(attributes->attrs_count));
 
 		if (is_value_attribute(attr->attributeID)) {
-			offset += memcpy_ret_n(mem_in, &attr->content.value.a, sizeof(attr->content.value.a));
+			offset += memcpy_ret_n(mem_in, &attr->content.value.a,
+					       sizeof(attr->content.value.a));
 			inc_offset(&mem_in, sizeof(attr->content.value.a));
 
-			offset += memcpy_ret_n(mem_in, &attr->content.value.b, sizeof(attr->content.value.b));
+			offset += memcpy_ret_n(mem_in, &attr->content.value.b,
+					       sizeof(attr->content.value.b));
 			inc_offset(&mem_in, sizeof(attr->content.value.b));
 		} else {
-			offset += memcpy_ret_n(mem_in, &attr->content.ref.length, sizeof(attr->content.ref.length));
+			offset += memcpy_ret_n(mem_in, &attr->content.ref.length,
+					       sizeof(attr->content.ref.length));
 			inc_offset(&mem_in, sizeof(attr->content.ref.length));
 
-			offset += memcpy_ret_n(mem_in, attr->content.ref.buffer, attr->content.ref.length);
+			offset += memcpy_ret_n(mem_in, attr->content.ref.buffer,
+					       attr->content.ref.length);
 			inc_offset(&mem_in, attr->content.ref.length);
 		}
 	}
@@ -168,8 +174,7 @@ static size_t serialize_gp_attribute(struct gp_attributes *attributes,
 }
 
 static TEE_Result create_persistent_handle(TEE_ObjectHandle *new_object,
-					   TEE_ObjectHandle attributes,
-					   uint32_t flags)
+					   TEE_ObjectHandle attributes, uint32_t flags)
 {
 	uint32_t objectType = TEE_TYPE_DATA, maxObjectSize = 0;
 	TEE_Result ret;
@@ -186,20 +191,21 @@ static TEE_Result create_persistent_handle(TEE_ObjectHandle *new_object,
 
 	if (attributes) {
 
-		ret = TEE_PopulateTransientObject(*new_object,
-						  attributes->key->gp_attrs.attrs,
+		ret = TEE_PopulateTransientObject(*new_object, attributes->key->gp_attrs.attrs,
 						  attributes->key->gp_attrs.attrs_count);
 		if (ret != TEE_SUCCESS) {
 			goto err;
 		}
 	}
 
-	/* Void operations like ss_file to new object. Change object to persisten object */
+	/* Void operations like ss_file to new object. Change object to persisten
+	 * object */
 	if (attributes) {
 		(*new_object)->objectInfo.objectUsage = attributes->objectInfo.objectUsage;
 	}
 
-	(*new_object)->objectInfo.handleFlags |= (TEE_HANDLE_FLAG_PERSISTENT | TEE_HANDLE_FLAG_INITIALIZED | flags);
+	(*new_object)->objectInfo.handleFlags |=
+	    (TEE_HANDLE_FLAG_PERSISTENT | TEE_HANDLE_FLAG_INITIALIZED | flags);
 
 	return TEE_SUCCESS;
 
@@ -209,29 +215,29 @@ err:
 	return ret;
 }
 
-TEE_Result TEE_OpenPersistentObject(uint32_t storageID,
-				    void *objectID,
-				    size_t objectIDLen,
-				    uint32_t flags,
-				    TEE_ObjectHandle *object)
+TEE_Result TEE_OpenPersistentObject(uint32_t storageID, void *objectID, size_t objectIDLen,
+				    uint32_t flags, TEE_ObjectHandle *object)
 {
 	struct com_mrg_open_persistent *retOpenParams = NULL;
 	struct com_mgr_invoke_cmd_payload payload = {}, returnPayload = {};
 	TEE_ObjectHandle new_object = (TEE_ObjectHandle)NULL;
 	struct gp_attributes ss_file_gp_attributes = {0};
 	TEE_Result ret = TEE_SUCCESS;
-	
+
 	if (object == NULL || objectID == NULL || objectIDLen > TEE_OBJECT_ID_MAX_LEN) {
-		OT_LOG_ERR("TEE_OpenPersistentObject: Object null OR objectID null OR objectIDLen too big\n");
+		OT_LOG_ERR("TEE_OpenPersistentObject: Object null OR objectID null OR "
+			   "objectIDLen too big\n");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
 
 	if (storageID != TEE_STORAGE_PRIVATE) {
-		OT_LOG_ERR("TEE_OpenPersistentObject: Only supported storageID is TEE_STORAGE_PRIVATE\n");
+		OT_LOG_ERR("TEE_OpenPersistentObject: Only supported storageID is "
+			   "TEE_STORAGE_PRIVATE\n");
 		return TEE_ERROR_ITEM_NOT_FOUND;
 	}
 
-	/* Open object from storage to get the object info. Then we know object type */
+	/* Open object from storage to get the object info. Then we know object type
+	 */
 	payload.size = sizeof(struct com_mrg_open_persistent);
 	payload.data = calloc(1, payload.size);
 
@@ -244,11 +250,11 @@ TEE_Result TEE_OpenPersistentObject(uint32_t storageID,
 	((struct com_mrg_open_persistent *)payload.data)->storageID = storageID;
 	((struct com_mrg_open_persistent *)payload.data)->flags = flags;
 	((struct com_mrg_open_persistent *)payload.data)->objectIDLen = objectIDLen;
-	memcpy(&((struct com_mrg_open_persistent *)payload.data)->objectID, (uint8_t *)objectID, objectIDLen);
+	memcpy(&((struct com_mrg_open_persistent *)payload.data)->objectID, (uint8_t *)objectID,
+	       objectIDLen);
 
-	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE,
-				   COM_MGR_CMD_ID_OPEN_PERSISTENT,
-				   &payload, &returnPayload);
+	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_OPEN_PERSISTENT, &payload,
+				   &returnPayload);
 	if (ret != TEE_SUCCESS) {
 		goto out;
 	}
@@ -264,20 +270,20 @@ TEE_Result TEE_OpenPersistentObject(uint32_t storageID,
 
 	/* Might be a data object */
 	if (retOpenParams->attrsSize > 0) {
-		
-		if (TEE_SUCCESS != deserialize_gp_attribute((uint8_t *)returnPayload.data +
-							    sizeof(struct com_mrg_open_persistent),
-							    &ss_file_gp_attributes)) {
+
+		if (TEE_SUCCESS !=
+		    deserialize_gp_attribute((uint8_t *)returnPayload.data +
+						 sizeof(struct com_mrg_open_persistent),
+					     &ss_file_gp_attributes)) {
 			goto err;
 		}
 
 		// Function copies attributes to object buffers.
-		ret = TEE_PopulateTransientObject(new_object,
-						  ss_file_gp_attributes.attrs,
+		ret = TEE_PopulateTransientObject(new_object, ss_file_gp_attributes.attrs,
 						  ss_file_gp_attributes.attrs_count);
 
-		//Need to free due error handling simplicity.
-		//Alloc done in deserialize_gp_attribute
+		// Need to free due error handling simplicity.
+		// Alloc done in deserialize_gp_attribute
 		free_gp_attributes(&ss_file_gp_attributes);
 
 		if (ret != TEE_SUCCESS) {
@@ -286,30 +292,27 @@ TEE_Result TEE_OpenPersistentObject(uint32_t storageID,
 		}
 	}
 
-	memcpy(&new_object->per_object, &retOpenParams->per_object, sizeof(struct persistant_object));
+	memcpy(&new_object->per_object, &retOpenParams->per_object,
+	       sizeof(struct persistant_object));
 	memcpy(&new_object->objectInfo, &retOpenParams->info, sizeof(TEE_ObjectInfo));
 
 	*object = new_object;
 	goto out;
 
- err:
+err:
 	close_persistan_object(objectID, objectIDLen);
 	free_object_handle(new_object);
 	*object = NULL;
- out:
+out:
 	free(payload.data);
 	free(returnPayload.data);
 
 	return ret;
 }
 
-TEE_Result TEE_CreatePersistentObject(uint32_t storageID,
-				      void *objectID,
-				      size_t objectIDLen,
-				      uint32_t flags,
-				      TEE_ObjectHandle attributes,
-				      void *initialData,
-				      uint32_t initialDataLen,
+TEE_Result TEE_CreatePersistentObject(uint32_t storageID, void *objectID, size_t objectIDLen,
+				      uint32_t flags, TEE_ObjectHandle attributes,
+				      void *initialData, uint32_t initialDataLen,
 				      TEE_ObjectHandle *object)
 {
 	/* serialize to manager */
@@ -319,7 +322,7 @@ TEE_Result TEE_CreatePersistentObject(uint32_t storageID,
 	TEE_ObjectHandle tempHandle = NULL;
 	TEE_Result ret = TEE_SUCCESS;
 	uint8_t *mem_write_start = NULL;
-	
+
 	if (storageID != TEE_STORAGE_PRIVATE) {
 		OT_LOG_ERR("Only supported storageID is TEE_STORAGE_PRIVATE\n");
 		return TEE_ERROR_ITEM_NOT_FOUND;
@@ -328,116 +331,122 @@ TEE_Result TEE_CreatePersistentObject(uint32_t storageID,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-        /* Only vital checks */
-        if (objectID == NULL) {
-                OT_LOG_ERR("Panicking due objectID is NULL");
-                TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
-        } else if (objectIDLen > TEE_OBJECT_ID_MAX_LEN) {
-                OT_LOG_ERR("Panicking due objectID len too big");
-                TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
-        } else if (attributes && !(attributes->objectInfo.handleFlags & TEE_HANDLE_FLAG_INITIALIZED)) {
-                OT_LOG_ERR("Panicking due object not initilized");
-                TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
-        } else if (attributes && (attributes->objectInfo.objectType == TEE_TYPE_CORRUPTED_OBJECT)) {
-                OT_LOG_ERR("Panicking due object corrupted");
-                TEE_Panic(TEE_ERROR_BAD_PARAMETERS);	
+	/* Only vital checks */
+	if (objectID == NULL) {
+		OT_LOG_ERR("Panicking due objectID is NULL");
+		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
+	} else if (objectIDLen > TEE_OBJECT_ID_MAX_LEN) {
+		OT_LOG_ERR("Panicking due objectID len too big");
+		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
+	} else if (attributes &&
+		   !(attributes->objectInfo.handleFlags & TEE_HANDLE_FLAG_INITIALIZED)) {
+		OT_LOG_ERR("Panicking due object not initilized");
+		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
+	} else if (attributes && (attributes->objectInfo.objectType == TEE_TYPE_CORRUPTED_OBJECT)) {
+		OT_LOG_ERR("Panicking due object corrupted");
+		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (attributes && (attributes->objectInfo.objectType == TEE_TYPE_DATA)) {
-		OT_LOG_ERR("TEE_CreatePersistentObject panicking due attributes object is type TEE_TYPE_DATA\n");
+		OT_LOG_ERR("TEE_CreatePersistentObject panicking due attributes object is "
+			   "type TEE_TYPE_DATA\n");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
-	
-	//Create message: Size
+
+	// Create message: Size
 	messageSize = sizeof(struct com_mrg_create_persistent);
 	messageSize += initialDataLen;
 	if (attributes) {
 		attirbuteSize = serialize_gp_attribute(&attributes->key->gp_attrs, NULL);
 	}
 	messageSize += attirbuteSize;
-	
-	//Create message: Malloc
+
+	// Create message: Malloc
 	payload.size = messageSize;
 	payload.data = calloc(1, payload.size);
 	if (payload.data == NULL) {
 		OT_LOG_ERR("TEE_CreatePersistentObject panic due out of memory\n");
 		TEE_Panic(TEE_ERROR_OUT_OF_MEMORY);
 	}
-	
-	//Create message: Fill
+
+	// Create message: Fill
 	createParams = payload.data;
 
 	((struct com_mrg_create_persistent *)payload.data)->attributeSize = attirbuteSize;
 	((struct com_mrg_create_persistent *)payload.data)->storageID = storageID;
 	((struct com_mrg_create_persistent *)payload.data)->flags = flags;
 	((struct com_mrg_create_persistent *)payload.data)->objectIDLen = objectIDLen;
-	memcpy(&((struct com_mrg_create_persistent *)payload.data)->objectID, (uint8_t *)objectID, objectIDLen);
-	
+	memcpy(&((struct com_mrg_create_persistent *)payload.data)->objectID, (uint8_t *)objectID,
+	       objectIDLen);
+
 	if (attributes) {
-		mem_write_start = (uint8_t *)payload.data + sizeof(struct com_mrg_create_persistent);
-		memcpy(&((struct com_mrg_create_persistent *)payload.data)->info, &attributes->objectInfo, sizeof(TEE_ObjectInfo));
+		mem_write_start =
+		    (uint8_t *)payload.data + sizeof(struct com_mrg_create_persistent);
+		memcpy(&((struct com_mrg_create_persistent *)payload.data)->info,
+		       &attributes->objectInfo, sizeof(TEE_ObjectInfo));
 		serialize_gp_attribute(&attributes->key->gp_attrs, mem_write_start);
 	} else {
 		createParams->data_object = COM_MGR_PERSISTENT_DATA_OBJECT;
 	}
 
 	if (initialData) {
-		mem_write_start = (uint8_t *)payload.data + sizeof(struct com_mrg_create_persistent) + attirbuteSize;
+		mem_write_start = (uint8_t *)payload.data +
+				  sizeof(struct com_mrg_create_persistent) + attirbuteSize;
 		memcpy(mem_write_start, initialData, initialDataLen);
 		createParams->initialDataLen = initialDataLen;
 	} else {
 		createParams->initialDataLen = 0;
 	}
-	
-	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE,
-				   COM_MGR_CMD_ID_CREATE_PERSISTENT,
-				   &payload, &returnPayload);
-				
+
+	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_CREATE_PERSISTENT, &payload,
+				   &returnPayload);
+
 	if (ret != TEE_SUCCESS) {
-		goto out; //ret is TEE_ERROR_XXX
+		goto out; // ret is TEE_ERROR_XXX
 	}
 
 	if (object == NULL) {
 		close_persistan_object(objectID, objectIDLen);
-		goto out; //ret == TEE_SUCCESS
+		goto out; // ret == TEE_SUCCESS
 	}
 
-	//Resp message: Get
+	// Resp message: Get
 	respMsg = returnPayload.data;
 
 	// Needed for initdata write or for return object */
 	ret = create_persistent_handle(&tempHandle, attributes, flags);
 	if (ret != TEE_SUCCESS) {
-		//TODO: We do not have handle. Need to close file
-		//TEE_CloseAndDeletePersistentObject1(tempHandle);
-		goto out; //Ret some ERROR
+		// TODO: We do not have handle. Need to close file
+		// TEE_CloseAndDeletePersistentObject1(tempHandle);
+		goto out; // Ret some ERROR
 	}
 
 	memcpy(&tempHandle->per_object, &respMsg->perObj, sizeof(struct persistant_object));
 
 	*object = tempHandle;
 
- out:
+out:
 	free(returnPayload.data);
 	free(payload.data);
 
 	return ret;
 }
 
-
 TEE_Result TEE_CloseAndDeletePersistentObject1(TEE_ObjectHandle object)
 {
 	struct com_mgr_invoke_cmd_payload payload, returnPayload;
 	TEE_Result ret = TEE_ERROR_GENERIC;
-	
+
 	if (object == NULL) {
 		return TEE_SUCCESS;
 	}
 
-	//Flags check will be forced by manager
+	// Flags check will be forced by manager
 	if (!(object->objectInfo.handleFlags & TEE_HANDLE_FLAG_PERSISTENT)) {
-		OT_LOG_ERR("TEE_CloseAndDeletePersistentObject1 panics due not a persistan object");
+		OT_LOG_ERR("TEE_CloseAndDeletePersistentObject1 panics due not a persistan "
+			   "object");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (!(object->objectInfo.handleFlags & TEE_DATA_FLAG_ACCESS_WRITE_META)) {
-		OT_LOG_ERR("TEE_CloseAndDeletePersistentObject1 panics due not opened with TEE_DATA_FLAG_ACCESS_WRITE_META");
+		OT_LOG_ERR("TEE_CloseAndDeletePersistentObject1 panics due not opened with "
+			   "TEE_DATA_FLAG_ACCESS_WRITE_META");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
 
@@ -448,44 +457,44 @@ TEE_Result TEE_CloseAndDeletePersistentObject1(TEE_ObjectHandle object)
 		TEE_Panic(TEE_ERROR_OUT_OF_MEMORY);
 	}
 
-	((struct com_mrg_close_persistent *)payload.data)->objectIDLen = object->per_object.obj_id_len;
-	memcpy(&((struct com_mrg_close_persistent *)payload.data)->objectID, &object->per_object.obj_id, object->per_object.obj_id_len);
+	((struct com_mrg_close_persistent *)payload.data)->objectIDLen =
+	    object->per_object.obj_id_len;
+	memcpy(&((struct com_mrg_close_persistent *)payload.data)->objectID,
+	       &object->per_object.obj_id, object->per_object.obj_id_len);
 
-	//TODO: Check return value;
-	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE,
-				   COM_MGR_CMD_ID_CLOSE_AND_DELETE_PERSISTENT, &payload,
-				   &returnPayload);
+	// TODO: Check return value;
+	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_CLOSE_AND_DELETE_PERSISTENT,
+				   &payload, &returnPayload);
 	free(payload.data);
-	
+
 	free_object_handle(object);
 
 	return ret;
 }
 
-TEE_Result TEE_RenamePersistentObject(TEE_ObjectHandle object,
-				      void *newObjectID,
+TEE_Result TEE_RenamePersistentObject(TEE_ObjectHandle object, void *newObjectID,
 				      size_t newObjectIDLen)
 {
-	struct com_mgr_invoke_cmd_payload payload = {}, returnPayload = {};	
+	struct com_mgr_invoke_cmd_payload payload = {}, returnPayload = {};
 	TEE_Result ret;
 
 	// Only vital checks
-        if (object == NULL) {
-                OT_LOG_ERR("TEE_RenamePersistentObject panics due object is NULL");
-                TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
-        } else if (newObjectIDLen > TEE_OBJECT_ID_MAX_LEN) {
-                OT_LOG_ERR("TEE_RenamePersistentObject panics due newObjectIDLen len too big");
-                TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
+	if (object == NULL) {
+		OT_LOG_ERR("TEE_RenamePersistentObject panics due object is NULL");
+		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
+	} else if (newObjectIDLen > TEE_OBJECT_ID_MAX_LEN) {
+		OT_LOG_ERR("TEE_RenamePersistentObject panics due newObjectIDLen len too big");
+		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (newObjectID == NULL) {
 		OT_LOG_ERR("TEE_RenamePersistentObject panics due newObjectID NULL");
-                TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
+		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (!(object->objectInfo.handleFlags & TEE_HANDLE_FLAG_PERSISTENT)) {
 		OT_LOG_ERR("TEE_RenamePersistentObject panics due object is not persistant");
-                TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
+		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (!(object->objectInfo.handleFlags & TEE_DATA_FLAG_ACCESS_WRITE_META)) {
 		OT_LOG_ERR("TEE_RenamePersistentObject panics due object does not "
 			   "sufficient permissions (missing TEE_DATA_FLAG_ACCESS_WRITE_META)");
-                TEE_Panic(TEE_ERROR_BAD_STATE);
+		TEE_Panic(TEE_ERROR_BAD_STATE);
 	}
 
 	payload.size = sizeof(struct com_mrg_rename_persistent);
@@ -498,25 +507,24 @@ TEE_Result TEE_RenamePersistentObject(TEE_ObjectHandle object,
 
 	// Create message: Fill and send (no init data)
 	((struct com_mrg_rename_persistent *)payload.data)->objectIDLen =
-		object->per_object.obj_id_len;
+	    object->per_object.obj_id_len;
 	memcpy(&((struct com_mrg_rename_persistent *)payload.data)->objectID,
 	       &object->per_object.obj_id, object->per_object.obj_id_len);
 	((struct com_mrg_rename_persistent *)payload.data)->newObjectIDLen = newObjectIDLen;
-	memcpy(&((struct com_mrg_rename_persistent *)payload.data)->newObjectID,
-	       newObjectID, newObjectIDLen);
-	
-	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE,
-				   COM_MGR_CMD_ID_RENAME_PERSISTENT,
-				   &payload, &returnPayload);
+	memcpy(&((struct com_mrg_rename_persistent *)payload.data)->newObjectID, newObjectID,
+	       newObjectIDLen);
+
+	ret = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_RENAME_PERSISTENT, &payload,
+				   &returnPayload);
 	if (ret != TEE_SUCCESS) {
 		goto out;
 	}
-	
+
 	memset(&object->per_object.obj_id, 0, TEE_OBJECT_ID_MAX_LEN);
 	memcpy(&object->per_object.obj_id, newObjectID, newObjectIDLen);
 	object->per_object.obj_id_len = newObjectIDLen;
- out:
+out:
 	free(payload.data);
-	
+
 	return ret;
 }

@@ -20,30 +20,28 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include <dirent.h>
+#include <errno.h>
 #include <limits.h>
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <errno.h>
-#include <dirent.h>
-#include <stdint.h>
 
-
-#include "tee_storage_api.h"
-#include "tee_memory.h"
-#include "tee_logging.h"
-#include "tee_time_api.h" /*TEE_TIMEOUT_INFINITE*/
 #include "com_protocol.h" /*MGR CMD IDs*/
 #include "tee_internal_client_api.h"
 #include "tee_list.h"
+#include "tee_logging.h"
+#include "tee_memory.h"
+#include "tee_storage_api.h"
+#include "tee_time_api.h" /*TEE_TIMEOUT_INFINITE*/
 
 #include "ext_storage_stream_api.h"
 
-#include "opentee_manager_storage_api.h"
 #include "core_control_resources.h"
-
+#include "opentee_manager_storage_api.h"
 
 struct storage_element {
 	struct list_head list;
@@ -73,7 +71,6 @@ struct storage_enumerator {
 
 static struct list_head elements_head;
 
-
 static bool __attribute__((constructor)) storage_ext_init()
 {
 	char *tee_storage_dir = getenv("OPENTEE_STORAGE_PATH");
@@ -81,16 +78,18 @@ static bool __attribute__((constructor)) storage_ext_init()
 
 	if (tee_storage_dir != NULL) {
 		/* if it doesn't end with a backslash, add it */
-		char *pathspec = (tee_storage_dir[strlen(tee_storage_dir) - 1] != '/') ? "%s/" : "%s" ;
+		char *pathspec =
+		    (tee_storage_dir[strlen(tee_storage_dir) - 1] != '/') ? "%s/" : "%s";
 		res = snprintf(secure_storage_path, MAX_EXT_PATH_NAME, pathspec, tee_storage_dir);
 	} else {
-		/* fallback to $HOME or /data if OPENTEE_STORAGE_PATH isn't defined */
-		#ifndef ANDROID
+/* fallback to $HOME or /data if OPENTEE_STORAGE_PATH isn't defined */
+#ifndef ANDROID
 		tee_storage_dir = getenv("HOME");
-		#else
+#else
 		tee_storage_dir = "/data";
-		#endif
-		res = snprintf(secure_storage_path, MAX_EXT_PATH_NAME, "%s/%s", tee_storage_dir, ".TEE_secure_storage/");
+#endif
+		res = snprintf(secure_storage_path, MAX_EXT_PATH_NAME, "%s/%s", tee_storage_dir,
+			       ".TEE_secure_storage/");
 	}
 
 	if (res == MAX_EXT_PATH_NAME) {
@@ -107,9 +106,8 @@ static bool __attribute__((constructor)) storage_ext_init()
 /*!
  * \brief get_uuid
  * Retrieve TAs UUID
- * \param uuid is filled with TAs uuid. UUID is converted to HEX format and containing NULL
- * character.
- * Use TEE_UUID_LEN_HEX for buffer size reservation.
+ * \param uuid is filled with TAs uuid. UUID is converted to HEX format and
+ * containing NULL character. Use TEE_UUID_LEN_HEX for buffer size reservation.
  * \return
  */
 static bool get_uuid(char *uuid)
@@ -169,7 +167,8 @@ static FILE *storage_id_to_file(uint32_t storage_blob_id)
 	struct list_head *pos;
 	struct storage_element *current_element;
 
-	LIST_FOR_EACH(pos, &elements_head) {
+	LIST_FOR_EACH(pos, &elements_head)
+	{
 		current_element = LIST_ENTRY(pos, struct storage_element, list);
 		if (storage_blob_id == current_element->storage_blob_id)
 			return current_element->file;
@@ -187,8 +186,8 @@ static uint32_t close_object(uint32_t storage_blob_id, void *objectID, size_t ob
 		return 1;
 	}
 
-
-	LIST_FOR_EACH(pos, &elements_head) {
+	LIST_FOR_EACH(pos, &elements_head)
+	{
 		current_element = LIST_ENTRY(pos, struct storage_element, list);
 		if (storage_blob_id == current_element->storage_blob_id)
 			break;
@@ -199,9 +198,9 @@ static uint32_t close_object(uint32_t storage_blob_id, void *objectID, size_t ob
 		list_unlink(&current_element->list);
 
 		if (memcmp(objectID, current_element->objectid, objectIDLen))
-			OT_LOG(LOG_ERR,
-			       "objectID does not match internal object id, closing file anyways\n");
-
+			OT_LOG(
+			    LOG_ERR,
+			    "objectID does not match internal object id, closing file anyways\n");
 
 		if (current_element->file && fclose(current_element->file) != 0) {
 			OT_LOG(LOG_ERR, "Something went wrong with file closing\n");
@@ -214,9 +213,7 @@ static uint32_t close_object(uint32_t storage_blob_id, void *objectID, size_t ob
 	return 0;
 }
 
-TEE_Result alloc_storage_path(void *objectID,
-			      size_t objectIDLen,
-			      char **name_with_dir_path,
+TEE_Result alloc_storage_path(void *objectID, size_t objectIDLen, char **name_with_dir_path,
 			      char **return_dir_path)
 {
 	size_t i;
@@ -224,9 +221,7 @@ TEE_Result alloc_storage_path(void *objectID,
 	char UUID[TEE_UUID_LEN_HEX];
 	char *dir_path;
 
-	if ((objectIDLen > TEE_OBJECT_ID_MAX_LEN) ||
-	    (objectID == NULL) ||
-	    (!get_uuid(UUID)) ||
+	if ((objectIDLen > TEE_OBJECT_ID_MAX_LEN) || (objectID == NULL) || (!get_uuid(UUID)) ||
 	    (name_with_dir_path == NULL && return_dir_path == NULL))
 		return TEE_ERROR_BAD_PARAMETERS;
 
@@ -234,8 +229,8 @@ TEE_Result alloc_storage_path(void *objectID,
 	if (dir_path == NULL)
 		return TEE_ERROR_OUT_OF_MEMORY;
 
-	if (snprintf(dir_path, MAX_EXT_PATH_NAME, "%s%s/", secure_storage_path, UUID)
-	    == MAX_EXT_PATH_NAME){
+	if (snprintf(dir_path, MAX_EXT_PATH_NAME, "%s%s/", secure_storage_path, UUID) ==
+	    MAX_EXT_PATH_NAME) {
 		OT_LOG(LOG_ERR, "secure storage dir path is too long");
 		free(dir_path);
 		return TEE_ERROR_OVERFLOW;
@@ -251,8 +246,8 @@ TEE_Result alloc_storage_path(void *objectID,
 		for (i = 0; i < objectIDLen; ++i)
 			sprintf(hex_ID + i * 2, "%02x", *((unsigned char *)objectID + i));
 
-		if (snprintf(*name_with_dir_path, MAX_EXT_PATH_NAME, "%s%s", dir_path, hex_ID)
-		    == MAX_EXT_PATH_NAME) {
+		if (snprintf(*name_with_dir_path, MAX_EXT_PATH_NAME, "%s%s", dir_path, hex_ID) ==
+		    MAX_EXT_PATH_NAME) {
 			OT_LOG(LOG_ERR, "secure storage name path is too long");
 			free(dir_path);
 			free(*name_with_dir_path);
@@ -274,7 +269,8 @@ uint32_t ext_object_id_to_storage_id(char *objectid, size_t objectid_len)
 	struct list_head *pos;
 	struct storage_element *current_element;
 
-	LIST_FOR_EACH(pos, &elements_head) {
+	LIST_FOR_EACH(pos, &elements_head)
+	{
 		current_element = LIST_ENTRY(pos, struct storage_element, list);
 		if (objectid_len == current_element->objectid_len &&
 		    !memcmp(objectid, current_element->objectid, objectid_len)) {
@@ -295,21 +291,20 @@ uint32_t ext_delete_storage_blob(uint32_t storage_blob_id, void *objectID, size_
 
 	if (object_file && close_object(storage_blob_id, objectID, objectIDLen)) {
 		return 1;
-
 	}
-	
+
 	if (alloc_storage_path(objectID, objectIDLen, &name_with_dir_path, &dir_path)) {
 		OT_LOG(LOG_ERR, "Bad parameters\n");
 		return 1;
 	}
 
 	/* TODO: Check that correct file is closed and removed! FILE == objectID */
-	
+
 	if (remove(name_with_dir_path) < 0) {
 		OT_LOG(LOG_ERR, "Failed to remove file: %s", name_with_dir_path);
 		return 1;
 	}
-	
+
 	if (is_directory_empty(dir_path))
 		rmdir(dir_path);
 
@@ -318,10 +313,7 @@ uint32_t ext_delete_storage_blob(uint32_t storage_blob_id, void *objectID, size_
 	return 0;
 }
 
-void ext_close_storage_blob(uint32_t storage_blob_id)
-{
-	close_object(storage_blob_id, NULL, 0);
-}
+void ext_close_storage_blob(uint32_t storage_blob_id) { close_object(storage_blob_id, NULL, 0); }
 
 uint32_t ext_open_storage_blob(char *objectID, size_t objectIDlen, bool create_if_not_exist)
 {
@@ -348,14 +340,14 @@ uint32_t ext_open_storage_blob(char *objectID, size_t objectIDlen, bool create_i
 			ret_mkdir = mkdir(secure_storage_path, 0777);
 			if (ret_mkdir != 0 && errno != EEXIST) {
 				OT_LOG(LOG_ERR, "Cannot create Secure Storage directory: %s\n",
-				strerror(errno));
+				       strerror(errno));
 				goto ret;
 			}
 
 			ret_mkdir = mkdir(dir_path, 0777);
 			if (ret_mkdir != 0 && errno != EEXIST) {
 				OT_LOG(LOG_ERR, "Cannot create UUID directory: %s\n",
-				strerror(errno));
+				       strerror(errno));
 				goto ret;
 			}
 
@@ -389,11 +381,8 @@ size_t ext_get_storage_blob_size(uint32_t storage_blob_id)
 	return 0;
 }
 
-bool ext_change_object_ID(uint32_t storage_blob_id,
-			  void *objectID,
-			  size_t objectIDLen,
-			  void *new_objectID,
-			  size_t new_objectIDLen)
+bool ext_change_object_ID(uint32_t storage_blob_id, void *objectID, size_t objectIDLen,
+			  void *new_objectID, size_t new_objectIDLen)
 {
 	struct list_head *pos;
 	struct storage_element *current_element;
@@ -422,7 +411,7 @@ bool ext_change_object_ID(uint32_t storage_blob_id,
 		ret_val = false;
 		goto exit;
 	}
-	
+
 	if (rename(name_with_dir_path, new_name_with_dir_path) != 0) {
 		OT_LOG(LOG_ERR, "Rename function failed\n");
 		ret_val = false;
@@ -430,12 +419,12 @@ bool ext_change_object_ID(uint32_t storage_blob_id,
 	}
 
 	/* update info */
-	LIST_FOR_EACH(pos, &elements_head) {
+	LIST_FOR_EACH(pos, &elements_head)
+	{
 		current_element = LIST_ENTRY(pos, struct storage_element, list);
 		if (storage_blob_id == current_element->storage_blob_id) {
 			current_element->objectid_len = new_objectIDLen;
-			memcpy(current_element->objectid,
-			       new_objectID,
+			memcpy(current_element->objectid, new_objectID,
 			       current_element->objectid_len);
 			break;
 		}
@@ -460,7 +449,6 @@ uint32_t ext_read_stream(uint32_t storage_blob_id, uint32_t offset, void *data, 
 	readed = fread(data, 1, datalen, file);
 	return readed;
 }
-
 
 uint32_t ext_write_stream(uint32_t storage_blob_id, uint32_t offset, void *data, size_t datalen)
 {
@@ -498,7 +486,6 @@ TEE_Result ext_truncate_storage_blob(uint32_t storage_blob_id, uint32_t size)
 		if (errno == ENOSPC)
 			return TEE_ERROR_STORAGE_NO_SPACE;
 		return TEE_ERROR_GENERIC;
-
 	}
 	return TEE_SUCCESS;
 }
@@ -595,8 +582,8 @@ bool ext_start_enumerator(uint32_t start_enum_ID)
 		return false;
 	}
 
-	if (snprintf(dir_path, MAX_EXT_PATH_NAME, "%s%s/", secure_storage_path, UUID)
-	    == MAX_EXT_PATH_NAME) {
+	if (snprintf(dir_path, MAX_EXT_PATH_NAME, "%s%s/", secure_storage_path, UUID) ==
+	    MAX_EXT_PATH_NAME) {
 		/* TEE_ERROR_OUT_OF_MEMORY */
 		OT_LOG(LOG_ERR, "Out of memory");
 		return false;
@@ -624,7 +611,6 @@ bool ext_start_enumerator(uint32_t start_enum_ID)
 	return true;
 }
 
-
 void ext_reset_enumerator(uint32_t reset_enum_ID)
 {
 	struct storage_enumerator *reset_enum;
@@ -646,7 +632,6 @@ void ext_reset_enumerator(uint32_t reset_enum_ID)
 
 	reset_enum->dir = NULL;
 }
-
 
 bool ext_get_next_obj_from_enumeration(uint32_t get_next_ID,
 				       struct ss_object_meta_info *recv_data_to_caller)
@@ -687,13 +672,13 @@ bool ext_get_next_obj_from_enumeration(uint32_t get_next_ID,
 			return false;
 		}
 
-		if (snprintf(name_with_path, MAX_EXT_PATH_NAME, "%s%s/%s",
-			     secure_storage_path, UUID, entry->d_name) == MAX_EXT_PATH_NAME) {
+		if (snprintf(name_with_path, MAX_EXT_PATH_NAME, "%s%s/%s", secure_storage_path,
+			     UUID, entry->d_name) == MAX_EXT_PATH_NAME) {
 
 			OT_LOG(LOG_ERR, "Enumerator: name path size overflow\n");
 			return false; /* TEE_ERROR_GENERIC */
 		}
-		
+
 		next_object = fopen(name_with_path, "rb");
 
 		if (next_object == NULL) {
@@ -734,5 +719,3 @@ bool ext_get_next_obj_from_enumeration(uint32_t get_next_ID,
 
 	return true;
 }
-
-

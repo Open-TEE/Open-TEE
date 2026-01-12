@@ -24,9 +24,9 @@
 #include "tee_list.h"
 #include "tee_shared_data_types.h"
 
-#define WAIT_NO_MSG_OUT		1
-#define WAIT_OPEN_SESSION_MSG	2
-#define WAIT_INVOKE_MSG		3
+#define WAIT_NO_MSG_OUT 1
+#define WAIT_OPEN_SESSION_MSG 2
+#define WAIT_INVOKE_MSG 3
 
 /* define an opaque structure to handle the process related information */
 typedef struct __proc *proc_t;
@@ -37,7 +37,8 @@ struct sock_to_close {
 	int sockfd;
 };
 
-/* Received message is malloced to msg parameter and it lenght will be in msg_len.
+/* Received message is malloced to msg parameter and it lenght will be in
+ * msg_len.
  */
 struct manager_msg {
 	struct list_head list;

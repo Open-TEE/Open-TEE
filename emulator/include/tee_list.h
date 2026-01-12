@@ -19,7 +19,8 @@
 
 /*!
  * \brief The list_head struct
- *  Can be embedded into any structure to provide double linked list capabilities
+ *  Can be embedded into any structure to provide double linked list
+ * capabilities
  */
 struct list_head {
 	struct list_head *prev;
@@ -74,7 +75,8 @@ struct list_head {
 	for ((pos) = (head)->prev; (pos) != (head); (pos) = (pos)->prev)
 
 /*!
- *  \brief Iterate over a list safely, this allows elements to be removed or added in the loop
+ *  \brief Iterate over a list safely, this allows elements to be removed or
+ * added in the loop
  *  \param pos a struct list_head entry point to the current entry
  *  \param la a struct list_head entry used for look ahead to ensure safety
  *  \param head The main list to iterating over
@@ -109,7 +111,8 @@ void list_add_before(struct list_head *ele, struct list_head *before);
 
 /*!
  * \brief list_unlink
- *  Delete an entry from the list. This does not free the element, that is left to the caller to do.
+ *  Delete an entry from the list. This does not free the element, that is left
+ * to the caller to do.
  * \param element The element to be removed from the list
  */
 void list_unlink(struct list_head *element);

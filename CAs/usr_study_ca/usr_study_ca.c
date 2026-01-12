@@ -17,7 +17,8 @@
 /* NOTE!!
  *
  * This is implemented for user study. It is serving the purpose of user study!
- * Therefore it might not have the most perfect design choices and implementation.
+ * Therefore it might not have the most perfect design choices and
+ * implementation.
  *
  * NOTE!!
  */
@@ -30,29 +31,28 @@
 #include <string.h>
 
 static const TEEC_UUID uuid = {
-	0x12345678, 0x8765, 0x4321, { 'U', 'S', 'R', 'S', 'T', 'U', 'D', 'Y'}
-};
+    0x12345678, 0x8765, 0x4321, {'U', 'S', 'R', 'S', 'T', 'U', 'D', 'Y'}};
 
-#define MAX_MSG_SIZE		200
+#define MAX_MSG_SIZE 200
 
-#define DEPOSIT_MSG_1		"Winnings"
-#define DEPOSIT_AMOUNT_1	2000
-#define DEPOSIT_MSG_2		"Salary"
-#define DEPOSIT_AMOUNT_2	500
-#define DEPOSIT_MSG_3		"Sell old stuff"
-#define DEPOSIT_AMOUNT_3	300
-#define WITHDRAW_MSG_1		"Rent"
-#define WITHDRAW_AMOUNT_1	1500
-#define WITHDRAW_MSG_2		"Gas"
-#define WITHDRAW_AMOUNT_2	50
-#define WITHDRAW_MSG_3		"New TV from store"
-#define WITHDRAW_AMOUNT_3	550
-#define WITHDRAW_MSG_4		"New phone from friends store"
-#define WITHDRAW_AMOUNT_4	200
+#define DEPOSIT_MSG_1 "Winnings"
+#define DEPOSIT_AMOUNT_1 2000
+#define DEPOSIT_MSG_2 "Salary"
+#define DEPOSIT_AMOUNT_2 500
+#define DEPOSIT_MSG_3 "Sell old stuff"
+#define DEPOSIT_AMOUNT_3 300
+#define WITHDRAW_MSG_1 "Rent"
+#define WITHDRAW_AMOUNT_1 1500
+#define WITHDRAW_MSG_2 "Gas"
+#define WITHDRAW_AMOUNT_2 50
+#define WITHDRAW_MSG_3 "New TV from store"
+#define WITHDRAW_AMOUNT_3 550
+#define WITHDRAW_MSG_4 "New phone from friends store"
+#define WITHDRAW_AMOUNT_4 200
 
-#define OWNER_ID		0xf3da12cc
-#define BALANCE			500
-#define	TRANSACTION_COUNT	7
+#define OWNER_ID 0xf3da12cc
+#define BALANCE 500
+#define TRANSACTION_COUNT 7
 
 #define P_STR(str) printf("failed: %s\n", str);
 
@@ -162,8 +162,8 @@ static TEEC_Result open_session(TEEC_Context *context, TEEC_Session *session,
 }
 
 static TEEC_Result exec_transaction(TEEC_Session *session, TEEC_SharedMemory *shm_inout,
-				    uint32_t transaction_type, uint32_t amount,
-				    char *msg, uint32_t msg_len)
+				    uint32_t transaction_type, uint32_t amount, char *msg,
+				    uint32_t msg_len)
 {
 	TEEC_Operation operation;
 
@@ -179,8 +179,8 @@ static TEEC_Result exec_transaction(TEEC_Session *session, TEEC_SharedMemory *sh
 	operation.params[1].memref.parent = shm_inout;
 
 	/* Fill in parameters type */
-	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_MEMREF_WHOLE,
-						TEEC_NONE, TEEC_NONE);
+	operation.paramTypes =
+	    TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_MEMREF_WHOLE, TEEC_NONE, TEEC_NONE);
 
 	/* Execute transaction*/
 	if (transaction_type == USR_AC_CMD_DEPOSIT)
@@ -196,44 +196,44 @@ static TEEC_Result do_dummy_transactions(TEEC_Session *session, TEEC_SharedMemor
 	printf("Making transactions: ");
 
 	/* Transaction: 1 */
-	ret = exec_transaction(session, shm_inout, USR_AC_CMD_DEPOSIT,
-			       DEPOSIT_AMOUNT_1, DEPOSIT_MSG_1, sizeof(DEPOSIT_MSG_1));
+	ret = exec_transaction(session, shm_inout, USR_AC_CMD_DEPOSIT, DEPOSIT_AMOUNT_1,
+			       DEPOSIT_MSG_1, sizeof(DEPOSIT_MSG_1));
 	if (ret != TEEC_SUCCESS)
 		goto end;
 
 	/* Transaction: 2 */
-	ret = exec_transaction(session, shm_inout, USR_AC_CMD_DEPOSIT,
-			       DEPOSIT_AMOUNT_2, DEPOSIT_MSG_2, sizeof(DEPOSIT_MSG_2));
+	ret = exec_transaction(session, shm_inout, USR_AC_CMD_DEPOSIT, DEPOSIT_AMOUNT_2,
+			       DEPOSIT_MSG_2, sizeof(DEPOSIT_MSG_2));
 	if (ret != TEEC_SUCCESS)
 		goto end;
 
 	/* Transaction: 3 */
-	ret = exec_transaction(session, shm_inout, USR_AC_CMD_WITHDRAW,
-			       WITHDRAW_AMOUNT_1, WITHDRAW_MSG_1, sizeof(WITHDRAW_MSG_1));
+	ret = exec_transaction(session, shm_inout, USR_AC_CMD_WITHDRAW, WITHDRAW_AMOUNT_1,
+			       WITHDRAW_MSG_1, sizeof(WITHDRAW_MSG_1));
 	if (ret != TEEC_SUCCESS)
 		goto end;
 
 	/* Transaction: 4 */
-	ret = exec_transaction(session, shm_inout, USR_AC_CMD_WITHDRAW,
-			       WITHDRAW_AMOUNT_2, WITHDRAW_MSG_2, sizeof(WITHDRAW_MSG_2));
+	ret = exec_transaction(session, shm_inout, USR_AC_CMD_WITHDRAW, WITHDRAW_AMOUNT_2,
+			       WITHDRAW_MSG_2, sizeof(WITHDRAW_MSG_2));
 	if (ret != TEEC_SUCCESS)
 		goto end;
 
 	/* Transaction: 5 */
-	ret = exec_transaction(session, shm_inout, USR_AC_CMD_WITHDRAW,
-			       WITHDRAW_AMOUNT_3, WITHDRAW_MSG_3, sizeof(WITHDRAW_MSG_3));
+	ret = exec_transaction(session, shm_inout, USR_AC_CMD_WITHDRAW, WITHDRAW_AMOUNT_3,
+			       WITHDRAW_MSG_3, sizeof(WITHDRAW_MSG_3));
 	if (ret != TEEC_SUCCESS)
 		goto end;
 
 	/* Transaction: 6 */
-	ret = exec_transaction(session, shm_inout, USR_AC_CMD_DEPOSIT,
-			       DEPOSIT_AMOUNT_3, DEPOSIT_MSG_3, sizeof(DEPOSIT_MSG_3));
+	ret = exec_transaction(session, shm_inout, USR_AC_CMD_DEPOSIT, DEPOSIT_AMOUNT_3,
+			       DEPOSIT_MSG_3, sizeof(DEPOSIT_MSG_3));
 	if (ret != TEEC_SUCCESS)
 		goto end;
 
 	/* Transaction: 7 */
-	ret = exec_transaction(session, shm_inout, USR_AC_CMD_WITHDRAW,
-			       WITHDRAW_AMOUNT_4, WITHDRAW_MSG_4, sizeof(WITHDRAW_MSG_4));
+	ret = exec_transaction(session, shm_inout, USR_AC_CMD_WITHDRAW, WITHDRAW_AMOUNT_4,
+			       WITHDRAW_MSG_4, sizeof(WITHDRAW_MSG_4));
 	if (ret != TEEC_SUCCESS)
 		goto end;
 
@@ -272,8 +272,7 @@ static TEE_Result get_account(TEEC_Session *session, TEEC_SharedMemory *shm_inou
 
 	usr_ac = shm_inout->buffer;
 
-	if (usr_ac->balance != BALANCE ||
-	    usr_ac->transaction_count != TRANSACTION_COUNT ||
+	if (usr_ac->balance != BALANCE || usr_ac->transaction_count != TRANSACTION_COUNT ||
 	    usr_ac->owner_id != OWNER_ID) {
 		printf("Something is wrong: 0x%x\n", ret);
 		return TEE_ERROR_GENERIC;
@@ -291,7 +290,6 @@ static TEE_Result get_transactions(TEEC_Session *session, TEEC_SharedMemory *shm
 
 	printf("Getting random transactions: ");
 
-
 	/* Reset operation struct */
 	memset((void *)&operation, 0, sizeof(operation));
 
@@ -302,8 +300,8 @@ static TEE_Result get_transactions(TEEC_Session *session, TEEC_SharedMemory *shm
 	operation.params[1].memref.parent = shm_inout;
 
 	/* Fill in parameters type */
-	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_MEMREF_WHOLE,
-						TEEC_NONE, TEEC_NONE);
+	operation.paramTypes =
+	    TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_MEMREF_WHOLE, TEEC_NONE, TEEC_NONE);
 
 	ret = TEEC_InvokeCommand(session, USR_AC_CMD_GET_TRANSACTION, &operation, NULL);
 
@@ -380,7 +378,6 @@ int main()
 	TEEC_Session session;
 	TEEC_SharedMemory shm_inout;
 	TEEC_Result ret;
-
 
 	printf("\nSTART: usr study app\n");
 

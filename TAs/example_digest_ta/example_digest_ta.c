@@ -16,40 +16,40 @@
 
 /* NOTE!!
  *
- * This is an example. It might not have the most perfect design choices and implementation.
- * It is servinc purpose of showing how you could do the most simplest SHAXXX/MD5 hash
+ * This is an example. It might not have the most perfect design choices and
+ * implementation. It is servinc purpose of showing how you could do the most
+ * simplest SHAXXX/MD5 hash
  *
  * NOTE!!
  */
 
 #include "tee_internal_api.h" /* TA envrionment */
-#include "tee_logging.h" /* OpenTEE logging functions */
+#include "tee_logging.h"      /* OpenTEE logging functions */
 
 #ifdef TA_PLUGIN
 #include "tee_ta_properties.h" /* Setting TA properties */
 
 /* UUID must be unique */
-SET_TA_PROPERTIES(
-	{ 0x12345678, 0x8765, 0x4321, { 'D', 'I', 'G', 'E', 'S', 'T', '0', '0'} }, /* UUID */
-		512, /* dataSize */
-		255, /* stackSize */
-		1, /* singletonInstance */
-		1, /* multiSession */
-		1) /* instanceKeepAlive */
+SET_TA_PROPERTIES({0x12345678, 0x8765, 0x4321, {'D', 'I', 'G', 'E', 'S', 'T', '0', '0'}}, /* UUID */
+		  512, /* dataSize */
+		  255, /* stackSize */
+		  1,   /* singletonInstance */
+		  1,   /* multiSession */
+		  1)   /* instanceKeepAlive */
 #endif
 
 /* Hash TA command IDs for this applet */
-#define HASH_UPDATE	0x00000001
-#define HASH_DO_FINAL	0x00000002
-#define HASH_RESET	0x00000003
+#define HASH_UPDATE 0x00000001
+#define HASH_DO_FINAL 0x00000002
+#define HASH_RESET 0x00000003
 
 /* Hash algorithm identifier */
-#define HASH_MD5	0x00000001
-#define HASH_SHA1	0x00000002
-#define HASH_SHA224	0x00000003
-#define HASH_SHA256	0x00000004
-#define HASH_SHA384	0x00000005
-#define HASH_SHA512	0x00000006
+#define HASH_MD5 0x00000001
+#define HASH_SHA1 0x00000002
+#define HASH_SHA224 0x00000003
+#define HASH_SHA256 0x00000004
+#define HASH_SHA384 0x00000005
+#define HASH_SHA512 0x00000006
 
 TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
@@ -67,8 +67,7 @@ void TA_EXPORT TA_DestroyEntryPoint(void)
 	/* No functionality */
 }
 
-TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
-					      TEE_Param params[4],
+TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes, TEE_Param params[4],
 					      void **sessionContext)
 {
 	algorithm_Identifier hash;
@@ -110,8 +109,8 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	return TEE_AllocateOperation((TEE_OperationHandle *)sessionContext,
-				     hash, TEE_MODE_DIGEST, 0);
+	return TEE_AllocateOperation((TEE_OperationHandle *)sessionContext, hash, TEE_MODE_DIGEST,
+				     0);
 }
 
 void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
@@ -121,10 +120,8 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 	TEE_FreeOperation(sessionContext);
 }
 
-TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
-						uint32_t commandID,
-						uint32_t paramTypes,
-						TEE_Param params[4])
+TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t commandID,
+						uint32_t paramTypes, TEE_Param params[4])
 {
 	TEE_Result tee_rv = TEE_SUCCESS;
 
@@ -157,8 +154,8 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
 		}
 
 		tee_rv = TEE_DigestDoFinal(sessionContext, params[0].memref.buffer,
-				params[0].memref.size, params[1].memref.buffer,
-				&params[1].memref.size);
+					   params[0].memref.size, params[1].memref.buffer,
+					   &params[1].memref.size);
 
 	} else {
 		OT_LOG(LOG_ERR, "Unknow command ID");

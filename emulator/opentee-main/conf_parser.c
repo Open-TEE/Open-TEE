@@ -16,13 +16,13 @@
 *****************************************************************************/
 
 #include "conf_parser.h"
+#include "core_control_resources.h"
 #include "ini.h"
 #include "tee_logging.h"
-#include "core_control_resources.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 /*!
  * \brief ini_handler
@@ -53,9 +53,11 @@ static int ini_handler(void *user, const char *section, const char *name, const 
 
 /*!
  * \brief fixup_lib_path
- * To be useful the lib name should be the whole path so we concatinate the strings here
+ * To be useful the lib name should be the whole path so we concatinate the
+ * strings here
  * \param path The base directory containing the libraries
- * \param lib_name [IN] The name of the library [OUT] the full path of the library
+ * \param lib_name [IN] The name of the library [OUT] the full path of the
+ * library
  * \return 0 on success -1 otherwise
  */
 static int fixup_lib_path(const char *path, char **lib_name)

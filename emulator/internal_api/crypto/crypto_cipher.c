@@ -18,14 +18,14 @@
 *****************************************************************************/
 
 #include "tee_crypto_api.h"
-#include "tee_panic.h"
 #include "tee_memory.h"
+#include "tee_panic.h"
 
-#include "crypto_utils.h"
-#include "storage/storage_utils.h"
 #include "crypto_cipher.h"
+#include "crypto_utils.h"
 #include "operation_handle.h"
 #include "storage/object_handle.h"
+#include "storage/storage_utils.h"
 
 #include "tee_logging.h"
 
@@ -124,13 +124,14 @@ static TEE_Result valid_iv_len(TEE_OperationHandle operation, size_t ivlen)
 	case TEE_ALG_AES_CBC_NOPAD:
 	case TEE_ALG_AES_CTR:
 		if (ivlen != 16) {
-			OT_LOG_ERR("Error: Algorithm (TEE_ALG_AES_CTR, TEE_ALG_AES_CBC_NOPAD) requires 16 bytes IV");
+			OT_LOG_ERR("Error: Algorithm (TEE_ALG_AES_CTR, TEE_ALG_AES_CBC_NOPAD) "
+				   "requires 16 bytes IV");
 			return TEE_ERROR_BAD_PARAMETERS;
 		}
 
 		break;
 	default:
-		//Should never end up here
+		// Should never end up here
 		OT_LOG_ERR("Not supported algorithm [%u]", operation->operation_info.algorithm);
 		TEE_Panic(TEE_ERROR_NOT_SUPPORTED);
 	}
@@ -155,18 +156,18 @@ TEE_Result init_gp_cipher(TEE_OperationHandle operation)
 		goto out_err_1;
 
 	mbedtls_cipher_init(cipher_ctx);
-	
+
 	ret = mbedtls_cipher_setup(cipher_ctx, cipher_info);
 	if (ret == MBEDTLS_ERR_CIPHER_BAD_INPUT_DATA) {
 		OT_LOG(LOG_ERR, "mbedtls_cipher_setup failed bad input");
 		res = TEE_ERROR_BAD_PARAMETERS;
-		 goto out_err_2;
+		goto out_err_2;
 	} else if (ret == MBEDTLS_ERR_CIPHER_ALLOC_FAILED) {
 		OT_LOG(LOG_ERR, "mbedtls_cipher_setup out of memory");
 		res = TEE_ERROR_OUT_OF_MEMORY;
 		goto out_err_2;
 	}
-	
+
 	operation->ctx.cipher.ctx = cipher_ctx;
 
 	return TEE_SUCCESS;
@@ -180,7 +181,8 @@ out_err_1:
 
 void free_gp_cipher(TEE_OperationHandle operation)
 {
-	mbedtls_cipher_context_t *cipher_ctx = (mbedtls_cipher_context_t *)operation->ctx.cipher.ctx;
+	mbedtls_cipher_context_t *cipher_ctx =
+	    (mbedtls_cipher_context_t *)operation->ctx.cipher.ctx;
 
 	mbedtls_cipher_free(cipher_ctx);
 	free(cipher_ctx);
@@ -196,8 +198,7 @@ void assign_key_cipher(TEE_OperationHandle operation, TEE_ObjectHandle key)
 {
 	TEE_Attribute *sec_attr = NULL;
 
-	sec_attr = get_attr_from_attrArr(TEE_ATTR_SECRET_VALUE,
-					 key->key->gp_attrs.attrs,
+	sec_attr = get_attr_from_attrArr(TEE_ATTR_SECRET_VALUE, key->key->gp_attrs.attrs,
 					 key->key->gp_attrs.attrs_count);
 	if (sec_attr == NULL) {
 		OT_LOG(LOG_ERR, "TEE_ATTR_SECRET_VALUE not found");
@@ -210,14 +211,13 @@ void assign_key_cipher(TEE_OperationHandle operation, TEE_ObjectHandle key)
 /*
  * GP TEE Core API functions
  */
-void TEE_CipherInit(TEE_OperationHandle operation,
-		    void *IV, size_t IVLen)
+void TEE_CipherInit(TEE_OperationHandle operation, void *IV, size_t IVLen)
 {
 	mbedtls_cipher_context_t *cipher_ctx;
 	mbedtls_operation_t mbed_op;
 	int rv_mbedtls;
 	TEE_Result rv_gp;
-	
+
 	if (operation == NULL) {
 		OT_LOG_ERR("TEE_CipherInit panics due operation NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
@@ -235,23 +235,24 @@ void TEE_CipherInit(TEE_OperationHandle operation,
 	if (valid_iv_len(operation, IVLen)) {
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
-	
+
 	if (operation->operation_info.handleState == TEE_OPERATION_STATE_ACTIVE) {
 		TEE_ResetOperation(operation);
 	}
 
 	rv_gp = init_gp_cipher(operation);
 	if (rv_gp != TEE_SUCCESS) {
-		//NOTE: breaks GP compatibility. Might fail with out of memory.
+		// NOTE: breaks GP compatibility. Might fail with out of memory.
 		TEE_Panic(rv_gp);
 	}
-	
+
 	cipher_ctx = (mbedtls_cipher_context_t *)operation->ctx.cipher.ctx;
-	mbed_op = (operation->operation_info.mode == TEE_MODE_ENCRYPT) ?
-			  MBEDTLS_ENCRYPT : MBEDTLS_DECRYPT;
-	
-	rv_mbedtls = mbedtls_cipher_setkey(cipher_ctx, operation->ctx.cipher.key,
-					   keysize_in_bits(operation->key_data->key_lenght), mbed_op);
+	mbed_op = (operation->operation_info.mode == TEE_MODE_ENCRYPT) ? MBEDTLS_ENCRYPT
+								       : MBEDTLS_DECRYPT;
+
+	rv_mbedtls =
+	    mbedtls_cipher_setkey(cipher_ctx, operation->ctx.cipher.key,
+				  keysize_in_bits(operation->key_data->key_lenght), mbed_op);
 	if (rv_mbedtls) {
 		print_mbedtls_to_syslog(rv_mbedtls);
 		OT_LOG(LOG_ERR, "TEE_CipherInit (internal crypto error) panics due unable set key");
@@ -273,7 +274,8 @@ void TEE_CipherInit(TEE_OperationHandle operation,
 	case TEE_ALG_DES3_ECB_NOPAD:
 	case TEE_ALG_DES3_CBC_NOPAD:
 		if (mbedtls_cipher_set_padding_mode(cipher_ctx, MBEDTLS_PADDING_NONE)) {
-			OT_LOG(LOG_ERR, "TEE_CipherInit panics due not supported algorithm (algorithm[%u])",
+			OT_LOG(LOG_ERR,
+			       "TEE_CipherInit panics due not supported algorithm (algorithm[%u])",
 			       operation->operation_info.algorithm);
 			TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 		}
@@ -281,17 +283,16 @@ void TEE_CipherInit(TEE_OperationHandle operation,
 	default:
 		break;
 	}
-	
+
 	operation->operation_info.operationState = TEE_OPERATION_STATE_ACTIVE;
 	operation->operation_info.handleState |= TEE_HANDLE_FLAG_INITIALIZED;
 }
 
-TEE_Result TEE_CipherUpdate(TEE_OperationHandle operation,
-			    void *srcData, size_t srcLen,
+TEE_Result TEE_CipherUpdate(TEE_OperationHandle operation, void *srcData, size_t srcLen,
 			    void *destData, size_t *destLen)
 {
 	int rv_mbedtls;
-	
+
 	if (operation == NULL) {
 		OT_LOG_ERR("TEE_CipherUpdate panics due operation NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
@@ -317,31 +318,31 @@ TEE_Result TEE_CipherUpdate(TEE_OperationHandle operation,
 		OT_LOG_ERR("TEE_CipherUpdate panics due operation not active state");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (srcLen > *destLen) {
-		OT_LOG_ERR("TEE_CipherUpdate: srcLen bigger than destLen (TEE_ERROR_SHORT_BUFFER)");
+		OT_LOG_ERR("TEE_CipherUpdate: srcLen bigger than destLen "
+			   "(TEE_ERROR_SHORT_BUFFER)");
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
-	rv_mbedtls = mbedtls_cipher_update((mbedtls_cipher_context_t *)operation->ctx.cipher.ctx,
-					   (uint8_t *)srcData, srcLen,
-					   (uint8_t *)destData, destLen);
+	rv_mbedtls =
+	    mbedtls_cipher_update((mbedtls_cipher_context_t *)operation->ctx.cipher.ctx,
+				  (uint8_t *)srcData, srcLen, (uint8_t *)destData, destLen);
 	if (rv_mbedtls) {
 		print_mbedtls_to_syslog(rv_mbedtls);
-		OT_LOG(LOG_ERR,"Error: Internal cipher error");
+		OT_LOG(LOG_ERR, "Error: Internal cipher error");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
 	return TEE_SUCCESS;
 }
 
-TEE_Result TEE_CipherDoFinal(TEE_OperationHandle operation,
-			     void *srcData, size_t srcLen,
+TEE_Result TEE_CipherDoFinal(TEE_OperationHandle operation, void *srcData, size_t srcLen,
 			     void *destData, size_t *destLen)
 {
 	TEE_Result ret = TEE_SUCCESS;
 	int mbedret;
 	size_t updateDestLen = 0, finalDestLen = 0;
 
-	//TODO: Check destlen buffer size!!
+	// TODO: Check destlen buffer size!!
 
 	if (operation == NULL) {
 		OT_LOG_ERR("TEE_CipherDoFinal panics due operation NULL");
@@ -356,7 +357,8 @@ TEE_Result TEE_CipherDoFinal(TEE_OperationHandle operation,
 		OT_LOG_ERR("TEE_CipherDoFinal panics due scrLen is non zero, but srcData NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (operation->operation_info.operationClass != TEE_OPERATION_CIPHER) {
-		OT_LOG_ERR("TEE_CipherDoFinal panics due operation class not TEE_OPERATION_CIPHER");
+		OT_LOG_ERR("TEE_CipherDoFinal panics due operation class not "
+			   "TEE_OPERATION_CIPHER");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (!(operation->operation_info.handleState & TEE_HANDLE_FLAG_INITIALIZED)) {
 		OT_LOG_ERR("TEE_CipherDoFinal panics due operation not initialized");
@@ -371,21 +373,21 @@ TEE_Result TEE_CipherDoFinal(TEE_OperationHandle operation,
 
 	if (srcData != NULL) {
 		updateDestLen = *destLen;
-		
+
 		ret = TEE_CipherUpdate(operation, srcData, srcLen, destData, &updateDestLen);
 		if (ret != TEE_SUCCESS) {
 			return ret;
 		}
 
-		//TODO: Implement underflow check
+		// TODO: Implement underflow check
 		finalDestLen = *destLen - updateDestLen;
 		destData = (uint8_t *)destData + updateDestLen;
 	} else {
 		finalDestLen = *destLen;
 	}
 
-	//TODO: Enough space for padding??
-	
+	// TODO: Enough space for padding??
+
 	mbedret = mbedtls_cipher_finish((mbedtls_cipher_context_t *)operation->ctx.cipher.ctx,
 					(uint8_t *)destData, &finalDestLen);
 	if (mbedret == MBEDTLS_ERR_CIPHER_BAD_INPUT_DATA) {
@@ -396,7 +398,7 @@ TEE_Result TEE_CipherDoFinal(TEE_OperationHandle operation,
 		return TEE_ERROR_BAD_STATE;
 	}
 
-	//TODO: Check if overflow from 8byte to 4byte
+	// TODO: Check if overflow from 8byte to 4byte
 	*destLen = updateDestLen + finalDestLen;
 
 	TEE_ResetOperation(operation);

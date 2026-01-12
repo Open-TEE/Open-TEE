@@ -21,18 +21,18 @@
 #include <string.h>
 
 static const TEEC_UUID omnishare_uuid = {
-	0x12345678, 0x8765, 0x4321, { 'O', 'M', 'N', 'I', 'S', 'H', 'A', 'R'}
-};
+    0x12345678, 0x8765, 0x4321, {'O', 'M', 'N', 'I', 'S', 'H', 'A', 'R'}};
 
 /* Context an session that are persistant for the duration of a connection */
 static TEEC_Context g_context;
 static TEEC_Session g_session;
 
 /*
- * Here we can see that the generate_root_key function acts as a static / standalone / singleton
- * with respect to creating a context, session, invoking a command and cleaning up. It is
- * a example of creating potentially multiple concurrent sessions to the same TEE and TA are
- * possible, depending on the policy that the TEE defines in its configuration.
+ * Here we can see that the generate_root_key function acts as a static /
+ * standalone / singleton with respect to creating a context, session, invoking
+ * a command and cleaning up. It is a example of creating potentially multiple
+ * concurrent sessions to the same TEE and TA are possible, depending on the
+ * policy that the TEE defines in its configuration.
  */
 uint32_t omnishare_generate_root_key(uint8_t *key, uint32_t *key_size)
 {
@@ -46,8 +46,8 @@ uint32_t omnishare_generate_root_key(uint8_t *key, uint32_t *key_size)
 	if (!key || !key_size || key_size == 0)
 		return TEEC_ERROR_BAD_PARAMETERS;
 	/*
-	 * Initialize context, opening a connection to a specific TEE, passing NULL here uses the
-	 * default one for libtee, Open-TEE
+	 * Initialize context, opening a connection to a specific TEE, passing NULL
+	 * here uses the default one for libtee, Open-TEE
 	 */
 	ret = TEEC_InitializeContext(NULL, &context);
 	if (ret != TEEC_SUCCESS)
@@ -57,8 +57,8 @@ uint32_t omnishare_generate_root_key(uint8_t *key, uint32_t *key_size)
 	 * Now create a session to connect to the omnishare TA. There are no special
 	 * params to pass as part of the open-session
 	 */
-	ret = TEEC_OpenSession(&context, &session, &omnishare_uuid,
-			       TEEC_LOGIN_PUBLIC, NULL, NULL, &retOrigin);
+	ret = TEEC_OpenSession(&context, &session, &omnishare_uuid, TEEC_LOGIN_PUBLIC, NULL, NULL,
+			       &retOrigin);
 	if (ret != TEEC_SUCCESS)
 		goto out_1;
 
@@ -71,8 +71,8 @@ uint32_t omnishare_generate_root_key(uint8_t *key, uint32_t *key_size)
 	inout_mem.flags = TEEC_MEM_OUTPUT;
 
 	/*
-	 * The shared memory is associated with the context, because it is shared with the TEE
-	 * itself and made accessible by the TEE to the TA.
+	 * The shared memory is associated with the context, because it is shared with
+	 * the TEE itself and made accessible by the TEE to the TA.
 	 */
 	ret = TEEC_RegisterSharedMemory(&context, &inout_mem);
 	if (ret != TEEC_SUCCESS)
@@ -86,9 +86,10 @@ uint32_t omnishare_generate_root_key(uint8_t *key, uint32_t *key_size)
 	ret = TEEC_InvokeCommand(&session, CMD_CREATE_ROOT_KEY, &operation, &retOrigin);
 
 	/*
-	 * Copy back the updated buffer size. The shared memory buffer means that the user provided
-	 * paramater key is already upto date. If the ret is TEEC_ERROR_SHORT_BUFFER, this can be
-	 * used to let the caller know how big the required buffer actually is.
+	 * Copy back the updated buffer size. The shared memory buffer means that the
+	 * user provided paramater key is already upto date. If the ret is
+	 * TEEC_ERROR_SHORT_BUFFER, this can be used to let the caller know how big
+	 * the required buffer actually is.
 	 */
 	*key_size = operation.params[0].memref.size;
 
@@ -110,7 +111,6 @@ out_1:
 	TEEC_FinalizeContext(&context);
 
 	return ret;
-
 }
 
 uint32_t omnishare_init(uint8_t *root_key, uint32_t size)
@@ -150,11 +150,11 @@ uint32_t omnishare_init(uint8_t *root_key, uint32_t size)
 	operation.params[0].memref.parent = &in_mem;
 
 	/*
-	 * Now create a persistant session to connect to the omnishare TA. The root key is
-	 * passed as part of this open session
+	 * Now create a persistant session to connect to the omnishare TA. The root
+	 * key is passed as part of this open session
 	 */
-	ret = TEEC_OpenSession(&g_context, &g_session, &omnishare_uuid,
-			       TEEC_LOGIN_PUBLIC, NULL, &operation, &retOrigin);
+	ret = TEEC_OpenSession(&g_context, &g_session, &omnishare_uuid, TEEC_LOGIN_PUBLIC, NULL,
+			       &operation, &retOrigin);
 
 	/*
 	 * Cleanup any allocated shared memory
@@ -168,7 +168,6 @@ uint32_t omnishare_init(uint8_t *root_key, uint32_t size)
 	if (ret == TEE_SUCCESS)
 		return ret;
 
-
 out_err:
 	/*
 	 * Clean up the connection to the TEE
@@ -179,8 +178,8 @@ out_err:
 }
 
 uint32_t omnishare_do_crypto(uint8_t *key_chain, uint32_t key_count, uint32_t key_len,
-			     uint8_t op_cmd, uint8_t *src, uint32_t src_len,
-			     uint8_t *dest, uint32_t *dest_len)
+			     uint8_t op_cmd, uint8_t *src, uint32_t src_len, uint8_t *dest,
+			     uint32_t *dest_len)
 {
 	TEEC_Operation operation = {0};
 	TEEC_Result ret;
@@ -191,7 +190,6 @@ uint32_t omnishare_do_crypto(uint8_t *key_chain, uint32_t key_count, uint32_t ke
 	struct key_chain_data *kc_data;
 	uint32_t have_src = TEEC_NONE;
 	uint32_t have_keys = TEEC_NONE;
-
 
 	if (!dest || dest_len == 0)
 		return TEEC_ERROR_BAD_PARAMETERS;
@@ -256,14 +254,14 @@ uint32_t omnishare_do_crypto(uint8_t *key_chain, uint32_t key_count, uint32_t ke
 	/*
 	 * Set the parameter types that we are sending to the TA
 	 */
-	operation.paramTypes = TEEC_PARAM_TYPES(have_keys, TEEC_VALUE_INPUT,
-						have_src, TEEC_MEMREF_WHOLE);
-
+	operation.paramTypes =
+	    TEEC_PARAM_TYPES(have_keys, TEEC_VALUE_INPUT, have_src, TEEC_MEMREF_WHOLE);
 
 	/* Invoke command */
 	ret = TEEC_InvokeCommand(&g_session, CMD_DO_CRYPTO, &operation, &retOrigin);
 
-	/* Inform the caller of the number of bytes actually used in the destination buffer */
+	/* Inform the caller of the number of bytes actually used in the destination
+	 * buffer */
 	*dest_len = operation.params[3].memref.size;
 
 free_shm:

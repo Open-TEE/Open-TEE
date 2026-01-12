@@ -19,16 +19,16 @@
 
 #include <stdlib.h>
 
-#include "tee_crypto_api.h"
-#include "tee_data_types.h"
-#include "tee_panic.h"
-#include "tee_memory.h"
 #include "crypto_digest.h"
 #include "crypto_utils.h"
 #include "operation_handle.h"
-#include "tee_logging.h"
 #include "storage/object_handle.h"
 #include "storage/storage_utils.h"
+#include "tee_crypto_api.h"
+#include "tee_data_types.h"
+#include "tee_logging.h"
+#include "tee_memory.h"
+#include "tee_panic.h"
 
 #include <mbedtls/md.h>
 
@@ -77,9 +77,9 @@ static TEE_Result do_hmac_init(TEE_OperationHandle operation)
 		free(md_ctx);
 		return TEE_ERROR_OUT_OF_MEMORY;
 	}
-	
+
 	operation->operation_info.digestLength =
-		get_alg_hash_lenght(operation->operation_info.algorithm);
+	    get_alg_hash_lenght(operation->operation_info.algorithm);
 
 	operation->ctx.md.ctx = (void *)md_ctx;
 	return TEE_SUCCESS;
@@ -88,11 +88,10 @@ static TEE_Result do_hmac_init(TEE_OperationHandle operation)
 static void do_hmac_set_key(TEE_OperationHandle operation)
 {
 	int rv_mbedtls;
-	
+
 	rv_mbedtls = mbedtls_md_hmac_starts((mbedtls_md_context_t *)operation->ctx.md.ctx,
-					    operation->ctx.md.key,
-					    operation->key_data->key_lenght);
-	
+					    operation->ctx.md.key, operation->key_data->key_lenght);
+
 	if (rv_mbedtls) {
 		print_mbedtls_to_syslog(rv_mbedtls);
 		OT_LOG(LOG_ERR, "Error: internal crypto (MAC)");
@@ -100,13 +99,12 @@ static void do_hmac_set_key(TEE_OperationHandle operation)
 	}
 }
 
-static void do_hmac_update(TEE_OperationHandle operation,
-			   uint8_t *chunk, size_t chunkSize)
+static void do_hmac_update(TEE_OperationHandle operation, uint8_t *chunk, size_t chunkSize)
 {
 	int rv_mbedtls;
 
-	rv_mbedtls = mbedtls_md_hmac_update((mbedtls_md_context_t *)operation->ctx.md.ctx,
-					    chunk, chunkSize);
+	rv_mbedtls =
+	    mbedtls_md_hmac_update((mbedtls_md_context_t *)operation->ctx.md.ctx, chunk, chunkSize);
 	if (rv_mbedtls) {
 		print_mbedtls_to_syslog(rv_mbedtls);
 		OT_LOG(LOG_ERR, "Error: internal crypto (MAC)");
@@ -181,9 +179,8 @@ void assign_key_mac(TEE_OperationHandle operation, TEE_ObjectHandle key)
 {
 	TEE_Attribute *sec_attr = NULL;
 
-	sec_attr = (TEE_Attribute *)get_attr_from_attrArr(TEE_ATTR_SECRET_VALUE,
-							  key->key->gp_attrs.attrs,
-							  key->key->gp_attrs.attrs_count);
+	sec_attr = (TEE_Attribute *)get_attr_from_attrArr(
+	    TEE_ATTR_SECRET_VALUE, key->key->gp_attrs.attrs, key->key->gp_attrs.attrs_count);
 	if (sec_attr == NULL) {
 		OT_LOG(LOG_ERR, "TEE_ATTR_SECRET_VALUE not found");
 		TEE_Panic(TEE_ERROR_GENERIC);
@@ -195,8 +192,7 @@ void assign_key_mac(TEE_OperationHandle operation, TEE_ObjectHandle key)
 /*
  * GP TEE Core API functions
  */
-void TEE_MACInit(TEE_OperationHandle operation,
-		 void *IV, size_t IVLen)
+void TEE_MACInit(TEE_OperationHandle operation, void *IV, size_t IVLen)
 {
 	(void)IV;
 	(void)IVLen;
@@ -217,7 +213,7 @@ void TEE_MACInit(TEE_OperationHandle operation,
 		OT_LOG_ERR("TEE_MACInit panics due operation key is not set");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
-	
+
 	if (operation->operation_info.operationState == TEE_OPERATION_STATE_ACTIVE)
 		TEE_ResetOperation(operation);
 
@@ -239,8 +235,7 @@ void TEE_MACInit(TEE_OperationHandle operation,
 	operation->operation_info.handleState |= TEE_HANDLE_FLAG_INITIALIZED;
 }
 
-void TEE_MACUpdate(TEE_OperationHandle operation,
-		   void *chunk, size_t chunkSize)
+void TEE_MACUpdate(TEE_OperationHandle operation, void *chunk, size_t chunkSize)
 {
 	if (operation == NULL) {
 		OT_LOG_ERR("TEE_MACUpdate panics due operation NULL");
@@ -280,8 +275,7 @@ void TEE_MACUpdate(TEE_OperationHandle operation,
 	}
 }
 
-TEE_Result TEE_MACComputeFinal(TEE_OperationHandle operation,
-			       void *message, size_t messageLen,
+TEE_Result TEE_MACComputeFinal(TEE_OperationHandle operation, void *message, size_t messageLen,
 			       void *mac, size_t *macLen)
 {
 	if (operation == NULL) {
@@ -313,7 +307,7 @@ TEE_Result TEE_MACComputeFinal(TEE_OperationHandle operation,
 	if (operation->operation_info.digestLength > *macLen) {
 		return TEE_ERROR_SHORT_BUFFER;
 	}
-	
+
 	switch (operation->operation_info.algorithm) {
 	case TEE_ALG_HMAC_MD5:
 	case TEE_ALG_HMAC_SHA1:
@@ -331,15 +325,14 @@ TEE_Result TEE_MACComputeFinal(TEE_OperationHandle operation,
 	}
 
 	//*macLen = operation->operation_info.digestLength;
-	//prepare to reuse the context if required
-	
+	// prepare to reuse the context if required
+
 	TEE_ResetOperation(operation);
 
 	return TEE_SUCCESS;
 }
 
-TEE_Result TEE_MACCompareFinal(TEE_OperationHandle operation,
-			       void *message, size_t messageLen,
+TEE_Result TEE_MACCompareFinal(TEE_OperationHandle operation, void *message, size_t messageLen,
 			       void *mac, size_t macLen)
 {
 	// Reserved according to the biggest mac output (HMAC_SHA512)
@@ -355,6 +348,6 @@ TEE_Result TEE_MACCompareFinal(TEE_OperationHandle operation,
 		ret = TEE_ERROR_MAC_INVALID;
 
 	TEE_ResetOperation(operation);
-	
+
 	return ret;
 }

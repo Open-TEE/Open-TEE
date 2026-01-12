@@ -16,15 +16,15 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include <stddef.h>
 #include <mbedtls/gcm.h>
+#include <stddef.h>
 #include <stdlib.h>
 
-#include "operation_handle.h"
-#include "tee_logging.h"
 #include "crypto_utils.h"
+#include "operation_handle.h"
 #include "storage/object_handle.h"
 #include "storage/storage_utils.h"
+#include "tee_logging.h"
 #include "tee_panic.h"
 
 static TEE_Result valid_tag_len(size_t tagLen)
@@ -44,28 +44,27 @@ static TEE_Result valid_tag_len(size_t tagLen)
 
 static void is_alg_supported(TEE_OperationHandle operation)
 {
-	//OpenTEE internal sanity check
+	// OpenTEE internal sanity check
 	if (operation->operation_info.algorithm != TEE_ALG_AES_GCM) {
 		OT_LOG_ERR("Not supported algorithm (only TEE_ALG_AES_GCM)");
 		TEE_Panic(TEE_ERROR_NOT_SUPPORTED);
 	}
 }
 
-static TEE_Result do_ae_final(TEE_OperationHandle operation,
-			      void *srcData, size_t srcLen,
-			      void *destData, size_t *destLen,
-			      void *tag, size_t *tagLen)
+static TEE_Result do_ae_final(TEE_OperationHandle operation, void *srcData, size_t srcLen,
+			      void *destData, size_t *destLen, void *tag, size_t *tagLen)
 {
 	TEE_Result rv_gp = TEE_SUCCESS;
 	unsigned char *destDataLeftStart;
 	size_t destDataLeftLen = 0, finalOutputLen, initTagLen;
 	int rv_mbedtls;
-	
+
 	if (operation == NULL) {
 		OT_LOG_ERR("TEE_AE_FInal panics due operation NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (operation->operation_info.operationState != TEE_OPERATION_STATE_ACTIVE) {
-		OT_LOG_ERR("TEE_AE_FInal panics due operation state needs to be TEE_OPERATION_STATE_ACTIVE");
+		OT_LOG_ERR("TEE_AE_FInal panics due operation state needs to be "
+			   "TEE_OPERATION_STATE_ACTIVE");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (!(operation->operation_info.handleState & TEE_HANDLE_FLAG_KEY_SET)) {
 		OT_LOG_ERR("TEE_AE_FInal panics due operation key is not set");
@@ -77,22 +76,23 @@ static TEE_Result do_ae_final(TEE_OperationHandle operation,
 		OT_LOG_ERR("TEE_AE_FInal panics due operation is NOT initialized");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (BITS_TO_BYTES(operation->operation_info.digestLength) > *tagLen) {
-		OT_LOG_ERR("TEE_AE_FInal panics due tagLen not right (expected[%u], provided[%lu])",
+		OT_LOG_ERR("TEE_AE_FInal panics due tagLen not right (expected[%u], "
+			   "provided[%lu])",
 			   BITS_TO_BYTES(operation->operation_info.digestLength), *tagLen);
 	}
 
 	is_alg_supported(operation);
 
 	initTagLen = BITS_TO_BYTES(operation->operation_info.digestLength);
-	
+
 	if (destLen != NULL) {
 		destDataLeftLen = *destLen;
 	}
-	
+
 	if (srcData != NULL) {
 		rv_gp = TEE_AEUpdate(operation, srcData, srcLen, destData, destLen);
 	}
-	
+
 	if (rv_gp != TEE_SUCCESS) {
 		return rv_gp;
 	}
@@ -104,14 +104,12 @@ static TEE_Result do_ae_final(TEE_OperationHandle operation,
 		destDataLeftStart = (unsigned char *)NULL;
 		destDataLeftLen -= 0;
 	}
-	
-	rv_mbedtls = mbedtls_gcm_finish(operation->ctx.gcm.ctx,
-					destDataLeftStart, destDataLeftLen,
-					&finalOutputLen,
-					tag, initTagLen);
+
+	rv_mbedtls = mbedtls_gcm_finish(operation->ctx.gcm.ctx, destDataLeftStart, destDataLeftLen,
+					&finalOutputLen, tag, initTagLen);
 	if (rv_mbedtls) {
 		print_mbedtls_to_syslog(rv_mbedtls);
-		OT_LOG(LOG_ERR,"Error: Internal AE error (details print to syslog)");
+		OT_LOG(LOG_ERR, "Error: Internal AE error (details print to syslog)");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
@@ -120,7 +118,7 @@ static TEE_Result do_ae_final(TEE_OperationHandle operation,
 	}
 	*tagLen = initTagLen;
 	TEE_ResetOperation(operation);
-	
+
 	return rv_gp;
 }
 
@@ -144,8 +142,8 @@ void free_gp_ae(TEE_OperationHandle operation)
 
 void reset_gp_ae(TEE_OperationHandle operation)
 {
-	//Not sure about how to reset, because not reset function :/
-	//TODO (NOTE): Breaks GP compatibility. Using malloc.
+	// Not sure about how to reset, because not reset function :/
+	// TODO (NOTE): Breaks GP compatibility. Using malloc.
 
 	free_gp_ae(operation);
 
@@ -159,8 +157,7 @@ void assign_key_ae(TEE_OperationHandle operation, TEE_ObjectHandle key)
 {
 	TEE_Attribute *sec_attr = NULL;
 
-	sec_attr = get_attr_from_attrArr(TEE_ATTR_SECRET_VALUE,
-					 key->key->gp_attrs.attrs,
+	sec_attr = get_attr_from_attrArr(TEE_ATTR_SECRET_VALUE, key->key->gp_attrs.attrs,
 					 key->key->gp_attrs.attrs_count);
 	if (sec_attr == NULL) {
 		OT_LOG(LOG_ERR, "TEE_ATTR_SECRET_VALUE not found");
@@ -170,11 +167,8 @@ void assign_key_ae(TEE_OperationHandle operation, TEE_ObjectHandle key)
 	operation->ctx.gcm.key = sec_attr->content.ref.buffer;
 }
 
-TEE_Result TEE_AEInit(TEE_OperationHandle operation,
-		      void *nonce, size_t nonceLen,
-		      uint32_t tagLen,
-		      uint32_t AADLen,
-		      uint32_t payloadLen)
+TEE_Result TEE_AEInit(TEE_OperationHandle operation, void *nonce, size_t nonceLen, uint32_t tagLen,
+		      uint32_t AADLen, uint32_t payloadLen)
 {
 	TEE_Result rv_gp;
 	int rv_mbedtls;
@@ -182,12 +176,13 @@ TEE_Result TEE_AEInit(TEE_OperationHandle operation,
 
 	AADLen = AADLen;
 	payloadLen = payloadLen;
-	
+
 	if (operation == NULL) {
 		OT_LOG_ERR("TEE_AEInit panics due operation NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (operation->operation_info.operationState != TEE_OPERATION_STATE_INITIAL) {
-		OT_LOG_ERR("TEE_AEInit panics due operation state needs to be TEE_OPERATION_STATE_INITIAL");
+		OT_LOG_ERR("TEE_AEInit panics due operation state needs to be "
+			   "TEE_OPERATION_STATE_INITIAL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (!(operation->operation_info.handleState & TEE_HANDLE_FLAG_KEY_SET)) {
 		OT_LOG_ERR("TEE_AEInit panics due operation key is not set");
@@ -196,57 +191,58 @@ TEE_Result TEE_AEInit(TEE_OperationHandle operation,
 		OT_LOG_ERR("TEE_AEInit panics due operation class not TEE_OPERATION_AE");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (operation->operation_info.handleState & TEE_HANDLE_FLAG_INITIALIZED) {
-		OT_LOG_ERR("TEE_AEInit panics due operation is initialized (call TEE_ResetOperation)");
+		OT_LOG_ERR("TEE_AEInit panics due operation is initialized (call "
+			   "TEE_ResetOperation)");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
-	
+
 	is_alg_supported(operation);
 
 	rv_gp = valid_tag_len(tagLen);
 	if (rv_gp != TEE_SUCCESS) {
 		return rv_gp;
 	}
-	
+
 	if (operation->operation_info.operationState == TEE_OPERATION_STATE_ACTIVE) {
 		TEE_ResetOperation(operation);
 	}
-	
-       	rv_mbedtls = mbedtls_gcm_setkey(operation->ctx.gcm.ctx,
-					MBEDTLS_CIPHER_ID_AES,
+
+	rv_mbedtls = mbedtls_gcm_setkey(operation->ctx.gcm.ctx, MBEDTLS_CIPHER_ID_AES,
 					(const unsigned char *)operation->ctx.gcm.key,
 					BYTES_TO_BITS(operation->key_data->key_lenght));
 	if (rv_mbedtls) {
 		print_mbedtls_to_syslog(rv_mbedtls);
-		OT_LOG(LOG_ERR,"Error: Internal AE error");
+		OT_LOG(LOG_ERR, "Error: Internal AE error");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	mode_mbedtls = operation->operation_info.mode == TEE_MODE_ENCRYPT ? MBEDTLS_GCM_ENCRYPT : MBEDTLS_GCM_DECRYPT;
+	mode_mbedtls = operation->operation_info.mode == TEE_MODE_ENCRYPT ? MBEDTLS_GCM_ENCRYPT
+									  : MBEDTLS_GCM_DECRYPT;
 
 	rv_mbedtls = mbedtls_gcm_starts(operation->ctx.gcm.ctx, mode_mbedtls, nonce, nonceLen);
 	if (rv_mbedtls) {
 		print_mbedtls_to_syslog(rv_mbedtls);
-		OT_LOG(LOG_ERR,"Error: Internal AE error");
+		OT_LOG(LOG_ERR, "Error: Internal AE error");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
 	operation->operation_info.digestLength = tagLen;
 	operation->operation_info.handleState |= TEE_HANDLE_FLAG_INITIALIZED;
 	operation->operation_info.operationState = TEE_OPERATION_STATE_ACTIVE;
-	
+
 	return TEE_SUCCESS;
 }
 
-void TEE_AEUpdateAAD(TEE_OperationHandle operation,
-		     void *AADdata, size_t AADdataLen)
+void TEE_AEUpdateAAD(TEE_OperationHandle operation, void *AADdata, size_t AADdataLen)
 {
 	int rv_mbedtls;
-	
+
 	if (operation == NULL) {
 		OT_LOG_ERR("TEE_AEUpdateAAD panics due operation NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (operation->operation_info.operationState != TEE_OPERATION_STATE_ACTIVE) {
-		OT_LOG_ERR("TEE_AEUpdateAAD panics due operation state needs to be TEE_OPERATION_STATE_ACTIVE");
+		OT_LOG_ERR("TEE_AEUpdateAAD panics due operation state needs to be "
+			   "TEE_OPERATION_STATE_ACTIVE");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (!(operation->operation_info.handleState & TEE_HANDLE_FLAG_KEY_SET)) {
 		OT_LOG_ERR("TEE_AEUpdateAAD panics due operation key is not set");
@@ -261,20 +257,19 @@ void TEE_AEUpdateAAD(TEE_OperationHandle operation,
 		OT_LOG_ERR("TEE_AEUpdateAAD panics due AADdata NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
-	
+
 	is_alg_supported(operation);
-	
+
 	rv_mbedtls = mbedtls_gcm_update_ad(operation->ctx.gcm.ctx, AADdata, AADdataLen);
 	if (rv_mbedtls) {
 		print_mbedtls_to_syslog(rv_mbedtls);
-		OT_LOG(LOG_ERR,"Error: Internal AE error");
+		OT_LOG(LOG_ERR, "Error: Internal AE error");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
 }
 
-TEE_Result TEE_AEUpdate(TEE_OperationHandle operation,
-			void *srcData, size_t srcLen,
-			void *destData, size_t *destLen)
+TEE_Result TEE_AEUpdate(TEE_OperationHandle operation, void *srcData, size_t srcLen, void *destData,
+			size_t *destLen)
 {
 	int rv_mbedtls;
 	size_t mbedtls_output_len;
@@ -306,45 +301,34 @@ TEE_Result TEE_AEUpdate(TEE_OperationHandle operation,
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (srcLen > *destLen) {
 		OT_LOG_ERR("TEE_AEUpdate panics due destLen too short (srcLen[%lu]; "
-			   "destLen[%lu])", srcLen, *destLen);
+			   "destLen[%lu])",
+			   srcLen, *destLen);
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
-	
+
 	is_alg_supported(operation);
-	
-	rv_mbedtls = mbedtls_gcm_update(operation->ctx.gcm.ctx,
-					srcData, srcLen,
-					destData, *destLen,
+
+	rv_mbedtls = mbedtls_gcm_update(operation->ctx.gcm.ctx, srcData, srcLen, destData, *destLen,
 					&mbedtls_output_len);
 	if (rv_mbedtls) {
 		print_mbedtls_to_syslog(rv_mbedtls);
-		OT_LOG(LOG_ERR,"Error: Internal AE error");
+		OT_LOG(LOG_ERR, "Error: Internal AE error");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
 	*destLen = mbedtls_output_len;
-	
+
 	return TEE_SUCCESS;
 }
 
-TEE_Result TEE_AEEncryptFinal(TEE_OperationHandle operation,
-			      void *srcData, size_t srcLen,
-			      void *destData, size_t *destLen,
-			      void *tag, size_t *tagLen)
+TEE_Result TEE_AEEncryptFinal(TEE_OperationHandle operation, void *srcData, size_t srcLen,
+			      void *destData, size_t *destLen, void *tag, size_t *tagLen)
 {
-	return do_ae_final(operation,
-			   srcData, srcLen,
-			   destData, destLen,
-			   tag, tagLen);
+	return do_ae_final(operation, srcData, srcLen, destData, destLen, tag, tagLen);
 }
 
-TEE_Result TEE_AEDecryptFinal(TEE_OperationHandle operation,
-			      void *srcData, size_t srcLen,
-			      void *destData, size_t *destLen,
-			      void *tag, size_t tagLen)
+TEE_Result TEE_AEDecryptFinal(TEE_OperationHandle operation, void *srcData, size_t srcLen,
+			      void *destData, size_t *destLen, void *tag, size_t tagLen)
 {
-	return do_ae_final(operation,
-			   srcData, srcLen,
-			   destData, destLen,
-			   tag, &tagLen);
+	return do_ae_final(operation, srcData, srcLen, destData, destLen, tag, &tagLen);
 }

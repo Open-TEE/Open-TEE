@@ -35,7 +35,8 @@ struct ta_loop_arg {
 
 /*!
  * \brief ta_process_loop
- * The main loop of the TA process. Ta_process_loop function is TA execution entry function
+ * The main loop of the TA process. Ta_process_loop function is TA execution
+ * entry function
  * \param arg \sa struct ta_loop_arg
  * \return should never return
  */

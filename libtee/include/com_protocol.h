@@ -22,9 +22,9 @@
  * \file com_protocol.h
  * \brief
  *
- * Use com_recv_msg(), com_send_msg(), com_wait_and_recv_msg() functions, because there function
- * will add or remove and check transport information.
- * If message is corrupted, it will be discarted.
+ * Use com_recv_msg(), com_send_msg(), com_wait_and_recv_msg() functions,
+ * because there function will add or remove and check transport information. If
+ * message is corrupted, it will be discarted.
  *
  * Protocol format:
  *
@@ -83,7 +83,8 @@
 
 /*!
  * \brief The com_msg_hdr struct
- * Message header is containing generic information, which is common for all messages
+ * Message header is containing generic information, which is common for all
+ * messages
  */
 struct com_msg_hdr {
 	uint64_t sess_id;
@@ -153,7 +154,6 @@ struct com_msg_open_session {
 	uint32_t return_origin;
 } __attribute__((aligned));
 
-
 /**
  * !brief
  * container for data to be passed as part of the mgr_invoke command
@@ -192,8 +192,8 @@ struct com_msg_invoke_cmd {
 
 /*!
  * \brief The com_msg_ta_created struct
- * Launcher is reporting launched TA PID. If PID is -1, something went wrong with launching
- * for example clone-function call failed.
+ * Launcher is reporting launched TA PID. If PID is -1, something went wrong
+ * with launching for example clone-function call failed.
  */
 struct com_msg_ta_created {
 	struct com_msg_hdr msg_hdr;
@@ -221,8 +221,8 @@ struct com_msg_ca_finalize_constex {
 
 /*!
  * \brief The com_msg_proc_status_change struct
- * Manager IO thread is reporting  to manager logic thread that some of child process
- * status has been changed.
+ * Manager IO thread is reporting  to manager logic thread that some of child
+ * process status has been changed.
  */
 struct com_msg_proc_status_change {
 	struct com_msg_hdr msg_hdr;
@@ -231,7 +231,8 @@ struct com_msg_proc_status_change {
 
 /*!
  * \brief The com_msg_fd_err struct
- * Manager IO thread encountered fd error and reporting it to manager logic thread.
+ * Manager IO thread encountered fd error and reporting it to manager logic
+ * thread.
  */
 struct com_msg_fd_err {
 	struct com_msg_hdr msg_hdr;
@@ -262,7 +263,7 @@ struct com_msg_ta_rem_from_dir {
  * \brief The com_msg_request_cancellation struct
  * Requestion operation cancellation. Message is send by CA
  */
-struct com_msg_request_cancellation  {
+struct com_msg_request_cancellation {
 	struct com_msg_hdr msg_hdr;
 	uint64_t operation_id;
 } __attribute__((aligned));
@@ -302,7 +303,7 @@ struct com_msg_manager_termination {
 
 /*
  * Function for receiving and  sending messages
-*/
+ */
 
 /*!
  * \brief send_fd
@@ -324,8 +325,9 @@ int recv_fd(int sockfd, int *recvd_fd, int *fd_count, struct iovec *aiov, int ai
 
 /*!
  * \brief com_recv_msg
- * Read message from socket and malloc space for message. Function strip transport info and
- * verifys message. If function is interrupted by EINTR, function recall read function.
+ * Read message from socket and malloc space for message. Function strip
+ * transport info and verifys message. If function is interrupted by EINTR,
+ * function recall read function.
  * \param sockfd
  * \param msg Malloced from heap. It must free by function caller
  * \param msg_len Message lenght
@@ -336,7 +338,8 @@ int com_recv_msg(int sockfd, void **msg, int *msg_len, int *shareable_fd, int *s
 
 /*!
  * \brief com_send_msg
- * Send message to socket. Function will add transport information begin of message.
+ * Send message to socket. Function will add transport information begin of
+ * message.
  * \param sockfd
  * \param msg
  * \param msg_len

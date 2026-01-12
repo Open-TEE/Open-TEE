@@ -17,18 +17,18 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-#include <string.h>
 #include <dirent.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "tee_panic.h"
-#include "tee_storage_api.h"
-#include "storage_utils.h"
 #include "com_protocol.h"
 #include "opentee_internal_api.h"
-#include "tee_time_api.h"
+#include "storage_utils.h"
 #include "tee_logging.h"
+#include "tee_panic.h"
+#include "tee_storage_api.h"
+#include "tee_time_api.h"
 
 TEE_Result TEE_AllocatePersistentObjectEnumerator(TEE_ObjectEnumHandle *objectEnumerator)
 {
@@ -52,7 +52,7 @@ TEE_Result TEE_AllocatePersistentObjectEnumerator(TEE_ObjectEnumHandle *objectEn
 
 	if (retVal == TEE_SUCCESS && returnPayload.size > 0) {
 		enumParams = returnPayload.data;
-		
+
 		(*objectEnumerator)->ID = enumParams->ID;
 
 		free(returnPayload.data);
@@ -77,7 +77,7 @@ void TEE_FreePersistentObjectEnumerator(TEE_ObjectEnumHandle objectEnumerator)
 		enumParams->ID = objectEnumerator->ID;
 
 		TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_OBJ_ENUM_FREE_PERSIST,
-					      &payload, NULL);
+				     &payload, NULL);
 
 		free(payload.data);
 	}
@@ -90,7 +90,7 @@ void TEE_ResetPersistentObjectEnumerator(TEE_ObjectEnumHandle objectEnumerator)
 {
 	struct com_mgr_invoke_cmd_payload payload;
 	struct com_mrg_enum_command *enumParams;
-	
+
 	if (objectEnumerator == NULL)
 		return;
 
@@ -101,8 +101,7 @@ void TEE_ResetPersistentObjectEnumerator(TEE_ObjectEnumHandle objectEnumerator)
 		enumParams = payload.data;
 		enumParams->ID = objectEnumerator->ID;
 
-		TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE,
-				     COM_MGR_CMD_ID_OBJ_ENUM_RESET_PERSIST,
+		TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_OBJ_ENUM_RESET_PERSIST,
 				     &payload, NULL);
 
 		free(payload.data);
@@ -128,12 +127,10 @@ TEE_Result TEE_StartPersistentObjectEnumerator(TEE_ObjectEnumHandle objectEnumer
 	if (payload.data) {
 		enumParams = payload.data;
 		enumParams->ID = objectEnumerator->ID;
-		memcpy((char *)payload.data + sizeof(struct com_mrg_enum_command),
-		       &storageID,
+		memcpy((char *)payload.data + sizeof(struct com_mrg_enum_command), &storageID,
 		       sizeof(storageID));
 
-		retVal = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE,
-					      COM_MGR_CMD_ID_OBJ_ENUM_START,
+		retVal = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_OBJ_ENUM_START,
 					      &payload, NULL);
 
 		free(payload.data);
@@ -142,8 +139,7 @@ TEE_Result TEE_StartPersistentObjectEnumerator(TEE_ObjectEnumHandle objectEnumer
 }
 
 TEE_Result TEE_GetNextPersistentObject(TEE_ObjectEnumHandle objectEnumerator,
-				       TEE_ObjectInfo *objectInfo,
-				       void *objectID,
+				       TEE_ObjectInfo *objectInfo, void *objectID,
 				       size_t *objectIDLen)
 {
 	struct com_mgr_invoke_cmd_payload payload, returnPayload;
@@ -160,9 +156,9 @@ TEE_Result TEE_GetNextPersistentObject(TEE_ObjectEnumHandle objectEnumerator,
 		enumNext = payload.data;
 		enumNext->ID = objectEnumerator->ID;
 
-		retVal = TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE,
-					      COM_MGR_CMD_ID_OBJ_ENUM_GET_NEXT,
-					      &payload, &returnPayload);
+		retVal =
+		    TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_OBJ_ENUM_GET_NEXT,
+					 &payload, &returnPayload);
 
 		if (retVal == TEE_SUCCESS && returnPayload.size > 0) {
 			enumNext = returnPayload.data;

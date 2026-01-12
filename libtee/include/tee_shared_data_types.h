@@ -14,8 +14,8 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-/* Header file is containing structures and return codes that used and defined in both
- * spesification */
+/* Header file is containing structures and return codes that used and defined
+ * in both spesification */
 
 #ifndef __TEE_SHARED_DATA_TYPES_H__
 #define __TEE_SHARED_DATA_TYPES_H__

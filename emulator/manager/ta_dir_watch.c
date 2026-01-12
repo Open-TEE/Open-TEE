@@ -26,8 +26,8 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 
-#include "conf_parser.h"
 #include "com_protocol.h"
+#include "conf_parser.h"
 #include "core_control_resources.h"
 #include "elf_read.h"
 #include "epoll_wrapper.h"
@@ -35,8 +35,8 @@
 #include "io_thread.h"
 #include "ta_dir_watch.h"
 #include "tee_list.h"
-#include "tee_ta_properties.h"
 #include "tee_logging.h"
+#include "tee_ta_properties.h"
 
 struct loaded_ta {
 	struct list_head list;
@@ -50,7 +50,7 @@ static struct loaded_ta ta_dir_table;
 static int inotify_fd;
 static int inotify_wd;
 static uint32_t inotify_flags =
-		IN_CLOSE_WRITE | IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO;
+    IN_CLOSE_WRITE | IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO;
 #define BUF_LEN (10 * (sizeof(struct inotify_event) + NAME_MAX + 1))
 
 static void free_ta(struct trusted_app_propertie *ta)
@@ -71,10 +71,10 @@ static void free_ta(struct trusted_app_propertie *ta)
 	}
 
 	((struct com_msg_ta_rem_from_dir *)new_man_msg->msg)->msg_hdr.msg_name =
-			COM_MSG_NAME_TA_REM_FROM_DIR;
+	    COM_MSG_NAME_TA_REM_FROM_DIR;
 
-	memcpy(&((struct com_msg_ta_rem_from_dir *)new_man_msg->msg)->uuid,
-	       &ta->user_config.appID, sizeof(TEE_UUID));
+	memcpy(&((struct com_msg_ta_rem_from_dir *)new_man_msg->msg)->uuid, &ta->user_config.appID,
+	       sizeof(TEE_UUID));
 
 	add_man_msg_inbound_queue_and_notify(new_man_msg);
 }
@@ -92,7 +92,8 @@ static void remove_all_tas()
 
 	if (!list_is_empty(&ta_dir_table.list)) {
 
-		LIST_FOR_EACH_SAFE(pos, la, &ta_dir_table.list) {
+		LIST_FOR_EACH_SAFE(pos, la, &ta_dir_table.list)
+		{
 			ta = LIST_ENTRY(pos, struct loaded_ta, list);
 			list_unlink(&ta->list);
 			free_ta(&ta->ta);
@@ -114,7 +115,8 @@ static bool does_name_and_uuid_in_table(struct trusted_app_propertie *new_ta)
 	if (list_is_empty(&ta_dir_table.list))
 		goto end;
 
-	LIST_FOR_EACH(pos, &ta_dir_table.list) {
+	LIST_FOR_EACH(pos, &ta_dir_table.list)
+	{
 
 		ta_in_table = LIST_ENTRY(pos, struct loaded_ta, list);
 
@@ -127,9 +129,9 @@ static bool does_name_and_uuid_in_table(struct trusted_app_propertie *new_ta)
 		}
 
 		if (!memcmp(&ta_in_table->ta.user_config.appID, &new_ta->user_config.appID,
-			  sizeof(TEE_UUID))) {
-			OT_LOG(LOG_ERR, "TAs has same UUID: %s : %s",
-			       ta_in_table->ta.ta_so_name, new_ta->ta_so_name);
+			    sizeof(TEE_UUID))) {
+			OT_LOG(LOG_ERR, "TAs has same UUID: %s : %s", ta_in_table->ta.ta_so_name,
+			       new_ta->ta_so_name);
 			ret = true;
 			goto end;
 		}
@@ -154,7 +156,8 @@ static void delete_ta(char *name)
 	if (list_is_empty(&ta_dir_table.list))
 		goto end;
 
-	LIST_FOR_EACH_SAFE(pos, la, &ta_dir_table.list) {
+	LIST_FOR_EACH_SAFE(pos, la, &ta_dir_table.list)
+	{
 
 		ta = LIST_ENTRY(pos, struct loaded_ta, list);
 
@@ -195,8 +198,7 @@ static void add_new_ta(char *name)
 		goto err;
 	}
 
-	if (!get_data_from_elf(ta_with_path, seek_section_name,
-			       &new_ta_propertie->ta.user_config,
+	if (!get_data_from_elf(ta_with_path, seek_section_name, &new_ta_propertie->ta.user_config,
 			       &ta_user_config_size)) {
 		OT_LOG(LOG_ERR, "%s : properties section is not found", name);
 		goto err;
@@ -374,7 +376,7 @@ int ta_dir_watch_init(struct core_control *c_params, int *man_ta_dir_watch_fd)
 	if (man_ta_dir_watch_fd)
 		*man_ta_dir_watch_fd = inotify_fd;
 
-	return 0;	
+	return 0;
 }
 
 void ta_dir_watch_cleanup()
@@ -403,7 +405,8 @@ struct trusted_app_propertie *ta_dir_watch_props(TEE_UUID *get_ta_uuid)
 	if (list_is_empty(&ta_dir_table.list))
 		goto end;
 
-	LIST_FOR_EACH(pos, &ta_dir_table.list) {
+	LIST_FOR_EACH(pos, &ta_dir_table.list)
+	{
 
 		ta = LIST_ENTRY(pos, struct loaded_ta, list);
 

@@ -18,46 +18,44 @@
 #include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <stddef.h> /*offsetof*/
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <stddef.h> /*offsetof*/
-#include <stdlib.h>
 
 #include "com_protocol.h"
 #include "extern_resources.h"
 #include "io_thread.h"
-#include "shm_mem.h"
-#include "ta_exit_states.h"
-#include "ta_dir_watch.h"
-#include "tee_list.h"
-#include "tee_logging.h"
 #include "logic_thread.h"
-#include "tee_storage_api.h"
 #include "opentee_internal_api.h"
 #include "opentee_manager_storage_api.h"
+#include "shm_mem.h"
+#include "ta_dir_watch.h"
+#include "ta_exit_states.h"
 #include "tee_data_types.h"
+#include "tee_list.h"
+#include "tee_logging.h"
+#include "tee_storage_api.h"
 
 /* Used for hashtable init */
 #define TA_SESS_COUNT_EST 50
 
-
 /* Paramater Types */
-#define TEEC_NONE			0x00000000
-#define TEEC_VALUE_INPUT		0x00000001
-#define TEEC_VALUE_OUTPUT		0x00000002
-#define TEEC_VALUE_INOUT		0x00000003
-#define TEEC_MEMREF_TEMP_INPUT		0x00000005
-#define TEEC_MEMREF_TEMP_OUTPUT		0x00000006
-#define TEEC_MEMREF_TEMP_INOUT		0x00000007
-#define TEEC_MEMREF_WHOLE		0x0000000C
-#define TEEC_MEMREF_PARTIAL_INPUT	0x0000000D
-#define TEEC_MEMREF_PARTIAL_OUTPUT	0x0000000E
-#define TEEC_MEMREF_PARTIAL_INOUT	0x0000000F
+#define TEEC_NONE 0x00000000
+#define TEEC_VALUE_INPUT 0x00000001
+#define TEEC_VALUE_OUTPUT 0x00000002
+#define TEEC_VALUE_INOUT 0x00000003
+#define TEEC_MEMREF_TEMP_INPUT 0x00000005
+#define TEEC_MEMREF_TEMP_OUTPUT 0x00000006
+#define TEEC_MEMREF_TEMP_INOUT 0x00000007
+#define TEEC_MEMREF_WHOLE 0x0000000C
+#define TEEC_MEMREF_PARTIAL_INPUT 0x0000000D
+#define TEEC_MEMREF_PARTIAL_OUTPUT 0x0000000E
+#define TEEC_MEMREF_PARTIAL_INOUT 0x0000000F
 
-static void invoke_cmd_add_fds(struct com_msg_operation *operation,
-			       struct com_msg_hdr *msg_hdr,
+static void invoke_cmd_add_fds(struct com_msg_operation *operation, struct com_msg_hdr *msg_hdr,
 			       struct proc_shm_mem *proc_shm_mem)
 {
 	uint32_t param_types = operation->paramTypes;
@@ -83,8 +81,8 @@ static void invoke_cmd_add_fds(struct com_msg_operation *operation,
 
 		} else {
 
-
-			LIST_FOR_EACH(pos, &proc_shm_mem->list) {
+			LIST_FOR_EACH(pos, &proc_shm_mem->list)
+			{
 				current_shm = LIST_ENTRY(pos, struct proc_shm_mem, list);
 				if (strcmp(current_shm->name,
 					   operation->params[i].param.memref.shm_area) == 0) {
@@ -160,10 +158,12 @@ static void free_proc(proc_t del_proc)
 	unlink_all_shm_region(del_proc);
 
 	/* Free process sessions
-	 * Note: It is a programmer error, if he close session and there is session open */
+	 * Note: It is a programmer error, if he close session and there is session
+	 * open */
 	if (!list_is_empty(&del_proc->links.list)) {
 
-		LIST_FOR_EACH_SAFE(pos, la, &del_proc->links.list) {
+		LIST_FOR_EACH_SAFE(pos, la, &del_proc->links.list)
+		{
 
 			proc_sess = LIST_ENTRY(pos, struct sesLink, list);
 			list_unlink(&proc_sess->list);
@@ -289,8 +289,7 @@ static void ca_init_context(struct manager_msg *man_msg)
 	}
 
 	/* Message can be received only from client */
-	if (man_msg->proc->p_type != proc_t_CA ||
-	    man_msg->proc->status != proc_uninitialized) {
+	if (man_msg->proc->p_type != proc_t_CA || man_msg->proc->status != proc_uninitialized) {
 		OT_LOG(LOG_ERR, "Message can be received only from clientApp");
 		goto discard_msg;
 	}
@@ -319,7 +318,8 @@ static bool active_sess_in_ta(proc_t ta_proc)
 	if (list_is_empty(&ta_proc->links.list))
 		return false;
 
-	LIST_FOR_EACH(pos, &ta_proc->links.list) {
+	LIST_FOR_EACH(pos, &ta_proc->links.list)
+	{
 
 		sess = LIST_ENTRY(pos, struct sesLink, list);
 
@@ -378,7 +378,8 @@ static struct sesLink *get_sesLink_by_ID(proc_t proc, uint64_t get_sess_id)
 	if (list_is_empty(&proc->links.list))
 		return NULL;
 
-	LIST_FOR_EACH(pos, &proc->links.list) {
+	LIST_FOR_EACH(pos, &proc->links.list)
+	{
 
 		sess = LIST_ENTRY(pos, struct sesLink, list);
 
@@ -402,13 +403,11 @@ static void remove_session_between(proc_t owner, proc_t to, uint64_t sess_id)
 	free_sess(session);
 }
 
-
 static void remove_session_send_close_sess_msg(struct sesLink *ta_sess)
 {
 	struct manager_msg *man_msg = NULL;
 
-	if (ta_sess->p_type != proc_t_session ||
-	    ta_sess->owner->p_type != proc_t_TA) {
+	if (ta_sess->p_type != proc_t_session || ta_sess->owner->p_type != proc_t_TA) {
 		OT_LOG(LOG_ERR, "Not session or not session in TA process\n");
 		return;
 	}
@@ -430,7 +429,7 @@ static void remove_session_send_close_sess_msg(struct sesLink *ta_sess)
 	man_msg->proc = ta_sess->owner;
 
 	((struct com_msg_close_session *)man_msg->msg)->msg_hdr.msg_name =
-			COM_MSG_NAME_CLOSE_SESSION;
+	    COM_MSG_NAME_CLOSE_SESSION;
 	((struct com_msg_close_session *)man_msg->msg)->msg_hdr.msg_type = COM_TYPE_QUERY;
 	((struct com_msg_close_session *)man_msg->msg)->sess_ctx = ta_sess->sess_ctx;
 
@@ -457,11 +456,9 @@ static void open_session_response(struct manager_msg *man_msg)
 	if (man_msg->proc->p_type != proc_t_TA) {
 		OT_LOG(LOG_ERR, "Invalid sender");
 		goto ignore_msg;
-
 	}
 
-	if (!(man_msg->proc->status == proc_active ||
-	      man_msg->proc->status == proc_initialized)) {
+	if (!(man_msg->proc->status == proc_active || man_msg->proc->status == proc_initialized)) {
 		OT_LOG(LOG_ERR, "Invalid sender status");
 		goto ignore_msg;
 	}
@@ -490,8 +487,8 @@ static void open_session_response(struct manager_msg *man_msg)
 	if (open_resp_msg->return_code_open_session != TEE_SUCCESS) {
 
 		/* Although session will be removed, it is marked as closed. It is done,
-		 * because then we can call send_close_sess_msg() and it can decide if TA needs
-		 * to be terminated. */
+		 * because then we can call send_close_sess_msg() and it can decide if TA
+		 * needs to be terminated. */
 		ta_session->status = sess_closed;
 		ta_session->to->status = sess_closed;
 
@@ -552,7 +549,8 @@ static proc_t get_ta_by_uuid(TEE_UUID *uuid)
 	if (list_is_empty(&ta_list))
 		return ta;
 
-	LIST_FOR_EACH(pos, &ta_list) {
+	LIST_FOR_EACH(pos, &ta_list)
+	{
 
 		ta = LIST_ENTRY(pos, struct __proc, list);
 
@@ -575,9 +573,8 @@ static int comm_launcher_to_launch_ta(struct manager_msg *man_msg, int *new_ta_f
 	*new_ta_pid = -1;
 
 	/* Communicating directly to launcher */
-	if (com_send_msg(launcher_fd, man_msg->msg, man_msg->msg_len,
-			header_for_fds->shareable_fd, header_for_fds->shareable_fd_count)
-	    != man_msg->msg_len) {
+	if (com_send_msg(launcher_fd, man_msg->msg, man_msg->msg_len, header_for_fds->shareable_fd,
+			 header_for_fds->shareable_fd_count) != man_msg->msg_len) {
 		/* TODO: Why socket failing */
 		OT_LOG(LOG_ERR, "Communication proble to launcher");
 		goto err;
@@ -608,7 +605,8 @@ static int comm_launcher_to_launch_ta(struct manager_msg *man_msg, int *new_ta_f
 
 	*new_ta_pid = recv_created_msg->pid;
 
-	/* launcher is forking to new proc and creates sockpair. Other end will be send here. */
+	/* launcher is forking to new proc and creates sockpair. Other end will be
+	 * send here. */
 	if (recv_fd(launcher_fd, new_ta_fd, NULL, NULL, 0) == -1) {
 		OT_LOG(LOG_ERR, "Error at recv TA fd");
 		goto err;
@@ -659,7 +657,8 @@ static int create_sesLink(proc_t owner, proc_t to, uint64_t sess_id)
 	struct sesLink *new_owner_ses = NULL;
 	struct sesLink *new_to_ses = NULL;
 
-	/* Following code will be generating two session link and cross linking sessions to gether
+	/* Following code will be generating two session link and cross linking
+	 * sessions to gether
 	 */
 
 	if (add_new_session_to_proc(owner, NULL, sess_id, &new_owner_ses))
@@ -680,15 +679,17 @@ static int create_sesLink(proc_t owner, proc_t to, uint64_t sess_id)
 
 /*!
  * \brief connect_to_ta
- * Function sole purpose is to decide if there is need to connect some existing TA or launch
- * new TA.
+ * Function sole purpose is to decide if there is need to connect some existing
+ * TA or launch new TA.
  * \param man_msg
- * \param conn_ta If function returns NULL -> Launch new TA or else connect to this proc
+ * \param conn_ta If function returns NULL -> Launch new TA or else connect to
+ * this proc
  * \param ta_uuid
- * \return true on success. False if can't connect ANY TA. See also explanation about conn_ta param
+ * \return true on success. False if can't connect ANY TA. See also explanation
+ * about conn_ta param
  */
-static bool does_ta_exist_and_connectable(struct manager_msg *man_msg,
-					  proc_t *conn_ta, TEE_UUID *ta_uuid)
+static bool does_ta_exist_and_connectable(struct manager_msg *man_msg, proc_t *conn_ta,
+					  TEE_UUID *ta_uuid)
 {
 	struct trusted_app_propertie *ta_propertie;
 	bool ret = true;
@@ -713,9 +714,9 @@ static bool does_ta_exist_and_connectable(struct manager_msg *man_msg,
 		goto ret;
 	}
 
-	if (*conn_ta && ((*conn_ta)->status == proc_active ||
-			 (*conn_ta)->status == proc_initialized ||
-			 (*conn_ta)->status == proc_uninitialized) &&
+	if (*conn_ta &&
+	    ((*conn_ta)->status == proc_active || (*conn_ta)->status == proc_initialized ||
+	     (*conn_ta)->status == proc_uninitialized) &&
 	    ta_propertie->user_config.singletonInstance &&
 	    !ta_propertie->user_config.multiSession) {
 		/* Singleton and running and not supporting multi session! */
@@ -724,8 +725,8 @@ static bool does_ta_exist_and_connectable(struct manager_msg *man_msg,
 		goto ret;
 	}
 
-	memcpy(&((struct com_msg_open_session *)man_msg->msg)->ta_so_name,
-	       ta_propertie->ta_so_name, TA_MAX_FILE_NAME);
+	memcpy(&((struct com_msg_open_session *)man_msg->msg)->ta_so_name, ta_propertie->ta_so_name,
+	       TA_MAX_FILE_NAME);
 
 	if (*conn_ta && ta_propertie->user_config.singletonInstance) {
 
@@ -738,8 +739,8 @@ static bool does_ta_exist_and_connectable(struct manager_msg *man_msg,
 		 * success --> do not accept new open session msg */
 		if ((*conn_ta)->status == proc_initialized ||
 		    (*conn_ta)->status == proc_uninitialized) {
-			gen_err_msg_and_add_to_out(man_msg,
-						   TEE_ORIGIN_TEE, TEE_ERROR_ACCESS_CONFLICT);
+			gen_err_msg_and_add_to_out(man_msg, TEE_ORIGIN_TEE,
+						   TEE_ERROR_ACCESS_CONFLICT);
 			ret = false;
 			goto ret;
 		}
@@ -756,8 +757,8 @@ static bool does_ta_exist_and_connectable(struct manager_msg *man_msg,
 
 		if ((*conn_ta)->status == proc_initialized ||
 		    (*conn_ta)->status == proc_uninitialized) {
-			gen_err_msg_and_add_to_out(man_msg,
-						   TEE_ORIGIN_TEE, TEE_ERROR_ACCESS_CONFLICT);
+			gen_err_msg_and_add_to_out(man_msg, TEE_ORIGIN_TEE,
+						   TEE_ERROR_ACCESS_CONFLICT);
 			ret = false;
 			goto ret;
 		}
@@ -785,12 +786,12 @@ static int launch_and_init_ta(struct manager_msg *man_msg, TEE_UUID *ta_uuid, pr
 		goto err_1;
 
 	/* Launch new TA */
-	if (comm_launcher_to_launch_ta(man_msg,
-				       &(((*new_ta_proc)->sockfd)),
+	if (comm_launcher_to_launch_ta(man_msg, &(((*new_ta_proc)->sockfd)),
 				       &((*new_ta_proc)->pid)))
 		goto err_2;
 
-	/* Note: TA is launched and its init process is on going now on its own proc */
+	/* Note: TA is launched and its init process is on going now on its own proc
+	 */
 
 	if (epoll_reg_data((*new_ta_proc)->sockfd, EPOLLIN, *new_ta_proc))
 		goto err_3;
@@ -826,12 +827,11 @@ static void open_session_query(struct manager_msg *man_msg)
 	/* SessID is needed when message is sent back from TA */
 	open_msg->msg_hdr.sess_id = new_session_id;
 
-	/* Note: Function will return TRUE/FALSE, but this boolean is not about should we
-	 * connect to existing TA. If function return FALSE, TA might not be availible in TA
-	 * folder or can not lock mutex. If true, TA is availible, but we must check also
-	 * conn_ta -value:
-	 * If conn_ta is NULL, launch new ta and connect to that
-	 * If conn_ta NOT NULL, connect to that TA */
+	/* Note: Function will return TRUE/FALSE, but this boolean is not about should
+	 * we connect to existing TA. If function return FALSE, TA might not be
+	 * availible in TA folder or can not lock mutex. If true, TA is availible, but
+	 * we must check also conn_ta -value: If conn_ta is NULL, launch new ta and
+	 * connect to that If conn_ta NOT NULL, connect to that TA */
 	if (!does_ta_exist_and_connectable(man_msg, &conn_ta, &open_msg->uuid))
 		return; /* Err logged and send */
 
@@ -841,15 +841,16 @@ static void open_session_query(struct manager_msg *man_msg)
 			goto err; /* Err msg logged */
 
 		/* Pass on open session cmd to the TA
-		 * Potential Issue: If this message send fails, CA will be waiting forever, because
-		 * no error message is not send */
+		 * Potential Issue: If this message send fails, CA will be waiting forever,
+		 * because no error message is not send */
 		man_msg->proc = conn_ta;
 		add_msg_out_queue_and_notify(man_msg);
 
 	} else {
 
 		/* Launch new TA
-		 * NOTE: ta_exist_and_connectable() fill open session ta_so_name-parameter!! */
+		 * NOTE: ta_exist_and_connectable() fill open session ta_so_name-parameter!!
+		 */
 		if (launch_and_init_ta(man_msg, &open_msg->uuid, &new_ta))
 			return; /* Err msg logged and send to sender */
 
@@ -951,7 +952,6 @@ static void invoke_cmd(struct manager_msg *man_msg)
 		session->to->waiting_response_msg = WAIT_NO_MSG_OUT;
 	}
 
-
 	man_msg->proc = session->to->owner;
 	add_msg_out_queue_and_notify(man_msg);
 
@@ -976,7 +976,7 @@ static TEE_Result mgr_cmd_test(struct com_mgr_invoke_cmd_payload *in,
 		char *s = in->data;
 		char *r = out->data;
 		for (n = 0; n < in->size; n++)
-			r[n] = s[in->size-1-n];
+			r[n] = s[in->size - 1 - n];
 
 		ret = TEE_SUCCESS;
 	}
@@ -993,14 +993,10 @@ static TEE_Result mgr_cmd_open_persistent(struct com_mgr_invoke_cmd_payload *in,
 	uint32_t attrSize = 0;
 	struct persistant_object per_obj = {0};
 	TEE_ObjectInfo obj_info = {0};
-	
-	ret = MGR_TEE_OpenPersistentObject(createMessage->storageID,
-					   createMessage->objectID,
-					   createMessage->objectIDLen,
-					   createMessage->flags,
-					   &attrs, &attrSize,
-					   &per_obj,
-					   &obj_info);
+
+	ret = MGR_TEE_OpenPersistentObject(createMessage->storageID, createMessage->objectID,
+					   createMessage->objectIDLen, createMessage->flags, &attrs,
+					   &attrSize, &per_obj, &obj_info);
 	if (ret != TEE_SUCCESS) {
 		return ret;
 	}
@@ -1012,12 +1008,14 @@ static TEE_Result mgr_cmd_open_persistent(struct com_mgr_invoke_cmd_payload *in,
 		ret = TEE_ERROR_GENERIC;
 		goto err;
 	}
-	
-	((struct com_mrg_open_persistent*)out->data)->attrsSize = attrSize;
-	memcpy(&((struct com_mrg_open_persistent*)out->data)->info, &obj_info, sizeof(TEE_ObjectInfo));
-	memcpy(&((struct com_mrg_open_persistent*)out->data)->per_object, &per_obj, sizeof(struct persistant_object));
+
+	((struct com_mrg_open_persistent *)out->data)->attrsSize = attrSize;
+	memcpy(&((struct com_mrg_open_persistent *)out->data)->info, &obj_info,
+	       sizeof(TEE_ObjectInfo));
+	memcpy(&((struct com_mrg_open_persistent *)out->data)->per_object, &per_obj,
+	       sizeof(struct persistant_object));
 	memcpy((uint8_t *)out->data + sizeof(struct com_mrg_open_persistent), attrs, attrSize);
- err:
+err:
 	free(attrs);
 	return ret;
 }
@@ -1036,8 +1034,8 @@ static TEE_Result mgr_cmd_close_object(struct com_mgr_invoke_cmd_payload *in,
 
 /* brief! wrapper to create persistent object here
  * in - is the payload coming in, and memory is handled by caller
- * out - is the payload to be returned, if out->data is allocated here, calling function
- *  (invoke_mgr_cmd) will free it
+ * out - is the payload to be returned, if out->data is allocated here, calling
+ * function (invoke_mgr_cmd) will free it
  */
 
 static TEE_Result mgr_cmd_create_persistent(struct com_mgr_invoke_cmd_payload *in,
@@ -1049,31 +1047,27 @@ static TEE_Result mgr_cmd_create_persistent(struct com_mgr_invoke_cmd_payload *i
 	uint8_t *gp_attrs = NULL;
 	uint8_t *initialData = NULL;
 	struct persistant_object per_obj;
-	
+
 	if (createMessage->attributeSize > 0) {
 		gp_attrs = (uint8_t *)in->data + sizeof(struct com_mrg_create_persistent);
 	}
 
 	if (createMessage->initialDataLen > 0) {
-		initialData = (uint8_t *)in->data +
-			sizeof(struct com_mrg_create_persistent) +
-			createMessage->attributeSize;
+		initialData = (uint8_t *)in->data + sizeof(struct com_mrg_create_persistent) +
+			      createMessage->attributeSize;
 	}
 
-	ret = MGR_TEE_CreatePersistentObject(createMessage->storageID,
-					     createMessage->objectID, createMessage->objectIDLen,
-					     createMessage->flags,
+	ret = MGR_TEE_CreatePersistentObject(createMessage->storageID, createMessage->objectID,
+					     createMessage->objectIDLen, createMessage->flags,
 					     gp_attrs, createMessage->attributeSize,
-					     createMessage->data_object,
-					     &createMessage->info,
-					     &per_obj,
-					     initialData, createMessage->initialDataLen);
+					     createMessage->data_object, &createMessage->info,
+					     &per_obj, initialData, createMessage->initialDataLen);
 
 	if (ret == TEE_SUCCESS) {
 		out->size = sizeof(struct com_mrg_create_persistent);
 		out->data = calloc(1, out->size);
-		memcpy(&((struct com_mrg_create_persistent *)out->data)->perObj,
-		       &per_obj, sizeof(struct persistant_object));
+		memcpy(&((struct com_mrg_create_persistent *)out->data)->perObj, &per_obj,
+		       sizeof(struct persistant_object));
 	}
 
 	return ret;
@@ -1087,8 +1081,7 @@ static TEE_Result mgr_cmd_rename_persistent(struct com_mgr_invoke_cmd_payload *i
 
 	out = out;
 
-	return MGR_TEE_RenamePersistentObject(renameMessage->objectID,
-					      renameMessage->objectIDLen,
+	return MGR_TEE_RenamePersistentObject(renameMessage->objectID, renameMessage->objectIDLen,
 					      renameMessage->newObjectID,
 					      renameMessage->newObjectIDLen);
 }
@@ -1101,7 +1094,8 @@ static TEE_Result mgr_cmd_close_and_delete_persistent(struct com_mgr_invoke_cmd_
 
 	out = out;
 
-	return MGR_TEE_CloseAndDeletePersistentObject(closeAndDeleteMessage->objectID, closeAndDeleteMessage->objectIDLen);
+	return MGR_TEE_CloseAndDeletePersistentObject(closeAndDeleteMessage->objectID,
+						      closeAndDeleteMessage->objectIDLen);
 }
 
 static TEE_Result mgr_cmd_allocate_persist_obj_enum(struct com_mgr_invoke_cmd_payload *in,
@@ -1238,14 +1232,14 @@ static TEE_Result mgr_cmd_read_obj_data(struct com_mgr_invoke_cmd_payload *in,
 		return TEE_ERROR_OUT_OF_MEMORY;
 	}
 	pos = transfer_struct->dataPosition;
-	
+
 	ret = MGR_TEE_ReadObjectData(transfer_struct->objectID, transfer_struct->objectIDLen,
 				     r_buffer, r_buffer_len, &read_count, &pos);
 	if (ret != TEE_SUCCESS) {
 		goto out;
 	}
 
-	//TODO(future): if calloc fails then pos is wrong..
+	// TODO(future): if calloc fails then pos is wrong..
 	out->size = sizeof(struct com_mrg_transfer_data_persistent) + read_count;
 	out->data = calloc(1, out->size);
 
@@ -1254,9 +1248,9 @@ static TEE_Result mgr_cmd_read_obj_data(struct com_mgr_invoke_cmd_payload *in,
 	transfer_struct->dataSize = read_count;
 	if (read_count > 0) {
 		memcpy((uint8_t *)out->data + sizeof(struct com_mrg_transfer_data_persistent),
-			r_buffer, read_count);
+		       r_buffer, read_count);
 	}
- out:
+out:
 	free(r_buffer);
 	return ret;
 }
@@ -1272,14 +1266,14 @@ static TEE_Result mgr_cmd_write_obj_data(struct com_mgr_invoke_cmd_payload *in,
 	pos = inTransferMsg->dataPosition;
 	bufferLen = inTransferMsg->dataSize;
 	buffer = (uint8_t *)in->data + sizeof(struct com_mrg_transfer_data_persistent);
-	
-	ret = MGR_TEE_WriteObjectData(&inTransferMsg->objectID, inTransferMsg->objectIDLen,
-				      buffer, bufferLen, &pos);
+
+	ret = MGR_TEE_WriteObjectData(&inTransferMsg->objectID, inTransferMsg->objectIDLen, buffer,
+				      bufferLen, &pos);
 
 	if (ret == TEE_SUCCESS) {
 		out->size = sizeof(struct com_mrg_transfer_data_persistent);
 		out->data = calloc(1, out->size);
-		
+
 		((struct com_mrg_transfer_data_persistent *)out->data)->dataPosition = pos;
 	}
 
@@ -1295,14 +1289,14 @@ static TEE_Result mgr_cmd_truncate_obj_data(struct com_mgr_invoke_cmd_payload *i
 	size_t pos;
 
 	pos = inTransferMsg->dataPosition;
-	
+
 	ret = MGR_TEE_TruncateObjectData(&inTransferMsg->objectID, inTransferMsg->objectIDLen,
 					 inTransferMsg->dataSize, &pos);
 
 	if (ret == TEE_SUCCESS) {
 		out->size = sizeof(struct com_mrg_transfer_data_persistent);
 		out->data = calloc(1, out->size);
-		
+
 		retTransferMsg = out->data;
 		retTransferMsg->dataPosition = pos;
 	}
@@ -1313,12 +1307,12 @@ static TEE_Result mgr_cmd_truncate_obj_data(struct com_mgr_invoke_cmd_payload *i
 static TEE_Result mgr_cmd_seek_obj_data(struct com_mgr_invoke_cmd_payload *in,
 					struct com_mgr_invoke_cmd_payload *out)
 {
-	//Placeholder. Currently not need.
-	// Implemented at the internal API
-	
+	// Placeholder. Currently not need.
+	//  Implemented at the internal API
+
 	out = out;
 	in = in;
-	
+
 	return TEE_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -1329,16 +1323,15 @@ static TEE_Result mgr_cmd_objectinfo(struct com_mgr_invoke_cmd_payload *in,
 	TEE_Result ret = TEE_SUCCESS;
 	uint32_t dataSize = 0;
 
-	ret = MGR_TEE_GetObjectInfo1(&inTransferMsg->objectID,
-				     inTransferMsg->objectIDLen,
-				     &dataSize);
+	ret =
+	    MGR_TEE_GetObjectInfo1(&inTransferMsg->objectID, inTransferMsg->objectIDLen, &dataSize);
 
 	if (ret == TEE_SUCCESS) {
 		out->size = sizeof(struct com_mrg_transfer_data_persistent);
 		out->data = calloc(1, out->size);
 		((struct com_mrg_transfer_data_persistent *)out->data)->dataSize = dataSize;
 	}
-	
+
 	return ret;
 }
 
@@ -1356,8 +1349,7 @@ static void invoke_mgr_cmd(struct manager_msg *man_msg)
 
 	/* Function is only valid for proc FDs */
 	if (man_msg->proc->p_type == proc_t_session ||
-	    !(man_msg->proc->status == proc_active ||
-	      man_msg->proc->status == proc_initialized)) {
+	    !(man_msg->proc->status == proc_active || man_msg->proc->status == proc_initialized)) {
 		OT_LOG(LOG_ERR, "Invalid sender or senders status");
 		goto discard_msg;
 	}
@@ -1433,7 +1425,8 @@ static void invoke_mgr_cmd(struct manager_msg *man_msg)
 	}
 
 	/* prepare the message for return, return payload copy and possible realloc*/
-	/* make size 0 means that there is no payload return, and must be marked to 0 */
+	/* make size 0 means that there is no payload return, and must be marked to 0
+	 */
 	invoke_msg->payload.size = 0;
 	invoke_msg->result = retVal;
 
@@ -1511,9 +1504,8 @@ static void send_close_resp_msg_to_sender(proc_t to)
 	}
 
 	((struct com_msg_close_session *)new_man_msg->msg)->msg_hdr.msg_name =
-			COM_MSG_NAME_CLOSE_SESSION;
-	((struct com_msg_close_session *)new_man_msg->msg)->msg_hdr.msg_type =
-			COM_TYPE_RESPONSE;
+	    COM_MSG_NAME_CLOSE_SESSION;
+	((struct com_msg_close_session *)new_man_msg->msg)->msg_hdr.msg_type = COM_TYPE_RESPONSE;
 
 	new_man_msg->proc = to;
 	add_msg_out_queue_and_notify(new_man_msg);
@@ -1593,11 +1585,12 @@ static void set_all_ta_sess_status(proc_t ta, enum session_status new_status)
 	if (list_is_empty(&ta->links.list))
 		return;
 
-	LIST_FOR_EACH(pos, &ta->links.list) {
+	LIST_FOR_EACH(pos, &ta->links.list)
+	{
 
 		proc_sess = LIST_ENTRY(pos, struct sesLink, list);
-			proc_sess->to->status = new_status;
-			proc_sess->status = new_status;
+		proc_sess->to->status = new_status;
+		proc_sess->status = new_status;
 	}
 }
 
@@ -1609,15 +1602,14 @@ static void rm_all_ta_sessions(proc_t ta)
 	if (list_is_empty(&ta->links.list))
 		return;
 
-	LIST_FOR_EACH_SAFE(pos, la, &ta->links.list) {
+	LIST_FOR_EACH_SAFE(pos, la, &ta->links.list)
+	{
 
 		proc_sess = LIST_ENTRY(pos, struct sesLink, list);
-		remove_session_between(proc_sess->owner,
-				       proc_sess->to->owner,
+		remove_session_between(proc_sess->owner, proc_sess->to->owner,
 				       proc_sess->session_id);
 	}
 }
-
 
 static TEE_Result unmap_create_entry_exit_value(uint8_t ret)
 {
@@ -1706,18 +1698,18 @@ static void gen_man_and_err_and_send(struct sesLink *ta_sess, uint8_t exit_statu
 
 	if (exit_status) {
 		((struct com_msg_error *)man_msg->msg)->ret =
-				unmap_create_entry_exit_value(exit_status);
+		    unmap_create_entry_exit_value(exit_status);
 		((struct com_msg_error *)man_msg->msg)->ret_origin = TEE_ORIGIN_TRUSTED_APP;
 
 	} else if (waited_msg) {
 
 		if (waited_msg == WAIT_OPEN_SESSION_MSG)
 			((struct com_msg_error *)man_msg->msg)->msg_hdr.msg_name =
-				COM_MSG_NAME_OPEN_SESSION;
+			    COM_MSG_NAME_OPEN_SESSION;
 
 		else if (waited_msg == WAIT_INVOKE_MSG)
 			((struct com_msg_error *)man_msg->msg)->msg_hdr.msg_name =
-				COM_MSG_NAME_INVOKE_CMD;
+			    COM_MSG_NAME_INVOKE_CMD;
 
 		/* If TA exited during the out message, only possibility is panic! */
 		((struct com_msg_error *)man_msg->msg)->ret = TEE_ERROR_TARGET_DEAD;
@@ -1739,7 +1731,8 @@ static void send_err_to_initialized_sess(proc_t ta, uint8_t exit_status)
 	if (list_is_empty(&ta->links.list))
 		return;
 
-	LIST_FOR_EACH(pos, &ta->links.list) {
+	LIST_FOR_EACH(pos, &ta->links.list)
+	{
 
 		proc_sess = LIST_ENTRY(pos, struct sesLink, list);
 
@@ -1758,7 +1751,8 @@ static void send_err_msg_to_waiting_sess(proc_t ta)
 	if (list_is_empty(&ta->links.list))
 		return;
 
-	LIST_FOR_EACH(pos, &ta->links.list) {
+	LIST_FOR_EACH(pos, &ta->links.list)
+	{
 
 		proc_sess = LIST_ENTRY(pos, struct sesLink, list);
 
@@ -1778,7 +1772,8 @@ static void send_err_generic_err_msg(proc_t ta)
 	if (list_is_empty(&ta->links.list))
 		return;
 
-	LIST_FOR_EACH(pos, &ta->links.list) {
+	LIST_FOR_EACH(pos, &ta->links.list)
+	{
 
 		proc_sess = LIST_ENTRY(pos, struct sesLink, list);
 		gen_man_and_err_and_send(proc_sess, 0, 0);
@@ -1793,7 +1788,8 @@ static void ta_status_change(pid_t ta_pid, int status)
 	if (list_is_empty(&ta_list))
 		return;
 
-	LIST_FOR_EACH(pos, &ta_list) {
+	LIST_FOR_EACH(pos, &ta_list)
+	{
 
 		ta = LIST_ENTRY(pos, struct __proc, list);
 
@@ -1883,7 +1879,8 @@ static void proc_changed_state(struct manager_msg *man_msg)
 		}
 
 		/* Note: If proc status is not continued or stopped, it is terminated. So no
-		 * more socket communication to that process. Close sockets and change status */
+		 * more socket communication to that process. Close sockets and change
+		 * status */
 
 		ta_status_change(changed_proc_pid, status);
 	}
@@ -1897,7 +1894,8 @@ static void send_close_msg_to_all_sessions(proc_t ca_proc)
 	if (list_is_empty(&ca_proc->links.list))
 		return;
 
-	LIST_FOR_EACH_SAFE(pos, la, &ca_proc->links.list) {
+	LIST_FOR_EACH_SAFE(pos, la, &ca_proc->links.list)
+	{
 
 		proc_sess = LIST_ENTRY(pos, struct sesLink, list);
 
@@ -1926,7 +1924,8 @@ static void fd_error(struct manager_msg *man_msg)
 {
 	struct com_msg_fd_err *fd_err_msg = man_msg->msg;
 
-	/* TODO: We can send an error message in following error case: EDQUOT ENOSPC EFBIG EFAULT */
+	/* TODO: We can send an error message in following error case: EDQUOT ENOSPC
+	 * EFBIG EFAULT */
 
 	switch (fd_err_msg->err_no) {
 	case 0: /* If err_no is zero, EPOLLERR or EPOLLHUP generated this message! */
@@ -1964,7 +1963,8 @@ static void ta_rem_from_dir(struct manager_msg *man_msg)
 	if (list_is_empty(&ta_list))
 		return;
 
-	LIST_FOR_EACH_SAFE(pos, la, &ta_list) {
+	LIST_FOR_EACH_SAFE(pos, la, &ta_list)
+	{
 
 		ta = LIST_ENTRY(pos, struct __proc, list);
 
@@ -1998,11 +1998,11 @@ static void request_cancel(struct manager_msg *man_msg)
 		goto discard_msg;
 	}
 
-
 	if (list_is_empty(&man_msg->proc->links.list))
 		return;
 
-	LIST_FOR_EACH(pos, &man_msg->proc->links.list) {
+	LIST_FOR_EACH(pos, &man_msg->proc->links.list)
+	{
 
 		ca_sess = LIST_ENTRY(pos, struct sesLink, list);
 
@@ -2042,13 +2042,15 @@ static void manager_termination(struct manager_msg *man_msg)
 
 	free_manager_msg(man_msg); /* No information */
 
-	/* NOTE: This is only partial cleaning up function. It is only releasing resources, which
-	 * would be left "open" after process terminaiton. This are shared memorys and file locks */
+	/* NOTE: This is only partial cleaning up function. It is only releasing
+	 * resources, which would be left "open" after process terminaiton. This are
+	 * shared memorys and file locks */
 
 	/* Unlink all TAs shm and release file locks */
 	if (!list_is_empty(&ta_list)) {
 
-		LIST_FOR_EACH(pos, &ta_list) {
+		LIST_FOR_EACH(pos, &ta_list)
+		{
 
 			proc = LIST_ENTRY(pos, struct __proc, list);
 			unlink_all_shm_region(proc);
@@ -2059,7 +2061,8 @@ static void manager_termination(struct manager_msg *man_msg)
 	/* Unlink all CAs shm */
 	if (!list_is_empty(&ca_list)) {
 
-		LIST_FOR_EACH(pos, &ca_list) {
+		LIST_FOR_EACH(pos, &ca_list)
+		{
 
 			proc = LIST_ENTRY(pos, struct __proc, list);
 			unlink_all_shm_region(proc);
@@ -2117,15 +2120,14 @@ void *logic_thread_mainloop(void *arg)
 
 		} else {
 
-		    if (!handled_msg->proc) {
-			OT_LOG(LOG_ERR, "Error with sender details");
-			free_manager_msg(handled_msg);
-			continue;
-		    }
+			if (!handled_msg->proc) {
+				OT_LOG(LOG_ERR, "Error with sender details");
+				free_manager_msg(handled_msg);
+				continue;
+			}
 
 			if (handled_msg->proc->p_type == proc_t_TA) {
-				memcpy(&current_TA_uuid,
-				       &handled_msg->proc->ta_uuid,
+				memcpy(&current_TA_uuid, &handled_msg->proc->ta_uuid,
 				       sizeof(current_TA_uuid));
 			}
 		}

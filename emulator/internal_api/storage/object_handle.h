@@ -20,8 +20,8 @@
 #ifndef __OBJECT_HANDLE_H__
 #define __OBJECT_HANDLE_H__
 
-#include <stdio.h>
 #include "crypto/operation_handle.h"
+#include <stdio.h>
 
 struct persistant_object {
 	char obj_id[TEE_OBJECT_ID_MAX_LEN + 1];

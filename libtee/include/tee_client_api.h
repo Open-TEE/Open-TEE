@@ -51,39 +51,46 @@
 /* clang-format on */
 
 /*!
- * \brief TEEC_Context Logical container linking the Client Application to a particular TEE
+ * \brief TEEC_Context Logical container linking the Client Application to a
+ * particular TEE
  */
 typedef struct {
 	void *imp;
 } TEEC_Context;
 
 /*!
- * \brief TEEC_Session Container linking a Client Application to a particular Trusted Application
+ * \brief TEEC_Session Container linking a Client Application to a particular
+ * Trusted Application
  */
 typedef struct {
 	void *imp;
 } TEEC_Session;
 
 /*!
-  * \brief TEEC_SharedMemory A shared memory block that has been registered or allocated
-  */
+ * \brief TEEC_SharedMemory A shared memory block that has been registered or
+ * allocated
+ */
 typedef struct {
-	void *buffer;   /*!< pointer to a memory buffer that is shared with TEE */
-	size_t size;    /*!< The size of the memory buffer in bytes */
-	uint32_t flags; /*!< bit vector that can contain TEEC_MEM_INPUT or TEEC_MEM_OUTPUT */
+	void *buffer;	/*!< pointer to a memory buffer that is shared with TEE */
+	size_t size;	/*!< The size of the memory buffer in bytes */
+	uint32_t flags; /*!< bit vector that can contain TEEC_MEM_INPUT or
+			   TEEC_MEM_OUTPUT */
 	void *imp;
 } TEEC_SharedMemory;
 
 /*!
- * \brief TEEC_TempMemoryReference A Temporary memorry Reference as used by \sa TEEC_Operation
+ * \brief TEEC_TempMemoryReference A Temporary memorry Reference as used by \sa
+ * TEEC_Operation
  */
 typedef struct {
-	void *buffer; /*!< Pointer to the first byte of a buffer that needs to be referenced */
+	void *buffer; /*!< Pointer to the first byte of a buffer that needs to be
+			 referenced */
 	size_t size;  /*!< Size of the referenced memory region */
 } TEEC_TempMemoryReference;
 
 /*!
- * \brief TEEC_RegisteredMemoryReference Uses a pre-registered memory or pre-allocated memory block
+ * \brief TEEC_RegisteredMemoryReference Uses a pre-registered memory or
+ * pre-allocated memory block
  */
 typedef struct {
 	TEEC_SharedMemory *parent; /*!< Either a whole or partial memory reference */
@@ -95,8 +102,10 @@ typedef struct {
  * \brief TEEC_Value Defines a paramater that is not referencing shared memory
  */
 typedef struct {
-	uint32_t a; /*!< Paramater meaning is defined by the protocol between TA and Client */
-	uint32_t b; /*!< Paramater meaning is defined by the protocol between TA and Client */
+	uint32_t a; /*!< Paramater meaning is defined by the protocol between TA and
+		       Client */
+	uint32_t b; /*!< Paramater meaning is defined by the protocol between TA and
+		       Client */
 } TEEC_Value;
 
 /*!
@@ -109,19 +118,24 @@ typedef union {
 } TEEC_Parameter;
 
 /*!
- * \brief TEEC_Operation Defines the payload of either an open session or invoke command
+ * \brief TEEC_Operation Defines the payload of either an open session or invoke
+ * command
  */
 typedef struct {
-	uint32_t started;    /*!< Must set to zero if the client may try to cancel the operation */
-	uint32_t paramTypes; /*!< Encodes the type of each paramater that is being transfered */
+	uint32_t started;	  /*!< Must set to zero if the client may try to cancel the
+				     operation */
+	uint32_t paramTypes;	  /*!< Encodes the type of each paramater that is being
+				     transfered */
 	TEEC_Parameter params[4]; /*!< an array of 4 possible paramaters to share with TA */
-	/* TODO what should be done about the opaque type <implementation defined> section */
+	/* TODO what should be done about the opaque type <implementation defined>
+	 * section */
 	void *imp;
 } TEEC_Operation;
 
 /*
- * 4GB default 32 bit- TODO this should be checked on platform basis, so should be possible
- * to define it it at compile time "-DTEEC_CONFIG_SHAREDMEM_MAX_SIZE=XXX"
+ * 4GB default 32 bit- TODO this should be checked on platform basis, so should
+ * be possible to define it it at compile time
+ * "-DTEEC_CONFIG_SHAREDMEM_MAX_SIZE=XXX"
  */
 #ifndef TEEC_CONFIG_SHAREDMEM_MAX_SIZE
 /*!
@@ -146,23 +160,26 @@ void TEEC_FinalizeContext(TEEC_Context *context);
 
 /*!
  * \brief TEEC_RegisterSharedMemory
- * Register a block of existing Client Memory as a block of Shared Memory within the scope of
- * the specified TEEC_Context
+ * Register a block of existing Client Memory as a block of Shared Memory within
+ * the scope of the specified TEEC_Context
  * \param context Must point to an initialized TEE_Context
  * \param sharedMem Must point to the shared memory region to be registered
- * \return TEEC_SUCCESS on success, TEEC_ERROR_OUT_OF_MEMORY when no memory or another Return Code
+ * \return TEEC_SUCCESS on success, TEEC_ERROR_OUT_OF_MEMORY when no memory or
+ * another Return Code
  */
 TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context, TEEC_SharedMemory *shared_mem);
 
 /*!
  * \brief TEEC_AllocateSharedMemory
- * Allocate a new block of memory as a block of shared memory within the scope of the specified
- * TEEC_Context
+ * Allocate a new block of memory as a block of shared memory within the scope
+ * of the specified TEEC_Context
  * \param context Must point to an initialized TEEC_Context
- * \param sharedMem Must point to the shared memory region definition to to be populated
- * The size field must be set to define the rquired size of the memory region and the flags field
- * must also be set to indicate the direction of flow for the memory.
- * \return TEEC_SUCCESS on success, TEEC_ERROR_OUT_OF_MEMORY when no memory or another Return Code
+ * \param sharedMem Must point to the shared memory region definition to to be
+ * populated The size field must be set to define the rquired size of the memory
+ * region and the flags field must also be set to indicate the direction of flow
+ * for the memory.
+ * \return TEEC_SUCCESS on success, TEEC_ERROR_OUT_OF_MEMORY when no memory or
+ * another Return Code
  */
 TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context, TEEC_SharedMemory *shared_mem);
 
@@ -175,13 +192,17 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shared_mem);
 
 /*!
  * \brief TEEC_OpenSession
- * Open a new session between the client application and the specified Trusted Application
+ * Open a new session between the client application and the specified Trusted
+ * Application
  * \param context A pointer to an initialized context
  * \param session A pointer to a Session structure to be populated
  * \param destination The UUID of the destination Trusted Application
- * \param connectionMethod The method used to connect as defined in Session Connecton Methods
- * \param connectionData Any data necessary to support the connection method choosen
- * \param operation An operation containing a set of parameters to exchange with the TA
+ * \param connectionMethod The method used to connect as defined in Session
+ * Connecton Methods
+ * \param connectionData Any data necessary to support the connection method
+ * choosen
+ * \param operation An operation containing a set of parameters to exchange with
+ * the TA
  * \param returnOrigin The origin of the returned result
  * \return TEEC_SUCCEESS or another Return Code on error
  */
@@ -201,7 +222,8 @@ void TEEC_CloseSession(TEEC_Session *session);
  * \brief TEEC_InvokeCommand
  * Run a specfic command within the session to the trusted application
  * \param session Must point to a valid open session
- * \param commandID Indicates the command which should be run within the trusted Application
+ * \param commandID Indicates the command which should be run within the trusted
+ * Application
  * \param operation Optional data to be sent with the command invocation
  * \param returnOrigin The origin of the returned result
  * \return TEEC_SUCCEESS or another Return Code on error
@@ -211,18 +233,21 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 
 /*!
  * \brief TEEC_RequestCancellation
- * Request the cancellation of a pending Open Session or Comand invocation operation
+ * Request the cancellation of a pending Open Session or Comand invocation
+ * operation
  * \param operation A pointer to the operation to be canceled
  */
 void TEEC_RequestCancellation(TEEC_Operation *operation);
 
 /*!
- * \brief TEEC_PARAM_TYPES Create a Paramater type that can be used with an operation
+ * \brief TEEC_PARAM_TYPES Create a Paramater type that can be used with an
+ * operation
  * \param param0Type Type of parameter 0
  * \param param1Type Type of parameter 1
  * \param param2Type Type of parameter 2
  * \param param3Type Type of parameter 3
- * \return a uint32_t value that can be used in the operation to define the param types
+ * \return a uint32_t value that can be used in the operation to define the
+ * param types
  */
 #define TEEC_PARAM_TYPES(param0Type, param1Type, param2Type, param3Type)                           \
 	((param0Type) | ((param1Type) << 4) | ((param2Type) << 8) | ((param3Type) << 12))

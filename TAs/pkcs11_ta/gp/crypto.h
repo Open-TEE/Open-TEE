@@ -55,8 +55,9 @@ TEE_Result crypto(struct application *app, uint32_t paramTypes, TEE_Param *param
 
 /*!
  * \brief crypto
- * TEE_VERIFY operation is not fitting in a regular crypto operations. It is not returning
- * a buffer (eg. encrypted message). It taking two input buffer and returning an integer
+ * TEE_VERIFY operation is not fitting in a regular crypto operations. It is not
+ * returning a buffer (eg. encrypted message). It taking two input buffer and
+ * returning an integer
  * \param app
  * \param paramTypes
  * \param params

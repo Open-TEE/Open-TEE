@@ -15,18 +15,18 @@
 *****************************************************************************/
 
 #include "tee_bigint.h"
-#include "tee_panic.h"
 #include "tee_logging.h"
+#include "tee_panic.h"
 
 #include <mbedtls/bignum.h>
-#include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
 
 /* For endianness functions */
 #include <arpa/inet.h>
 
-#include <string.h>
 #include <assert.h>
+#include <string.h>
 
 /* Internal header for BigInt numbers */
 struct TEE_BigInt_InternalHeader {
@@ -112,8 +112,8 @@ static int32_t MPIToBigInt(TEE_BigInt *dest, const mbedtls_mpi *num)
 /* Memory allocation and Size of Objects */
 size_t TEE_BigIntFMMContextSizeInU32(size_t modulusSizeInBits)
 {
-	return sizeof(struct FMMContext)
-		+ (modulusSizeInBits * 0); /* to suppress unused parameter warning */
+	return sizeof(struct FMMContext) +
+	       (modulusSizeInBits * 0); /* to suppress unused parameter warning */
 }
 
 size_t TEE_BigIntFMMSizeInU32(size_t modulusSizeInBits)
@@ -132,12 +132,11 @@ void TEE_BigIntInit(TEE_BigInt *bigInt, size_t len)
 	memset(bigInt, 0, len * sizeof(uint32_t));
 
 	/* Store length to header in the beginning of the array */
-	GetHeader(bigInt)->allocated = len * sizeof(uint32_t) -
-				       sizeof(struct TEE_BigInt_InternalHeader);
+	GetHeader(bigInt)->allocated =
+	    len * sizeof(uint32_t) - sizeof(struct TEE_BigInt_InternalHeader);
 }
 
-void TEE_BigIntInitFMMContext(TEE_BigIntFMMContext *context, size_t len,
-			      TEE_BigInt *modulus)
+void TEE_BigIntInitFMMContext(TEE_BigIntFMMContext *context, size_t len, TEE_BigInt *modulus)
 {
 	struct FMMContext *fmm;
 
@@ -157,8 +156,8 @@ void TEE_BigIntInitFMM(TEE_BigIntFMM *bigIntFMM, size_t len)
 }
 
 /* Converter Functions */
-TEE_Result TEE_BigIntConvertFromOctetString(TEE_BigInt *dest, uint8_t *buffer,
-					    size_t bufferLen, int32_t sign)
+TEE_Result TEE_BigIntConvertFromOctetString(TEE_BigInt *dest, uint8_t *buffer, size_t bufferLen,
+					    int32_t sign)
 {
 	mbedtls_mpi num;
 	TEE_Result ret = TEE_SUCCESS;
@@ -189,9 +188,7 @@ TEE_Result TEE_BigIntConvertFromOctetString(TEE_BigInt *dest, uint8_t *buffer,
 	return ret;
 }
 
-TEE_Result TEE_BigIntConvertToOctetString(void *buffer,
-					  size_t bufferLen,
-					  TEE_BigInt *bigInt)
+TEE_Result TEE_BigIntConvertToOctetString(void *buffer, size_t bufferLen, TEE_BigInt *bigInt)
 {
 	mbedtls_mpi num;
 	TEE_Result ret = TEE_SUCCESS;
@@ -501,13 +498,9 @@ void TEE_BigIntMul(TEE_BigInt *dest, TEE_BigInt *op1, TEE_BigInt *op2)
 	mbedtls_mpi_free(&right);
 }
 
-void TEE_BigIntSquare(TEE_BigInt *dest, TEE_BigInt *op)
-{
-	TEE_BigIntMul(dest, op, op);
-}
+void TEE_BigIntSquare(TEE_BigInt *dest, TEE_BigInt *op) { TEE_BigIntMul(dest, op, op); }
 
-void TEE_BigIntDiv(TEE_BigInt *dest_q, TEE_BigInt *dest_r,
-		   TEE_BigInt *op1, TEE_BigInt *op2)
+void TEE_BigIntDiv(TEE_BigInt *dest_q, TEE_BigInt *dest_r, TEE_BigInt *op1, TEE_BigInt *op2)
 {
 	mbedtls_mpi Q;
 	mbedtls_mpi R;
@@ -590,22 +583,19 @@ void TEE_BigIntMod(TEE_BigInt *dest, TEE_BigInt *op, TEE_BigInt *n)
 	mbedtls_mpi_free(&mpi_n);
 }
 
-void TEE_BigIntAddMod(TEE_BigInt *dest, TEE_BigInt *op1,
-		      TEE_BigInt *op2, TEE_BigInt *n)
+void TEE_BigIntAddMod(TEE_BigInt *dest, TEE_BigInt *op1, TEE_BigInt *op2, TEE_BigInt *n)
 {
 	TEE_BigIntAdd(dest, op1, op2);
 	TEE_BigIntMod(dest, dest, n);
 }
 
-void TEE_BigIntSubMod(TEE_BigInt *dest, TEE_BigInt *op1,
-		      TEE_BigInt *op2, TEE_BigInt *n)
+void TEE_BigIntSubMod(TEE_BigInt *dest, TEE_BigInt *op1, TEE_BigInt *op2, TEE_BigInt *n)
 {
 	TEE_BigIntSub(dest, op1, op2);
 	TEE_BigIntMod(dest, dest, n);
 }
 
-void TEE_BigIntMulMod(TEE_BigInt *dest, TEE_BigInt *op1,
-		      TEE_BigInt *op2, TEE_BigInt *n)
+void TEE_BigIntMulMod(TEE_BigInt *dest, TEE_BigInt *op1, TEE_BigInt *op2, TEE_BigInt *n)
 {
 	TEE_BigIntMul(dest, op1, op2);
 	TEE_BigIntMod(dest, dest, n);
@@ -709,10 +699,7 @@ static void EGCDIteration(mbedtls_mpi *a, mbedtls_mpi *a1, mbedtls_mpi *q, mbedt
 	}
 }
 
-void TEE_BigIntComputeExtendedGcd(TEE_BigInt *gcd,
-				  TEE_BigInt *u,
-				  TEE_BigInt *v,
-				  TEE_BigInt *op1,
+void TEE_BigIntComputeExtendedGcd(TEE_BigInt *gcd, TEE_BigInt *u, TEE_BigInt *v, TEE_BigInt *op1,
 				  TEE_BigInt *op2)
 {
 	mbedtls_mpi mpi_gcd;
@@ -737,7 +724,6 @@ void TEE_BigIntComputeExtendedGcd(TEE_BigInt *gcd,
 
 	BigIntToMPI(&mpi_op1, op1);
 	BigIntToMPI(&mpi_op2, op2);
-
 
 	if (u == NULL && v == NULL) {
 		/* calculate gcd(op1, op2) */
@@ -817,13 +803,13 @@ int32_t TEE_BigIntIsProbablePrime(TEE_BigInt *op, uint32_t confidenceLevel)
 
 	int int_confidenceLevel;
 
-	//Default is 80
-	//mbedtls api: 2^(-2*rounds)
-	//GP api       2^(-rounds)
+	// Default is 80
+	// mbedtls api: 2^(-2*rounds)
+	// GP api       2^(-rounds)
 	if (confidenceLevel == 0) {
 		int_confidenceLevel = 40;
 	} else {
-		int_confidenceLevel = confidenceLevel/2;
+		int_confidenceLevel = confidenceLevel / 2;
 		if (int_confidenceLevel < 40) {
 			int_confidenceLevel = 40;
 		}
@@ -847,7 +833,8 @@ int32_t TEE_BigIntIsProbablePrime(TEE_BigInt *op, uint32_t confidenceLevel)
 		TEE_Panic(TEE_ERROR_GENERIC);
 	}
 
-	ret = mbedtls_mpi_is_prime_ext(&mpi_op, int_confidenceLevel, mbedtls_ctr_drbg_random, &ctr_drbg);
+	ret = mbedtls_mpi_is_prime_ext(&mpi_op, int_confidenceLevel, mbedtls_ctr_drbg_random,
+				       &ctr_drbg);
 	if (ret == MBEDTLS_ERR_MPI_ALLOC_FAILED) {
 		OT_LOG(LOG_ERR, "Could not allocate MPI for operands");
 		TEE_Panic(TEE_ERROR_OUT_OF_MEMORY);
@@ -867,8 +854,8 @@ int32_t TEE_BigIntIsProbablePrime(TEE_BigInt *op, uint32_t confidenceLevel)
 }
 
 /* Fast Modular Multiplication Operations */
-void TEE_BigIntConvertToFMM(TEE_BigIntFMM *dest, TEE_BigInt *src,
-			    TEE_BigInt *n, TEE_BigIntFMMContext *context)
+void TEE_BigIntConvertToFMM(TEE_BigIntFMM *dest, TEE_BigInt *src, TEE_BigInt *n,
+			    TEE_BigIntFMMContext *context)
 {
 	struct FMMContext *fmm;
 	size_t src_len;
@@ -901,8 +888,8 @@ void TEE_BigIntConvertToFMM(TEE_BigIntFMM *dest, TEE_BigInt *src,
 	return;
 }
 
-void TEE_BigIntConvertFromFMM(TEE_BigInt *dest, TEE_BigIntFMM *src,
-			      TEE_BigInt *n, TEE_BigIntFMMContext *context)
+void TEE_BigIntConvertFromFMM(TEE_BigInt *dest, TEE_BigIntFMM *src, TEE_BigInt *n,
+			      TEE_BigIntFMMContext *context)
 {
 	struct FMMContext *fmm;
 	size_t src_len;
@@ -935,15 +922,13 @@ void TEE_BigIntConvertFromFMM(TEE_BigInt *dest, TEE_BigIntFMM *src,
 	return;
 }
 
-void TEE_BigIntComputeFMM(TEE_BigIntFMM *dest, TEE_BigIntFMM *op1,
-			  TEE_BigIntFMM *op2, TEE_BigInt *n,
-			  TEE_BigIntFMMContext *context)
+void TEE_BigIntComputeFMM(TEE_BigIntFMM *dest, TEE_BigIntFMM *op1, TEE_BigIntFMM *op2,
+			  TEE_BigInt *n, TEE_BigIntFMMContext *context)
 {
 	struct FMMContext *fmm;
 
 	/* Check parameters */
-	if (dest == NULL || op1 == NULL || op2 == NULL
-			 || n == NULL || context == NULL) {
+	if (dest == NULL || op1 == NULL || op2 == NULL || n == NULL || context == NULL) {
 		OT_LOG(LOG_ERR, "Bad parameters");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}

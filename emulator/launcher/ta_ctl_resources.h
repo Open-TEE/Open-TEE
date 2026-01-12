@@ -38,7 +38,8 @@ extern struct list_head tasks_out_list;
 /* Interface TA funcitons */
 extern struct ta_interface *interface;
 
-/* we have 2 threads to synchronize so we can achieve this with static condition and statix mutex */
+/* we have 2 threads to synchronize so we can achieve this with static condition
+ * and statix mutex */
 extern pthread_mutex_t tasks_in_list_mutex;
 extern pthread_mutex_t tasks_out_list_mutex;
 extern pthread_cond_t condition;
@@ -53,24 +54,26 @@ extern pthread_mutex_t executed_operation_id_mutex;
 /* Logic thread update to here what is executed operation ID */
 extern uint64_t executed_operation_id;
 
-/* Not creating own message queue for response messages, because only one message can be
- * at time. So only one response message can be received */
+/* Not creating own message queue for response messages, because only one
+ * message can be at time. So only one response message can be received */
 extern void *response_msg;
 
-/* Use eventfd to notify the io_thread that the TA thread has finished processing a task */
+/* Use eventfd to notify the io_thread that the TA thread has finished
+ * processing a task */
 extern int event_fd;
 
-/* Graceful is an extra and in normal operation this is obsolite. This is for debuging.
- * Graceful termination is working after create entry point call! If TA is failing to set up
- * framework, resources is not released by this process. */
+/* Graceful is an extra and in normal operation this is obsolite. This is for
+ * debuging. Graceful termination is working after create entry point call! If
+ * TA is failing to set up framework, resources is not released by this process.
+ */
 #ifdef GRACEFUL_TERMINATION
-	/* Logic thread will signal throug termination_fd to io thread that destroy entry point has
-	 * been executed and this process need to be clean up */
-	extern int termination_fd;
+/* Logic thread will signal throug termination_fd to io thread that destroy
+ * entry point has been executed and this process need to be clean up */
+extern int termination_fd;
 
-	/* Variable is storing exit value. Logic thread is deciding exit value and this is
-	 * used by IO thread when it is cleaned up all resources */
-	extern int graceful_exit_value;
+/* Variable is storing exit value. Logic thread is deciding exit value and this
+ * is used by IO thread when it is cleaned up all resources */
+extern int graceful_exit_value;
 #endif
 
 /* Interal API cancel functionality */

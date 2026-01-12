@@ -23,12 +23,11 @@
 #include "tee_ta_properties.h"
 
 /* Setting TA properties */
-SET_TA_PROPERTIES(
-	{ 0x12345678, 0x8765, 0x4321, { 'P', 'K', 'C', 'S', '1', '1', 'T', 'A'} }, /* UUID */
-		512, /* dataSize */
-		8192, /* stackSize */
-		1, /* singletonInstance */
-		1, /* multiSession */
-		1) /* instanceKeepAlive */
+SET_TA_PROPERTIES({0x12345678, 0x8765, 0x4321, {'P', 'K', 'C', 'S', '1', '1', 'T', 'A'}}, /* UUID */
+		  512,	/* dataSize */
+		  8192, /* stackSize */
+		  1,	/* singletonInstance */
+		  1,	/* multiSession */
+		  1)	/* instanceKeepAlive */
 
 #endif // TA_PLUGIN

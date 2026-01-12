@@ -42,7 +42,8 @@ struct pkcs11_session {
 
 /*!
  * \brief free_session
- * Cleanup any resources used by a session (does NOT try to call free() on the session)
+ * Cleanup any resources used by a session (does NOT try to call free() on the
+ * session)
  * \param session The session to be cleaned
  */
 void clean_session(struct pkcs11_session *session);
@@ -87,7 +88,8 @@ CK_RV get_session_info(struct application *app, uint32_t paramTypes, TEE_Param p
 
 /*!
  * \brief add_session_object
- * Function is adding object ID to session. (function is not generating an object)
+ * Function is adding object ID to session. (function is not generating an
+ * object)
  * \param session The session to be object added
  * \param object_id
  * \return on success CKR_OK
@@ -134,7 +136,8 @@ CK_RV session_init_pin(struct application *app, uint32_t paramTypes, TEE_Param p
 
 /*!
  * \brief session_set_pin
- * Modify the pin of the logged in user or if not logged in then the CKU_USER pin is changed
+ * Modify the pin of the logged in user or if not logged in then the CKU_USER
+ * pin is changed
  * \param app The application that owns the session
  * \param paramTypes The type of the data sent from the user space
  * \param params The actual data that is sent
@@ -150,6 +153,5 @@ CK_RV session_set_pin(struct application *app, uint32_t paramTypes, TEE_Param pa
  * \return CKR_OK if it is queried session object.
  */
 CK_RV this_session_object(struct pkcs11_session *session, CK_OBJECT_HANDLE object_id);
-
 
 #endif // PKCS11_SESSION_H
