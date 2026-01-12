@@ -1,0 +1,16 @@
+# For compiling the TA
+
+ta_LTLIBRARIES += libsym_key_gen.la
+
+libsym_key_gen_la_includes = \
+        include/tee_ta_properties.h
+
+libsym_key_gen_la_SOURCES = $(libsym_key_gen_la_includes) \
+        sym_key_gen_ta/ta_sym_key_gen.c
+
+libsym_key_gen_la_CFLAGS = ${AM_CFLAGS} \
+        -iquote $(top_srcdir)/include \
+        -iquote $(top_srcdir)/../emulator/include
+
+libsym_key_gen_la_LDFLAGS = ${AM_LDFLAGS}
+
