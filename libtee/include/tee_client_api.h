@@ -65,11 +65,11 @@ typedef struct {
 } TEEC_Session;
 
 /*!
-  * \brief TEEC_SharedMemory A shared memory block that has been registered or allocated
-  */
+ * \brief TEEC_SharedMemory A shared memory block that has been registered or allocated
+ */
 typedef struct {
-	void *buffer;   /*!< pointer to a memory buffer that is shared with TEE */
-	size_t size;    /*!< The size of the memory buffer in bytes */
+	void *buffer;	/*!< pointer to a memory buffer that is shared with TEE */
+	size_t size;	/*!< The size of the memory buffer in bytes */
 	uint32_t flags; /*!< bit vector that can contain TEEC_MEM_INPUT or TEEC_MEM_OUTPUT */
 	void *imp;
 } TEEC_SharedMemory;

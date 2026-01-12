@@ -69,13 +69,13 @@ int event_fd;
  * Graceful termination is working after create entry point call! If TA is failing to set up
  * framework, resources is not released by this process. */
 #ifdef GRACEFUL_TERMINATION
-	/* Logic thread will signal throug termination_fd to io thread that destroy entry point has
-	 * been executed and this process need to be clean up */
-	int termination_fd;
+/* Logic thread will signal throug termination_fd to io thread that destroy entry point has
+ * been executed and this process need to be clean up */
+int termination_fd;
 
-	/* Variable is storing exit value. Logic thread is deciding exit value and this is
-	 * used by IO thread when it is cleaned up all resources */
-	int graceful_exit_value;
+/* Variable is storing exit value. Logic thread is deciding exit value and this is
+ * used by IO thread when it is cleaned up all resources */
+int graceful_exit_value;
 #endif
 
 /* These are for tasks received from the caller going to the TA */
@@ -102,7 +102,8 @@ static void clear_queues()
 	/* Done Queue */
 	if (!list_is_empty(&tasks_out_list)) {
 
-		LIST_FOR_EACH_SAFE(pos, la, &tasks_out_list) {
+		LIST_FOR_EACH_SAFE(pos, la, &tasks_out_list)
+		{
 			queue_task = LIST_ENTRY(pos, struct ta_task, list);
 			list_unlink(&queue_task->list);
 			free_task(queue_task);
@@ -112,7 +113,8 @@ static void clear_queues()
 	/* Todo queue */
 	if (!list_is_empty(&tasks_in_list)) {
 
-		LIST_FOR_EACH_SAFE(pos, la, &tasks_in_list) {
+		LIST_FOR_EACH_SAFE(pos, la, &tasks_in_list)
+		{
 			queue_task = LIST_ENTRY(pos, struct ta_task, list);
 			list_unlink(&queue_task->list);
 			free_task(queue_task);

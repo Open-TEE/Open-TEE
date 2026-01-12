@@ -4,5 +4,6 @@ UseTab: Always
 BreakBeforeBraces: Linux
 AllowShortIfStatementsOnASingleLine: false
 IndentCaseLabels: false
-ColumnLimit:     100
+ColumnLimit: 100
 PenaltyReturnTypeOnItsOwnLine: 100
+SortIncludes: Never

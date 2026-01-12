@@ -70,7 +70,8 @@ static void cancel_from_todo(struct ta_task *task)
 	if (list_is_empty(&tasks_in_list))
 		return;
 
-	LIST_FOR_EACH_SAFE(pos, la, &tasks_in_list) {
+	LIST_FOR_EACH_SAFE(pos, la, &tasks_in_list)
+	{
 
 		todo_queue_task = LIST_ENTRY(pos, struct ta_task, list);
 
@@ -81,26 +82,27 @@ static void cancel_from_todo(struct ta_task *task)
 
 		if (msg_name == COM_MSG_NAME_OPEN_SESSION &&
 		    ((struct com_msg_open_session *)todo_queue_task->msg)->operation.operation_id ==
-		    ((struct com_msg_request_cancellation *)task->msg)->operation_id) {
+			((struct com_msg_request_cancellation *)task->msg)->operation_id) {
 
-			((struct com_msg_open_session *)todo_queue_task->msg)->
-					return_code_open_session = TEE_ERROR_CANCEL;
+			((struct com_msg_open_session *)todo_queue_task->msg)
+			    ->return_code_open_session = TEE_ERROR_CANCEL;
 
 			((struct com_msg_open_session *)todo_queue_task->msg)->return_origin =
-					TEE_ORIGIN_TEE;
+			    TEE_ORIGIN_TEE;
 
 			list_unlink(&todo_queue_task->list);
 			list_add_before(&todo_queue_task->list, &tasks_out_list);
 
 		} else if (msg_name == COM_MSG_NAME_INVOKE_CMD &&
-		    ((struct com_msg_invoke_cmd *)todo_queue_task->msg)->operation.operation_id ==
-		    ((struct com_msg_request_cancellation *)task->msg)->operation_id) {
+			   ((struct com_msg_invoke_cmd *)todo_queue_task->msg)
+				   ->operation.operation_id ==
+			       ((struct com_msg_request_cancellation *)task->msg)->operation_id) {
 
 			((struct com_msg_invoke_cmd *)todo_queue_task->msg)->return_code =
-					TEE_ERROR_CANCEL;
+			    TEE_ERROR_CANCEL;
 
 			((struct com_msg_invoke_cmd *)todo_queue_task->msg)->return_origin =
-					TEE_ORIGIN_TEE;
+			    TEE_ORIGIN_TEE;
 
 			list_unlink(&todo_queue_task->list);
 			list_add_before(&todo_queue_task->list, &tasks_out_list);
@@ -221,7 +223,6 @@ void receive_from_manager(struct epoll_event *event, int man_sockfd)
 		return;
 	}
 
-
 	if (com_get_msg_type(new_ta_task->msg, &msg_type)) {
 		OT_LOG(LOG_ERR, "Failed retrieve message type");
 		goto skip;
@@ -232,7 +233,7 @@ void receive_from_manager(struct epoll_event *event, int man_sockfd)
 	if (fd_count > 0 && fd_count <= 4) {
 
 		header->shareable_fd_count = fd_count;
-		memcpy(header->shareable_fd, fd, sizeof(int)*fd_count);
+		memcpy(header->shareable_fd, fd, sizeof(int) * fd_count);
 	}
 
 	if (msg_type == COM_TYPE_RESPONSE) {

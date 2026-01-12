@@ -28,13 +28,13 @@
 
 #include "../tee_crypto_api.h"
 
-//const uint32_t GENERIC_BUF_LEN = 32;
+// const uint32_t GENERIC_BUF_LEN = 32;
 #define GENERIC_BUF_LEN 32
 
 struct gp_attributes {
 	TEE_Attribute *attrs;
-	//Do not change type!!
-	//Might mess up serilization funcitons
+	// Do not change type!!
+	// Might mess up serilization funcitons
 	uint32_t attrs_count;
 };
 
@@ -58,7 +58,7 @@ struct gp_key {
 	/* Key is always signed to object or operation and these values could be
 	 * queried from object/operation info. These are here for usability sake */
 	uint32_t gp_key_type;
-	uint32_t key_lenght; /* in bytes */
+	uint32_t key_lenght;	 /* in bytes */
 	uint32_t key_max_length; /* in bytes */
 
 	/* Parameters are assigned to key with TEE_PopulateTransientObject() */
@@ -77,7 +77,7 @@ struct __TEE_OperationHandle {
 			mbedtls_ecp_keypair *ec;
 			mbedtls_ecp_group *grp;
 		} ecc;
-		
+
 		struct {
 			mbedtls_rsa_context *ctx;
 		} rsa;

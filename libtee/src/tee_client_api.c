@@ -33,12 +33,9 @@
 pthread_mutex_t fd_write_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Operation is started when message is send out and stopped when response message is received */
-#define TEE_OPERATION_STARTED		0x38fa84fb
+#define TEE_OPERATION_STARTED 0x38fa84fb
 
-enum mem_type {
-	REGISTERED = 0,
-	ALLOCATED = 0xa110ca7e
-};
+enum mem_type { REGISTERED = 0, ALLOCATED = 0xa110ca7e };
 
 /*!
  * \brief The context_internal struct
@@ -52,15 +49,14 @@ struct context_internal {
 } ctx_internal;
 
 /* Only one connection to TEE is allowed! Therefore only one context internal can be init */
-#define CTX_INTERNAL_INIT		0xFB83DA36
+#define CTX_INTERNAL_INIT 0xFB83DA36
 
 struct shared_mem_internal {
-	char shm_uuid[SHM_MEM_NAME_LEN];  /*!< the shared memory object that has been created */
-	void *reg_address;	/*!< store the mmap address that is used for registered mem */
-	size_t org_size;	/*!< initial size, needed for unmapping */
-	enum mem_type type;       /*!< the type of the memory, i.e. allocated or registered */
+	char shm_uuid[SHM_MEM_NAME_LEN]; /*!< the shared memory object that has been created */
+	void *reg_address;  /*!< store the mmap address that is used for registered mem */
+	size_t org_size;    /*!< initial size, needed for unmapping */
+	enum mem_type type; /*!< the type of the memory, i.e. allocated or registered */
 };
-
 
 /*!
  * \brief The session_internal struct
@@ -101,10 +97,10 @@ static bool get_return_vals_from_err_msg(void *msg, TEE_Result *err_name, uint32
 	}
 
 	if (err_name)
-		*err_name = ((struct com_msg_error *) msg)->ret;
+		*err_name = ((struct com_msg_error *)msg)->ret;
 
 	if (err_origin)
-		*err_origin = ((struct com_msg_error *) msg)->ret_origin;
+		*err_origin = ((struct com_msg_error *)msg)->ret_origin;
 
 	return true;
 }
@@ -165,8 +161,7 @@ static void free_shm_and_from_manager(struct shared_mem_internal *shm_internal)
 	memcpy(unlink_msg.name, shm_internal->shm_uuid, SHM_MEM_NAME_LEN);
 
 	/* Message filled. Send message */
-	if (send_msg(ctx_internal.sockfd,
-		     &unlink_msg, sizeof(struct com_msg_unlink_shm_region),
+	if (send_msg(ctx_internal.sockfd, &unlink_msg, sizeof(struct com_msg_unlink_shm_region),
 		     fd_write_mutex) != sizeof(struct com_msg_unlink_shm_region))
 		OT_LOG(LOG_ERR, "Failed to send message TEE");
 
@@ -262,9 +257,8 @@ static TEEC_Result get_shm_from_manager_and_map_region(struct shared_mem_interna
 
 	/* mmap does not allow for the size to be zero, however the TEEC API allows it, so map a
 	 * size of 1 byte, though it will probably be mapped to a page */
-	shm_internal->reg_address = mmap(NULL, shm_internal->org_size,
-					 (PROT_WRITE | PROT_READ), MAP_SHARED,
-					 fds[0], 0);
+	shm_internal->reg_address =
+	    mmap(NULL, shm_internal->org_size, (PROT_WRITE | PROT_READ), MAP_SHARED, fds[0], 0);
 	if (shm_internal->reg_address == MAP_FAILED) {
 		OT_LOG(LOG_ERR, "Failed to MMAP");
 		result = TEEC_ERROR_OUT_OF_MEMORY;
@@ -300,7 +294,7 @@ static TEEC_Result create_shared_mem(TEEC_Context *context, TEEC_SharedMemory *s
 
 	if (type == REGISTERED && shared_mem->size && !shared_mem->buffer)
 		OT_LOG(LOG_ERR, "Warning: Registering a buffer, but buffer-parameter is NULL "
-		       "and size is not zero");
+				"and size is not zero");
 
 	if (type == ALLOCATED && !shared_mem->size)
 		OT_LOG(LOG_ERR, "Warning: Allocating a buffer, but size-parameter is zero");
@@ -352,7 +346,8 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 
 	internal_op->paramTypes = operation->paramTypes;
 
-	FOR_EACH_PARAM(i) {
+	FOR_EACH_PARAM(i)
+	{
 
 		if (TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_NONE ||
 		    TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_VALUE_OUTPUT) {
@@ -361,10 +356,9 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 		} else if (TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_VALUE_INPUT ||
 			   TEEC_PARAM_TYPE_GET(internal_op->paramTypes, i) == TEEC_VALUE_INOUT) {
 
-			memcpy(&internal_op->params[i].param.value,
-			       &operation->params[i].value, sizeof(TEEC_Value));
+			memcpy(&internal_op->params[i].param.value, &operation->params[i].value,
+			       sizeof(TEEC_Value));
 			continue;
-
 		}
 
 		/* Because it is not value, parameter type is MEMREF */
@@ -419,16 +413,15 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 			}
 
 			memcpy(internal_imp->reg_address, mem_source->buffer + offset,
-					internal_op->params[i].param.memref.size);
+			       internal_op->params[i].param.memref.size);
 		}
 
 		/* assign the name of the shared memory and its size area to
 		 * the operation that is being passed.  This will allow us
 		 * to open the same segment in the TA side
 		 */
-		memcpy(internal_op->params[i].param.memref.shm_area,
-		       internal_imp->shm_uuid, SHM_MEM_NAME_LEN);
-
+		memcpy(internal_op->params[i].param.memref.shm_area, internal_imp->shm_uuid,
+		       SHM_MEM_NAME_LEN);
 	}
 }
 
@@ -447,7 +440,8 @@ static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 	size_t offset;
 	int i;
 
-	FOR_EACH_PARAM(i) {
+	FOR_EACH_PARAM(i)
+	{
 
 		if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_NONE ||
 		    TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_VALUE_INPUT) {
@@ -456,10 +450,9 @@ static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 		} else if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_VALUE_OUTPUT ||
 			   TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_VALUE_INOUT) {
 
-			memcpy(&operation->params[i].value,
-			       &internal_op->params[i].param.value, sizeof(TEEC_Value));
+			memcpy(&operation->params[i].value, &internal_op->params[i].param.value,
+			       sizeof(TEEC_Value));
 			continue;
-
 		}
 
 		/* Because it is not value, parameter type is MEMREF */
@@ -508,7 +501,7 @@ static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 			}
 
 			memcpy(mem_source->buffer + offset, internal_imp->reg_address,
-					operation->params[i].memref.size);
+			       operation->params[i].memref.size);
 		}
 	}
 }
@@ -552,7 +545,8 @@ static void unregister_temp_refs(TEEC_Operation *operation, TEEC_SharedMemory *t
 	if (!operation)
 		return;
 
-	FOR_EACH_TEMP_SHM(i) {
+	FOR_EACH_TEMP_SHM(i)
+	{
 
 		if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_INPUT ||
 		    TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_OUTPUT ||
@@ -579,7 +573,8 @@ static TEEC_Result register_temp_refs(TEEC_Operation *operation, TEEC_SharedMemo
 	 * Note: This need to be changed, if we are allowing to have more than one opentee-process*/
 	ctx = (TEEC_Context *)&ctx_internal;
 
-	FOR_EACH_TEMP_SHM(i) {
+	FOR_EACH_TEMP_SHM(i)
+	{
 
 		if (TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_INPUT ||
 		    TEEC_PARAM_TYPE_GET(operation->paramTypes, i) == TEEC_MEMREF_TEMP_OUTPUT ||
@@ -592,7 +587,6 @@ static TEEC_Result register_temp_refs(TEEC_Operation *operation, TEEC_SharedMemo
 			ret = create_shared_mem(ctx, &temp_shm[i], REGISTERED);
 			if (ret != TEEC_SUCCESS)
 				goto err;
-
 		}
 	}
 
@@ -646,8 +640,8 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	strncpy(sock_addr.sun_path, known_socket_path, sizeof(sock_addr.sun_path) - 1);
 	sock_addr.sun_family = AF_UNIX;
 
-	if (connect(ctx_internal.sockfd,
-		    (struct sockaddr *)&sock_addr, sizeof(struct sockaddr_un)) == -1) {
+	if (connect(ctx_internal.sockfd, (struct sockaddr *)&sock_addr,
+		    sizeof(struct sockaddr_un)) == -1) {
 		OT_LOG(LOG_ERR, "Failed to connect to TEE");
 		ret = TEEC_ERROR_COMMUNICATION;
 		goto err_3;
@@ -656,7 +650,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	/* Fill init message */
 	init_msg.msg_hdr.msg_name = COM_MSG_NAME_CA_INIT_CONTEXT;
 	init_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
-	init_msg.msg_hdr.sess_id = 0;     /* ignored */
+	init_msg.msg_hdr.sess_id = 0; /* ignored */
 
 	/* Message filled. Send message */
 	if (pthread_mutex_lock(&ctx_internal.mutex)) {
@@ -724,7 +718,7 @@ void TEEC_FinalizeContext(TEEC_Context *context)
 
 	fin_con_msg.msg_hdr.msg_name = COM_MSG_NAME_CA_FINALIZ_CONTEXT;
 	fin_con_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
-	fin_con_msg.msg_hdr.sess_id = 0;     /* ignored */
+	fin_con_msg.msg_hdr.sess_id = 0; /* ignored */
 
 	if (pthread_mutex_lock(&ctx_internal.mutex)) {
 		OT_LOG(LOG_ERR, "Failed to lock mutex");
@@ -732,9 +726,8 @@ void TEEC_FinalizeContext(TEEC_Context *context)
 	}
 
 	/* Message filled. Send message */
-	if (send_msg(ctx_internal.sockfd, &fin_con_msg,
-		     sizeof(struct com_msg_ca_finalize_constex), fd_write_mutex) !=
-	    sizeof(struct com_msg_ca_finalize_constex)) {
+	if (send_msg(ctx_internal.sockfd, &fin_con_msg, sizeof(struct com_msg_ca_finalize_constex),
+		     fd_write_mutex) != sizeof(struct com_msg_ca_finalize_constex)) {
 		OT_LOG(LOG_ERR, "Failed to send message TEE");
 		goto unlock;
 	}
@@ -791,7 +784,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	struct com_msg_open_session *recv_msg = NULL;
 	struct com_msg_open_session open_msg;
 	TEEC_Result result = TEEC_SUCCESS;
-	TEEC_SharedMemory temp_shm[4] = { {0} };
+	TEEC_SharedMemory temp_shm[4] = {{0}};
 	int com_ret = 0;
 
 	memset((void *)&open_msg, 0, sizeof(struct com_msg_open_session));
@@ -843,8 +836,8 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	if (operation)
 		copy_tee_operation_to_internal(operation, &open_msg.operation);
 	else
-		open_msg.operation.paramTypes = TEEC_PARAM_TYPES(TEEC_NONE, TEEC_NONE,
-								 TEEC_NONE, TEEC_NONE);
+		open_msg.operation.paramTypes =
+		    TEEC_PARAM_TYPES(TEEC_NONE, TEEC_NONE, TEEC_NONE, TEEC_NONE);
 
 	open_msg.operation.operation_id = ctx_internal.operation_id;
 
@@ -923,7 +916,6 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session,
 	free(recv_msg);
 	return result;
 
-
 err_com_1:
 	if (operation)
 		operation->started = 0;
@@ -999,7 +991,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 	struct com_msg_invoke_cmd invoke_msg;
 	struct session_internal *session_internal = NULL;
 	TEEC_Result result = TEEC_SUCCESS;
-	TEEC_SharedMemory temp_shm[4] = { {0} };
+	TEEC_SharedMemory temp_shm[4] = {{0}};
 	int com_ret = 0;
 
 	memset((void *)&invoke_msg, 0, sizeof(struct com_msg_invoke_cmd));
@@ -1039,8 +1031,8 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 	if (operation)
 		copy_tee_operation_to_internal(operation, &invoke_msg.operation);
 	else
-		invoke_msg.operation.paramTypes = TEEC_PARAM_TYPES(TEEC_NONE, TEEC_NONE,
-								   TEEC_NONE, TEEC_NONE);
+		invoke_msg.operation.paramTypes =
+		    TEEC_PARAM_TYPES(TEEC_NONE, TEEC_NONE, TEEC_NONE, TEEC_NONE);
 
 	invoke_msg.operation.operation_id = ctx_internal.operation_id;
 
@@ -1055,9 +1047,8 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t command_id,
 		goto op_cancel;
 
 	/* Message filled. Send message */
-	if (send_msg(session_internal->sockfd, &invoke_msg,
-		     sizeof(struct com_msg_invoke_cmd), fd_write_mutex) !=
-	    sizeof(struct com_msg_invoke_cmd)) {
+	if (send_msg(session_internal->sockfd, &invoke_msg, sizeof(struct com_msg_invoke_cmd),
+		     fd_write_mutex) != sizeof(struct com_msg_invoke_cmd)) {
 		OT_LOG(LOG_ERR, "Failed to send message TEE");
 		goto err_com_2;
 	}
@@ -1160,6 +1151,6 @@ void TEEC_RequestCancellation(TEEC_Operation *operation)
 	cancel_msg.msg_hdr.msg_type = COM_TYPE_QUERY;
 	cancel_msg.operation_id = ctx_internal.operation_id;
 
-	send_msg(ctx_internal.sockfd, &cancel_msg,
-		 sizeof(struct com_msg_request_cancellation), fd_write_mutex);
+	send_msg(ctx_internal.sockfd, &cancel_msg, sizeof(struct com_msg_request_cancellation),
+		 fd_write_mutex);
 }

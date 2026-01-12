@@ -86,8 +86,7 @@ static int init_sock(int *pub_sockfd)
 	if (known_socket_path == NULL)
 		known_socket_path = WELL_KNOWN_PUBLIC_SOCK_PATH;
 	if (remove(known_socket_path) == -1 && errno != ENOENT) {
-		OT_LOG(LOG_ERR, "Failed to remove %s : %s",
-		       known_socket_path, strerror(errno));
+		OT_LOG(LOG_ERR, "Failed to remove %s : %s", known_socket_path, strerror(errno));
 		return -1;
 	}
 
@@ -245,10 +244,10 @@ int lib_main_loop(struct core_control *control_params)
 			} else if (cur_events[i].data.fd == control_params->self_pipe_fd) {
 				manager_check_signal(control_params, &cur_events[i]);
 
-			} else if(cur_events[i].data.fd == event_close_sock) {
+			} else if (cur_events[i].data.fd == event_close_sock) {
 				handle_close_sock(&cur_events[i]);
 
-			} else if(cur_events[i].data.fd == event_ta_dir_watch_fd) {
+			} else if (cur_events[i].data.fd == event_ta_dir_watch_fd) {
 				ta_dir_watch_event(&cur_events[i], &event_ta_dir_watch_fd);
 
 			} else {

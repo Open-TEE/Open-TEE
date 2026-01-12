@@ -8,5 +8,4 @@
 
 #define EFD_SEMAPHORE (0x00000001)
 
-
 #endif /*__android_defines_h__*/

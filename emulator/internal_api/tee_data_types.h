@@ -28,10 +28,9 @@ typedef struct {
 	TEE_UUID uuid;
 } TEE_Identity;
 
-
 typedef union {
 	struct {
-		void* buffer;
+		void *buffer;
 		size_t size;
 	} memref;
 	struct {
@@ -40,9 +39,9 @@ typedef union {
 	} value;
 } TEE_Param;
 
-typedef struct __TEE_TASessionHandle* TEE_TASessionHandle;
+typedef struct __TEE_TASessionHandle *TEE_TASessionHandle;
 
-typedef struct __TEE_PropSetHandle* TEE_PropSetHandle;
+typedef struct __TEE_PropSetHandle *TEE_PropSetHandle;
 
 /* clang-format off */
 /* Paramater Types */

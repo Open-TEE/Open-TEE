@@ -27,10 +27,10 @@
 #include "token_conf.h"
 #include "utils.h"
 
-#define BIGGEST_RSA_KEY_IN_BYTES	256
-#define BIGGEST_HASH_OUTUPUT_IN_BYTES	64
-#define TEE_RSA_PRIVATE_KEY		0x5A
-#define TEE_RSA_PUBLIC_KEY		0x5B
+#define BIGGEST_RSA_KEY_IN_BYTES 256
+#define BIGGEST_HASH_OUTUPUT_IN_BYTES 64
+#define TEE_RSA_PRIVATE_KEY 0x5A
+#define TEE_RSA_PUBLIC_KEY 0x5B
 #define BITS_TO_BYTES(bits) (bits / 8)
 #define BYTES_TO_BITS(bytes) (bytes * 8)
 
@@ -51,7 +51,6 @@ struct crypto_op {
 	void *dst;
 	size_t dst_len;
 };
-
 
 static uint32_t hash_output_length(CK_MECHANISM_TYPE hash)
 {
@@ -91,8 +90,7 @@ static uint32_t hash_output_length(CK_MECHANISM_TYPE hash)
 	}
 }
 
-static void map_tee_buf_attr2ck_attr(obj_func_atribute tee_attr_id,
-				     TEE_Attribute *tee_attr,
+static void map_tee_buf_attr2ck_attr(obj_func_atribute tee_attr_id, TEE_Attribute *tee_attr,
 				     CK_ATTRIBUTE *ck_attr)
 {
 	tee_attr->attributeID = tee_attr_id;
@@ -100,8 +98,7 @@ static void map_tee_buf_attr2ck_attr(obj_func_atribute tee_attr_id,
 	tee_attr->content.ref.length = ck_attr->ulValueLen;
 }
 
-static void free_tee_attrs(TEE_Attribute *tee_attrs,
-			   uint32_t tee_attrs_count)
+static void free_tee_attrs(TEE_Attribute *tee_attrs, uint32_t tee_attrs_count)
 {
 	uint32_t i;
 
@@ -113,10 +110,8 @@ static void free_tee_attrs(TEE_Attribute *tee_attrs,
 
 /* This function is written for AES key only. With small efforts this could be
  * modified as a general symmetric key object creation function */
-static CK_RV map_sym_secret_key_object(struct init_crypto_op *crypto_op,
-				       TEE_Attribute **tee_attrs,
-				       uint32_t *tee_attrs_count,
-				       uint32_t *key_size)
+static CK_RV map_sym_secret_key_object(struct init_crypto_op *crypto_op, TEE_Attribute **tee_attrs,
+				       uint32_t *tee_attrs_count, uint32_t *key_size)
 {
 	CK_ATTRIBUTE ck_attr = {0};
 	CK_RV ck_rv = CKR_OK;
@@ -146,21 +141,17 @@ err:
 
 /* This function is written for AES key only. With small efforts this could be
  * modified as a general symmetric key object creation function */
-static CK_RV map_AES_secret_key_object(struct init_crypto_op *crypto_op,
-				       TEE_Attribute **tee_attrs,
-				       uint32_t *tee_attrs_count,
-				       object_type *tee_object_type,
+static CK_RV map_AES_secret_key_object(struct init_crypto_op *crypto_op, TEE_Attribute **tee_attrs,
+				       uint32_t *tee_attrs_count, object_type *tee_object_type,
 				       uint32_t *key_size)
 {
 	*tee_object_type = TEE_TYPE_AES;
 	return map_sym_secret_key_object(crypto_op, tee_attrs, tee_attrs_count, key_size);
 }
 
-static CK_RV map_HMAC_secret_key_object(struct init_crypto_op *crypto_op,
-				       TEE_Attribute **tee_attrs,
-				       uint32_t *tee_attrs_count,
-				       object_type *tee_object_type,
-				       uint32_t *key_size)
+static CK_RV map_HMAC_secret_key_object(struct init_crypto_op *crypto_op, TEE_Attribute **tee_attrs,
+					uint32_t *tee_attrs_count, object_type *tee_object_type,
+					uint32_t *key_size)
 {
 	switch (crypto_op->mech_attr.mechanism) {
 	case CKM_MD5_HMAC:
@@ -195,12 +186,9 @@ static CK_RV map_HMAC_secret_key_object(struct init_crypto_op *crypto_op,
 	return map_sym_secret_key_object(crypto_op, tee_attrs, tee_attrs_count, key_size);
 }
 
-static CK_RV map_RSA_key_object(struct init_crypto_op *crypto_op,
-				TEE_Attribute **tee_attrs,
-				uint32_t *tee_attrs_count,
-				object_type *tee_object_type,
-				uint32_t *key_size,
-				uint8_t rsa_type)
+static CK_RV map_RSA_key_object(struct init_crypto_op *crypto_op, TEE_Attribute **tee_attrs,
+				uint32_t *tee_attrs_count, object_type *tee_object_type,
+				uint32_t *key_size, uint8_t rsa_type)
 {
 	CK_ATTRIBUTE ck_attr = {0};
 	TEE_Attribute *attrs;
@@ -257,8 +245,8 @@ static CK_RV map_RSA_key_object(struct init_crypto_op *crypto_op,
 		map_tee_buf_attr2ck_attr(TEE_ATTR_RSA_PRIVATE_EXPONENT, &attrs[2], &ck_attr);
 	}
 
-	*tee_object_type = rsa_type == TEE_RSA_PRIVATE_KEY ?
-				   TEE_TYPE_RSA_KEYPAIR : TEE_TYPE_RSA_PUBLIC_KEY;
+	*tee_object_type =
+	    rsa_type == TEE_RSA_PRIVATE_KEY ? TEE_TYPE_RSA_KEYPAIR : TEE_TYPE_RSA_PUBLIC_KEY;
 	*tee_attrs = attrs;
 
 	return ck_rv;
@@ -296,18 +284,18 @@ static CK_RV gen_gp_key_object(struct init_crypto_op *crypto_op)
 	if (obj_header.obj_class == CKO_PUBLIC_KEY) {
 
 		if (*((CK_KEY_TYPE *)ck_attr.pValue) == CKK_RSA)
-			ck_rv = map_RSA_key_object(crypto_op, &tee_attrs, &tee_attrs_count,
-						   &tee_obj_type, &tee_key_size,
-						   TEE_RSA_PUBLIC_KEY);
+			ck_rv =
+			    map_RSA_key_object(crypto_op, &tee_attrs, &tee_attrs_count,
+					       &tee_obj_type, &tee_key_size, TEE_RSA_PUBLIC_KEY);
 		else
 			ck_rv = CKR_FUNCTION_NOT_SUPPORTED;
 
 	} else if (obj_header.obj_class == CKO_PRIVATE_KEY) {
 
 		if (*((CK_KEY_TYPE *)ck_attr.pValue) == CKK_RSA)
-			ck_rv = map_RSA_key_object(crypto_op, &tee_attrs, &tee_attrs_count,
-						   &tee_obj_type, &tee_key_size,
-						   TEE_RSA_PRIVATE_KEY);
+			ck_rv =
+			    map_RSA_key_object(crypto_op, &tee_attrs, &tee_attrs_count,
+					       &tee_obj_type, &tee_key_size, TEE_RSA_PRIVATE_KEY);
 		else
 			ck_rv = CKR_FUNCTION_NOT_SUPPORTED;
 
@@ -359,8 +347,7 @@ static CK_RV init_sym_crypto(struct init_crypto_op *crypto_op)
 	if (crypto_op->mech_attr.ulParameterLen != 16)
 		return CKR_MECHANISM_PARAM_INVALID;
 
-	TEE_CipherInit(crypto_op->session->crypto_op.operation,
-		       crypto_op->mech_attr.pParameter,
+	TEE_CipherInit(crypto_op->session->crypto_op.operation, crypto_op->mech_attr.pParameter,
 		       crypto_op->mech_attr.ulParameterLen);
 
 	return CKR_OK;
@@ -378,7 +365,7 @@ static CK_RV init_mac_crypto(struct init_crypto_op *crypto_op)
 	case CKM_SHA384_HMAC_GENERAL:
 	case CKM_SHA512_HMAC_GENERAL:
 		crypto_op->session->crypto_op.hmac_general_output =
-				*(CK_MAC_GENERAL_PARAMS *)crypto_op->mech_attr.pParameter;
+		    *(CK_MAC_GENERAL_PARAMS *)crypto_op->mech_attr.pParameter;
 
 		/* Check that the provided output is legal. Note: Zero is legal size */
 		if (crypto_op->session->crypto_op.hmac_general_output > hash_output)
@@ -432,11 +419,11 @@ static CK_RV init_asym_sign_verify_crypto(struct init_crypto_op *crypto_op)
 	hash_len = hash_output_length(crypto_op->session->crypto_op.mechanism);
 
 	/* Can we use the RSA key for siging or verify that data length */
-	if(hash_len > (BITS_TO_BYTES(crypto_op->session->crypto_op.key_size) - 11))
-		return  CKR_KEY_SIZE_RANGE;
+	if (hash_len > (BITS_TO_BYTES(crypto_op->session->crypto_op.key_size) - 11))
+		return CKR_KEY_SIZE_RANGE;
 
-	tee_ret = TEE_AllocateOperation(&crypto_op->session->crypto_op.operation_2,
-					tee_hash_alg, TEE_MODE_DIGEST, 0);
+	tee_ret = TEE_AllocateOperation(&crypto_op->session->crypto_op.operation_2, tee_hash_alg,
+					TEE_MODE_DIGEST, 0);
 	if (tee_ret != TEE_SUCCESS)
 		return map_teec2ck(tee_ret);
 
@@ -457,8 +444,8 @@ static CK_RV do_digest_crypto(struct crypto_op *crypto_op)
 	/* Do digest operation */
 	if (crypto_op->crypto_type == TEE_DIGEST_UPDATE) {
 
-		TEE_DigestUpdate(crypto_op->session->crypto_op.operation,
-				 crypto_op->src, crypto_op->src_len);
+		TEE_DigestUpdate(crypto_op->session->crypto_op.operation, crypto_op->src,
+				 crypto_op->src_len);
 
 	} else if (crypto_op->crypto_type == TEE_DIGEST) {
 
@@ -468,8 +455,8 @@ static CK_RV do_digest_crypto(struct crypto_op *crypto_op)
 
 	} else if (crypto_op->crypto_type == TEE_DIGEST_FINAL) {
 
-		return map_teec2ck(TEE_DigestDoFinal(crypto_op->session->crypto_op.operation,
-						     NULL, 0, crypto_op->dst, &crypto_op->dst_len));
+		return map_teec2ck(TEE_DigestDoFinal(crypto_op->session->crypto_op.operation, NULL,
+						     0, crypto_op->dst, &crypto_op->dst_len));
 
 	} else {
 		return CKR_GENERAL_ERROR;
@@ -494,8 +481,7 @@ static CK_RV do_sym_crypto(struct crypto_op *crypto_op)
 	}
 
 	/* Do symmetric operation */
-	if (crypto_op->crypto_type == TEE_ENCRYPT ||
-	    crypto_op->crypto_type == TEE_DECRYPT) {
+	if (crypto_op->crypto_type == TEE_ENCRYPT || crypto_op->crypto_type == TEE_DECRYPT) {
 
 		return map_teec2ck(TEE_CipherDoFinal(crypto_op->session->crypto_op.operation,
 						     crypto_op->src, crypto_op->src_len,
@@ -511,8 +497,8 @@ static CK_RV do_sym_crypto(struct crypto_op *crypto_op)
 	} else if (crypto_op->crypto_type == TEE_ENCRYPT_FINAL ||
 		   crypto_op->crypto_type == TEE_DECRYPT_FINAL) {
 
-		return map_teec2ck(TEE_CipherDoFinal(crypto_op->session->crypto_op.operation,
-						     NULL, 0, crypto_op->dst, &crypto_op->dst_len));
+		return map_teec2ck(TEE_CipherDoFinal(crypto_op->session->crypto_op.operation, NULL,
+						     0, crypto_op->dst, &crypto_op->dst_len));
 
 	} else {
 		return CKR_GENERAL_ERROR;
@@ -548,29 +534,26 @@ static CK_RV do_asym_sign_verify(struct crypto_op *crypto_op)
 	}
 
 	/* Calculate hash, if needed. */
-	if (crypto_op->crypto_type == TEE_SIGN ||
-	    crypto_op->crypto_type == TEE_VERIFY) {
+	if (crypto_op->crypto_type == TEE_SIGN || crypto_op->crypto_type == TEE_VERIFY) {
 
 		tee_rv = TEE_DigestDoFinal(crypto_op->session->crypto_op.operation_2,
-					   crypto_op->src, crypto_op->src_len,
-					   hash, &hash_len);
+					   crypto_op->src, crypto_op->src_len, hash, &hash_len);
 
 		TEE_FreeOperation(crypto_op->session->crypto_op.operation_2);
 
 	} else if (crypto_op->crypto_type == TEE_SIGN_FINAL ||
 		   crypto_op->crypto_type == TEE_VERIFY_FINAL) {
 
-		tee_rv = TEE_DigestDoFinal(crypto_op->session->crypto_op.operation_2,
-					   NULL, 0, hash, &hash_len);
+		tee_rv = TEE_DigestDoFinal(crypto_op->session->crypto_op.operation_2, NULL, 0, hash,
+					   &hash_len);
 
 		TEE_FreeOperation(crypto_op->session->crypto_op.operation_2);
 
 	} else if (crypto_op->crypto_type == TEE_VERIFY_UPDATE ||
 		   crypto_op->crypto_type == TEE_SIGN_UPDATE) {
 
-		TEE_DigestUpdate(crypto_op->session->crypto_op.operation_2,
-				 crypto_op->src, crypto_op->src_len);
-
+		TEE_DigestUpdate(crypto_op->session->crypto_op.operation_2, crypto_op->src,
+				 crypto_op->src_len);
 	}
 
 	ck_rv = map_teec2ck(tee_rv);
@@ -580,21 +563,21 @@ static CK_RV do_asym_sign_verify(struct crypto_op *crypto_op)
 	/* Calculate actual signature/verification following cases */
 	if (crypto_op->crypto_type == TEE_SIGN || crypto_op->crypto_type == TEE_SIGN_FINAL) {
 
-		ck_rv = map_teec2ck(TEE_AsymmetricSignDigest(crypto_op->session->crypto_op.operation,
-							     NULL, 0, hash, hash_len,
-							     crypto_op->dst, &crypto_op->dst_len));
+		ck_rv = map_teec2ck(
+		    TEE_AsymmetricSignDigest(crypto_op->session->crypto_op.operation, NULL, 0, hash,
+					     hash_len, crypto_op->dst, &crypto_op->dst_len));
 
 	} else if (crypto_op->crypto_type == TEE_VERIFY) {
 
-		ck_rv = map_teec2ck(TEE_AsymmetricVerifyDigest(crypto_op->session->crypto_op.operation,
-							       NULL, 0, hash, hash_len,
-							       crypto_op->dst, crypto_op->dst_len));
+		ck_rv = map_teec2ck(
+		    TEE_AsymmetricVerifyDigest(crypto_op->session->crypto_op.operation, NULL, 0,
+					       hash, hash_len, crypto_op->dst, crypto_op->dst_len));
 
 	} else if (crypto_op->crypto_type == TEE_VERIFY_FINAL) {
 
-		ck_rv = map_teec2ck(TEE_AsymmetricVerifyDigest(crypto_op->session->crypto_op.operation,
-							       NULL, 0, hash, hash_len,
-							       crypto_op->src, crypto_op->src_len));
+		ck_rv = map_teec2ck(
+		    TEE_AsymmetricVerifyDigest(crypto_op->session->crypto_op.operation, NULL, 0,
+					       hash, hash_len, crypto_op->src, crypto_op->src_len));
 	}
 
 	return ck_rv;
@@ -616,8 +599,8 @@ static CK_RV do_mac_crypto(struct crypto_op *crypto_op)
 	} else if (crypto_op->crypto_type == TEE_VERIFY_UPDATE ||
 		   crypto_op->crypto_type == TEE_SIGN_UPDATE) {
 
-		TEE_MACUpdate(crypto_op->session->crypto_op.operation,
-			      crypto_op->src, crypto_op->src_len);
+		TEE_MACUpdate(crypto_op->session->crypto_op.operation, crypto_op->src,
+			      crypto_op->src_len);
 
 	} else if (crypto_op->crypto_type == TEE_SIGN || crypto_op->crypto_type == TEE_SIGN_FINAL) {
 
@@ -631,7 +614,8 @@ static CK_RV do_mac_crypto(struct crypto_op *crypto_op)
 			operation_output = crypto_op->session->crypto_op.hmac_general_output;
 			break;
 		default:
-			operation_output = hash_output_length(crypto_op->session->crypto_op.mechanism);
+			operation_output =
+			    hash_output_length(crypto_op->session->crypto_op.mechanism);
 			break;
 		}
 
@@ -642,8 +626,8 @@ static CK_RV do_mac_crypto(struct crypto_op *crypto_op)
 		}
 
 		ck_rv = map_teec2ck(TEE_MACComputeFinal(crypto_op->session->crypto_op.operation,
-							crypto_op->src, crypto_op->src_len,
-							hash, &hash_len));
+							crypto_op->src, crypto_op->src_len, hash,
+							&hash_len));
 
 		TEE_MemMove(crypto_op->dst, hash, operation_output);
 	}
@@ -661,9 +645,9 @@ static CK_RV do_asym_enc_dec_crypto(struct crypto_op *crypto_op)
 	if (crypto_op->crypto_type == TEE_ENCRYPT) {
 
 		/* Can we use the RSA key for that data lenght */
-		if(crypto_op->src_len >
-		   (BITS_TO_BYTES(crypto_op->session->crypto_op.key_size) - 11))
-			return  CKR_KEY_SIZE_RANGE;
+		if (crypto_op->src_len >
+		    (BITS_TO_BYTES(crypto_op->session->crypto_op.key_size) - 11))
+			return CKR_KEY_SIZE_RANGE;
 
 		/* Check output buffer size. RSA output is modulus sizes */
 		if (BITS_TO_BYTES(crypto_op->session->crypto_op.key_size) > crypto_op->dst_len) {
@@ -671,21 +655,19 @@ static CK_RV do_asym_enc_dec_crypto(struct crypto_op *crypto_op)
 			return CKR_BUFFER_TOO_SMALL;
 		}
 
-		ck_rv = map_teec2ck(TEE_AsymmetricEncrypt(crypto_op->session->crypto_op.operation,
-							  NULL, 0,
-							  crypto_op->src, crypto_op->src_len,
-							  crypto_op->dst, &crypto_op->dst_len));
+		ck_rv = map_teec2ck(TEE_AsymmetricEncrypt(
+		    crypto_op->session->crypto_op.operation, NULL, 0, crypto_op->src,
+		    crypto_op->src_len, crypto_op->dst, &crypto_op->dst_len));
 
 	} else if (crypto_op->crypto_type == TEE_DECRYPT) {
 
 		/* Decrypted should be modulo size */
-		if(crypto_op->src_len != (BITS_TO_BYTES(crypto_op->session->crypto_op.key_size)))
-			return   CKR_ENCRYPTED_DATA_INVALID;
+		if (crypto_op->src_len != (BITS_TO_BYTES(crypto_op->session->crypto_op.key_size)))
+			return CKR_ENCRYPTED_DATA_INVALID;
 
-		ck_rv = map_teec2ck(TEE_AsymmetricDecrypt(crypto_op->session->crypto_op.operation,
-							  NULL, 0,
-							  crypto_op->src, crypto_op->src_len,
-							  decryption_buf, &decryption_buf_len));
+		ck_rv = map_teec2ck(TEE_AsymmetricDecrypt(
+		    crypto_op->session->crypto_op.operation, NULL, 0, crypto_op->src,
+		    crypto_op->src_len, decryption_buf, &decryption_buf_len));
 
 		/* Unfortunately we can't know output size. We must decrypt it to tempoarary
 		 * buffer and copy it to a real output buffer. */
@@ -704,8 +686,7 @@ static CK_RV do_asym_enc_dec_crypto(struct crypto_op *crypto_op)
 	return ck_rv;
 }
 
-static CK_RV read_params_into_crypto_op(struct init_crypto_op *crypto_op,
-					struct application *app,
+static CK_RV read_params_into_crypto_op(struct init_crypto_op *crypto_op, struct application *app,
 					TEE_Param *params)
 {
 	uint32_t pos = 0;
@@ -718,9 +699,8 @@ static CK_RV read_params_into_crypto_op(struct init_crypto_op *crypto_op,
 	pos += sizeof(crypto_op->mech_attr.mechanism);
 
 	/* ulParameterLen */
-	TEE_MemMove(&crypto_op->mech_attr.ulParameterLen,
-		    (uint8_t *)params[0].memref.buffer + pos,
-			sizeof(crypto_op->mech_attr.ulParameterLen));
+	TEE_MemMove(&crypto_op->mech_attr.ulParameterLen, (uint8_t *)params[0].memref.buffer + pos,
+		    sizeof(crypto_op->mech_attr.ulParameterLen));
 	pos += sizeof(crypto_op->mech_attr.ulParameterLen);
 
 	/* pParameter */
@@ -736,8 +716,7 @@ static CK_RV read_params_into_crypto_op(struct init_crypto_op *crypto_op,
 	return app_get_session(app, params[3].value.a, &crypto_op->session);
 }
 
-static CK_RV can_mechanism_use_key(CK_MECHANISM_TYPE mechanism,
-				   CK_ATTRIBUTE *allowed_mech_attr)
+static CK_RV can_mechanism_use_key(CK_MECHANISM_TYPE mechanism, CK_ATTRIBUTE *allowed_mech_attr)
 {
 	uint32_t i;
 
@@ -747,7 +726,7 @@ static CK_RV can_mechanism_use_key(CK_MECHANISM_TYPE mechanism,
 	for (i = 0; i < allowed_mech_attr->ulValueLen / sizeof(allowed_mech_attr->type); i++) {
 
 		if (TEE_MemCompare((uint8_t *)allowed_mech_attr->pValue +
-				   (i * sizeof(allowed_mech_attr->type)),
+				       (i * sizeof(allowed_mech_attr->type)),
 				   &mechanism, sizeof(allowed_mech_attr->type)) == 0)
 			return CKR_OK;
 	}
@@ -774,8 +753,8 @@ static CK_RV check_object_for_crypto_op(struct init_crypto_op *crypto_op)
 	/* Can mechanism use key? If object is not defining CKA_ALLOWED_MECHANISMS, default
 	 * action is allow, because this attribute is optional. If attribute is present,
 	 * attribute is used for determing if mechanism can use this object */
-	if (get_attr_from_object(crypto_op->key_object,
-				 CKA_ALLOWED_MECHANISMS, &ck_attr) == CKR_OK) {
+	if (get_attr_from_object(crypto_op->key_object, CKA_ALLOWED_MECHANISMS, &ck_attr) ==
+	    CKR_OK) {
 
 		ck_rv = can_mechanism_use_key(crypto_op->mech_attr.mechanism, &ck_attr);
 		TEE_Free(ck_attr.pValue);
@@ -885,8 +864,7 @@ err:
 	return ck_rv;
 }
 
-static void map_op_ck2tee(struct init_crypto_op *crypto_op,
-			  algorithm_Identifier *tee_alg,
+static void map_op_ck2tee(struct init_crypto_op *crypto_op, algorithm_Identifier *tee_alg,
 			  TEE_OperationMode *tee_mode)
 {
 	/* TEE Mode */
@@ -1062,8 +1040,8 @@ TEE_Result crypto_init(struct application *app, uint32_t paramTypes, TEE_Param *
 		goto err_after_key_gen_1;
 
 	/* GP Call: Let initialize operation */
-	tee_ret = TEE_AllocateOperation(&crypto_op.session->crypto_op.operation,
-					tee_alg, tee_mode, crypto_op.session->crypto_op.key_size);
+	tee_ret = TEE_AllocateOperation(&crypto_op.session->crypto_op.operation, tee_alg, tee_mode,
+					crypto_op.session->crypto_op.key_size);
 	if (tee_ret != TEE_SUCCESS) {
 		ck_rv = map_teec2ck(tee_ret);
 		goto err_after_key_gen_1;
@@ -1141,7 +1119,6 @@ err_before_key_gen_2:
 err_before_key_gen_1:
 	params[3].value.a = ck_rv;
 	return TEE_SUCCESS;
-
 
 err_after_key_gen_2:
 	TEE_FreeOperation(crypto_op.session->crypto_op.operation);

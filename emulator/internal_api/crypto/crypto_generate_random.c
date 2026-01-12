@@ -24,16 +24,14 @@
 #include "crypto_utils.h"
 #include "tee_logging.h"
 
-void TEE_GenerateRandom(void *randomBuffer,
-			size_t randomBufferLen)
+void TEE_GenerateRandom(void *randomBuffer, size_t randomBufferLen)
 {
 	if (randomBuffer == NULL) {
 		OT_LOG_ERR("TEE_GenerateRandom panics due randomBuffer is NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
-	
-	if (mbedtls_ctr_drbg_random(&ot_mbedtls_ctr_drbg,
-				    (unsigned char *)randomBuffer,
+
+	if (mbedtls_ctr_drbg_random(&ot_mbedtls_ctr_drbg, (unsigned char *)randomBuffer,
 				    (size_t)randomBufferLen)) {
 		OT_LOG_ERR("TEE_GenerateRandom panics due internal (mbedtls) error");
 		TEE_Panic(TEE_ERROR_GENERIC);

@@ -209,9 +209,9 @@ int check_create_pid_file(char *proc_name_a0, char *def_pid_dir, bool write_pid)
 
 	/* determine if the directory /var/run/opentee exists, this is the preferred place
 	 * for daemon run files, i.e. when running in production this is where we will
-	 * store the information, but when developing Open-TEE engine itself or on Android we will just 
-	 * use the dir provided either via runtime arguments (-p) or the one provided via compile 
-	 * argument -DDEFAULT_PID_FILE for fast and easy starts and stops of processes.
+	 * store the information, but when developing Open-TEE engine itself or on Android we will
+	 * just use the dir provided either via runtime arguments (-p) or the one provided via
+	 * compile argument -DDEFAULT_PID_FILE for fast and easy starts and stops of processes.
 	 */
 	memcpy(pid_dir, def_pid_dir, strnlen(def_pid_dir, sizeof(pid_dir) - 1));
 	/* if the pid directory doesn't exist, try to create it. */
@@ -221,7 +221,7 @@ int check_create_pid_file(char *proc_name_a0, char *def_pid_dir, bool write_pid)
 			ret = -1;
 			goto out;
 		}
-	}	
+	}
 
 	if (snprintf(pid_file, MAX_PATH_NAME, "%s/%s.pid", pid_dir, proc_name) == MAX_PATH_NAME) {
 		printf("problems with snprintf, overflow\n");
@@ -243,8 +243,8 @@ int check_create_pid_file(char *proc_name_a0, char *def_pid_dir, bool write_pid)
 
 	if (fcntl(fd, F_SETLK, &lock) == -1) {
 		if (errno == EACCES || errno == EAGAIN) {
-			printf("\"%s\" is already running, pid file (%s) is locked!!\n",
-			       proc_name, pid_file);
+			printf("\"%s\" is already running, pid file (%s) is locked!!\n", proc_name,
+			       pid_file);
 		} else {
 			printf("Failed to lock pid_file (%s): %s\n", pid_file, strerror(errno));
 		}

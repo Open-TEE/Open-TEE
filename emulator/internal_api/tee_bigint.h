@@ -29,8 +29,8 @@ typedef uint32_t TEE_BigIntFMM;
 #define TEE_BIGINT_FLAGS_NEGATIVE 1
 
 /* Memory allocation and Size of Objects */
-#define TEE_BigIntSizeInU32(n) ((((n) + 31) / 32) + \
-		(TEE_BIGINT_INTERNAL_HEADER_SIZE / sizeof(uint32_t)))
+#define TEE_BigIntSizeInU32(n)                                                                     \
+	((((n) + 31) / 32) + (TEE_BIGINT_INTERNAL_HEADER_SIZE / sizeof(uint32_t)))
 
 size_t TEE_BigIntFMMContextSizeInU32(size_t modulusSizeInBits);
 
@@ -52,8 +52,7 @@ void TEE_BigIntInit(TEE_BigInt *bigInt, size_t len);
  *  @param len Size of FMM context as given by TEE_BigIntFMMContextSizeInU32
  *  @param modulus Modulus to initalize FMM context for
  */
-void TEE_BigIntInitFMMContext(TEE_BigIntFMMContext *context, size_t len,
-			      TEE_BigInt *modulus);
+void TEE_BigIntInitFMMContext(TEE_BigIntFMMContext *context, size_t len, TEE_BigInt *modulus);
 
 /***
  * Initializes Fast Modular Multiplication big integer.
@@ -73,8 +72,8 @@ void TEE_BigIntInitFMM(TEE_BigIntFMM *bigIntFMM, size_t len);
  * @return TEE_SUCCESS if successful,
  *         TEE_ERROR_OVERFLOW if the destination is too small
  */
-TEE_Result TEE_BigIntConvertFromOctetString(TEE_BigInt *dest, uint8_t *buffer,
-					    size_t bufferLen, int32_t sign);
+TEE_Result TEE_BigIntConvertFromOctetString(TEE_BigInt *dest, uint8_t *buffer, size_t bufferLen,
+					    int32_t sign);
 
 /***
  * Convert integer from TEE_BigInt to binary byte order representation
@@ -84,9 +83,7 @@ TEE_Result TEE_BigIntConvertFromOctetString(TEE_BigInt *dest, uint8_t *buffer,
  * @return TEE_SUCCESS if successful,
  *         TEE_ERROR_SHORT_BUFFER is buffer is too short
  */
-TEE_Result TEE_BigIntConvertToOctetString(void *buffer,
-					  size_t bufferLen,
-					  TEE_BigInt *bigInt);
+TEE_Result TEE_BigIntConvertToOctetString(void *buffer, size_t bufferLen, TEE_BigInt *bigInt);
 
 /***
  * Convert integer from int32_t to TEE_BigInt
@@ -197,8 +194,7 @@ void TEE_BigIntSquare(TEE_BigInt *dest, TEE_BigInt *op);
  * @param op1 First operand
  * @param op2 Second operand
  */
-void TEE_BigIntDiv(TEE_BigInt *dest_q, TEE_BigInt *dest_r,
-		   TEE_BigInt *op1, TEE_BigInt *op2);
+void TEE_BigIntDiv(TEE_BigInt *dest_q, TEE_BigInt *dest_r, TEE_BigInt *op1, TEE_BigInt *op2);
 
 /* Modular Arithmetic Operations */
 
@@ -217,8 +213,7 @@ void TEE_BigIntMod(TEE_BigInt *dest, TEE_BigInt *op, TEE_BigInt *n);
  * @param op2 Second operand
  * @param n Modulus
  */
-void TEE_BigIntAddMod(TEE_BigInt *dest, TEE_BigInt *op1,
-		      TEE_BigInt *op2, TEE_BigInt *n);
+void TEE_BigIntAddMod(TEE_BigInt *dest, TEE_BigInt *op1, TEE_BigInt *op2, TEE_BigInt *n);
 
 /***
  * Substracts two operands and puts the result to dest with modulus n
@@ -227,8 +222,7 @@ void TEE_BigIntAddMod(TEE_BigInt *dest, TEE_BigInt *op1,
  * @param op2 Second operand
  * @param n Modulus
  */
-void TEE_BigIntSubMod(TEE_BigInt *dest, TEE_BigInt *op1,
-		      TEE_BigInt *op2, TEE_BigInt *n);
+void TEE_BigIntSubMod(TEE_BigInt *dest, TEE_BigInt *op1, TEE_BigInt *op2, TEE_BigInt *n);
 
 /***
  * Multiplicates two operands and puts the result to dest with modulus n
@@ -237,8 +231,7 @@ void TEE_BigIntSubMod(TEE_BigInt *dest, TEE_BigInt *op1,
  * @param op2 Second operand
  * @param n Modulus
  */
-void TEE_BigIntMulMod(TEE_BigInt *dest, TEE_BigInt *op1,
-		      TEE_BigInt *op2, TEE_BigInt *n);
+void TEE_BigIntMulMod(TEE_BigInt *dest, TEE_BigInt *op1, TEE_BigInt *op2, TEE_BigInt *n);
 
 /***
  * Squares operand and puts the result to dest with modulus n
@@ -275,8 +268,7 @@ bool TEE_BigIntRelativePrime(TEE_BigInt *op1, TEE_BigInt *op2);
  * @param op1 First operand
  * @param op2 Second operand
  */
-void TEE_BigIntComputeExtendedGcd(TEE_BigInt *gcd, TEE_BigInt *u,
-				  TEE_BigInt *v, TEE_BigInt *op1,
+void TEE_BigIntComputeExtendedGcd(TEE_BigInt *gcd, TEE_BigInt *u, TEE_BigInt *v, TEE_BigInt *op1,
 				  TEE_BigInt *op2);
 
 /***
@@ -303,8 +295,8 @@ int32_t TEE_BigIntIsProbablePrime(TEE_BigInt *op, uint32_t confidenceLevel);
  * @param n Modulus to be used
  * @param context Initialized FMM context
  */
-void TEE_BigIntConvertToFMM(TEE_BigIntFMM *dest, TEE_BigInt *src,
-			    TEE_BigInt *n, TEE_BigIntFMMContext *context);
+void TEE_BigIntConvertToFMM(TEE_BigIntFMM *dest, TEE_BigInt *src, TEE_BigInt *n,
+			    TEE_BigIntFMMContext *context);
 
 /***
  * Convert FMM compatible representation back to big integer
@@ -313,8 +305,8 @@ void TEE_BigIntConvertToFMM(TEE_BigIntFMM *dest, TEE_BigInt *src,
  * @param n Modulus to be used
  * @param context Initialized FMM context
  */
-void TEE_BigIntConvertFromFMM(TEE_BigInt *dest, TEE_BigIntFMM *src,
-			      TEE_BigInt *n, TEE_BigIntFMMContext *context);
+void TEE_BigIntConvertFromFMM(TEE_BigInt *dest, TEE_BigIntFMM *src, TEE_BigInt *n,
+			      TEE_BigIntFMMContext *context);
 
 /***
  * Compute modular multiplication with FMM context.
@@ -326,8 +318,7 @@ void TEE_BigIntConvertFromFMM(TEE_BigInt *dest, TEE_BigIntFMM *src,
  * @param n Modulus to be used
  * @param context Initialized FMM context
  */
-void TEE_BigIntComputeFMM(TEE_BigIntFMM *dest, TEE_BigIntFMM *op1,
-			  TEE_BigIntFMM *op2, TEE_BigInt *n,
-			  TEE_BigIntFMMContext *context);
+void TEE_BigIntComputeFMM(TEE_BigIntFMM *dest, TEE_BigIntFMM *op1, TEE_BigIntFMM *op2,
+			  TEE_BigInt *n, TEE_BigIntFMMContext *context);
 
 #endif /* __TEE_BIGINT_H__ */

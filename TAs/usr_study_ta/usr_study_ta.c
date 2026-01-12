@@ -30,28 +30,37 @@
  * NOTE!!
  */
 
-#include "tee_internal_api.h" /* TA envrionment */
+#include "tee_internal_api.h"  /* TA envrionment */
 #include "usr_study_ta_ctrl.h" /* Control structures */
 
 #ifdef TA_PLUGIN
 #include "tee_ta_properties.h" /* Setting TA properties */
-#include "tee_logging.h" /* OpenTEE logging functions */
+#include "tee_logging.h"       /* OpenTEE logging functions */
 
 /* Setting TA properties */
-SET_TA_PROPERTIES(
-	{ 0x12345678, 0x8765, 0x4321, { 'U', 'S', 'R', 'S', 'T', 'U', 'D', 'Y'} }, /* UUID */
-		512, /* dataSize */
-		255, /* stackSize */
-		1, /* singletonInstance */
-		0, /* multiSession */
-		1) /* instanceKeepAlive */
+SET_TA_PROPERTIES({0x12345678, 0x8765, 0x4321, {'U', 'S', 'R', 'S', 'T', 'U', 'D', 'Y'}}, /* UUID */
+		  512, /* dataSize */
+		  255, /* stackSize */
+		  1,   /* singletonInstance */
+		  0,   /* multiSession */
+		  1)   /* instanceKeepAlive */
 #else
 
-#define OT_LOG(...) do {} while (0)
-#define OT_LOG1(...) do {} while (0)
-#define OT_LOG_ERR(...) do {} while (0)
-#define OT_LOG_INT(...) do {} while (0)
-#define OT_LOG_STR(...) do {} while (0)
+#define OT_LOG(...)                                                                                \
+	do {                                                                                       \
+	} while (0)
+#define OT_LOG1(...)                                                                               \
+	do {                                                                                       \
+	} while (0)
+#define OT_LOG_ERR(...)                                                                            \
+	do {                                                                                       \
+	} while (0)
+#define OT_LOG_INT(...)                                                                            \
+	do {                                                                                       \
+	} while (0)
+#define OT_LOG_STR(...)                                                                            \
+	do {                                                                                       \
+	} while (0)
 
 #endif
 
@@ -142,13 +151,13 @@ static struct internal_transaction *get_transaction_by_index(uint32_t index)
 	return trans;
 }
 
-static TEE_Result calc_digest(struct internal_transaction *transaction,
-			      void *digest, size_t digest_len)
+static TEE_Result calc_digest(struct internal_transaction *transaction, void *digest,
+			      size_t digest_len)
 {
 	TEE_DigestUpdate(digest_handler, &transaction->info, sizeof(struct transaction));
 
-	return TEE_DigestDoFinal(digest_handler, transaction->message,
-				 transaction->info.msg_len, digest, &digest_len);
+	return TEE_DigestDoFinal(digest_handler, transaction->message, transaction->info.msg_len,
+				 digest, &digest_len);
 }
 
 static TEE_Result add_digest_to_transaction(struct internal_transaction *new_trans)
@@ -174,8 +183,8 @@ static TEE_Result add_digest_to_transaction(struct internal_transaction *new_tra
 /*
  * Function executes transaction
  */
-static TEE_Result exec_transaction(uint32_t transaction_type,
-				   uint32_t paramTypes, TEE_Param *params)
+static TEE_Result exec_transaction(uint32_t transaction_type, uint32_t paramTypes,
+				   TEE_Param *params)
 {
 	struct internal_transaction *new_trans = NULL;
 	TEE_Result ret = TEE_SUCCESS;
@@ -203,8 +212,7 @@ static TEE_Result exec_transaction(uint32_t transaction_type,
 		goto end;
 	}
 
-	if (transaction_type == USR_AC_CMD_WITHDRAW &&
-	    usr_account.balance < params[0].value.a) {
+	if (transaction_type == USR_AC_CMD_WITHDRAW && usr_account.balance < params[0].value.a) {
 		OT_LOG(LOG_ERR, "Transaction not executed due insufficient funds");
 		ret = TEE_ERROR_GENERIC;
 		goto end;
@@ -327,7 +335,7 @@ static TEE_Result get_transaction(uint32_t paramTypes, TEE_Param *params)
 
 	trans = get_transaction_by_index(params[0].value.a);
 
-	TEE_MemMove(params[1].memref.buffer-1, &trans->info, sizeof(struct transaction));
+	TEE_MemMove(params[1].memref.buffer - 1, &trans->info, sizeof(struct transaction));
 	params[1].memref.size = sizeof(struct transaction);
 
 	return TEE_SUCCESS;
@@ -360,8 +368,8 @@ void TA_EXPORT TA_DestroyEntryPoint(void)
 	/* No actions */
 }
 
-TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
-					      TEE_Param params[4], void **sessionContext)
+TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes, TEE_Param params[4],
+					      void **sessionContext)
 {
 	OT_LOG(LOG_ERR, "Calling the Open session entry point");
 

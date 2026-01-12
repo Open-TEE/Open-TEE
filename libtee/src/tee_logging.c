@@ -16,7 +16,6 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
-
 #if (defined TA_PLUGIN || defined OT_LOGGING)
 
 #include <stdio.h>
@@ -32,12 +31,12 @@ void pri_opm_info(const char *title, void *operationInfoMultiple)
 {
 	TEE_OperationInfoMultiple *info = operationInfoMultiple;
 	uint32_t i = 0;
-	
+
 	if (info == NULL) {
 		OT_LOG_ERR("pri_opm_info: NULL");
 		return;
 	}
-	
+
 	if (title != NULL) {
 		OT_LOG_ERR("%s\n", title);
 	}
@@ -54,12 +53,12 @@ void pri_opm_info(const char *title, void *operationInfoMultiple)
 	if (info->numberOfKeys == 0) {
 		return;
 	}
-	
+
 	for (i = 0; i < info->numberOfKeys; ++i) {
 		OT_LOG_ERR("key             nr %d", i);
 		OT_LOG_ERR("keySize          [%u]", info->keyInformation[i].keySize);
 		OT_LOG_ERR("requiredKeyUsage [%u]", info->keyInformation[i].requiredKeyUsage);
-	}	
+	}
 }
 
 void pri_op_info(const char *title, void *operationInfo)
@@ -70,7 +69,7 @@ void pri_op_info(const char *title, void *operationInfo)
 		OT_LOG_ERR("pri_op_info: NULL");
 		return;
 	}
-	
+
 	if (title != NULL) {
 		OT_LOG_ERR("%s\n", title);
 	}
@@ -88,7 +87,7 @@ void pri_op_info(const char *title, void *operationInfo)
 void pri_obj_info(const char *title, void *objectInfo)
 {
 	TEE_ObjectInfo *info = objectInfo;
-	
+
 	if (info == NULL) {
 		OT_LOG_ERR("pri_obj_info: NULL");
 		return;
@@ -107,25 +106,23 @@ void pri_obj_info(const char *title, void *objectInfo)
 	OT_LOG_ERR("objectUsage   [%u]", info->objectUsage);
 }
 
-void pri_buf_hex_format(const char *title,
-			const unsigned char *buf,
-			int buf_len)
+void pri_buf_hex_format(const char *title, const unsigned char *buf, int buf_len)
 {
 	int rowLen = 0, rowMaxLen = 16, i = 0;
-	char hexstr[rowMaxLen*4+1];
-        char hex[4];
-	
+	char hexstr[rowMaxLen * 4 + 1];
+	char hex[4];
+
 	if (buf == NULL) {
 		OT_LOG_ERR("pri_buf_hex_format: NULL");
 		return;
 	}
-	
-        memset(hexstr, 0, rowMaxLen);
+
+	memset(hexstr, 0, rowMaxLen);
 
 	if (title != NULL) {
 		OT_LOG_ERR("%s [%u]\n", title, buf_len);
 	}
-	
+
 	for (i = 0; i < buf_len; ++i) {
 		sprintf(hex, "%02X ", buf[i]);
 		strncat(hexstr, hex, 4);

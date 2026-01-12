@@ -23,8 +23,8 @@
 #ifdef TA_PLUGIN
 #include "tee_ta_properties.h"
 
-SET_TA_PROPERTIES({ 0x3E93632E, 0xA710, 0x469E, { 'C', 'O', 'U', 'N', 'T', 'E', 'R' } }, 512, 255,
-		  1, 1, 1)
+SET_TA_PROPERTIES({0x3E93632E, 0xA710, 0x469E, {'C', 'O', 'U', 'N', 'T', 'E', 'R'}}, 512, 255, 1, 1,
+		  1)
 #endif
 
 /* Persistent object ID */
@@ -92,11 +92,10 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 	if (ret == TEE_ERROR_ITEM_NOT_FOUND) {
 		OT_LOG(LOG_DEBUG, "TEE_OpenPersistentObject failed, creating persistent object");
 
-		ret = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, &object_id, sizeof(object_id),
-						 TEE_DATA_FLAG_ACCESS_READ |
-						 TEE_DATA_FLAG_ACCESS_WRITE,
-						 NULL, &initial_value, sizeof(initial_value),
-						 &counter);
+		ret = TEE_CreatePersistentObject(
+		    TEE_STORAGE_PRIVATE, &object_id, sizeof(object_id),
+		    TEE_DATA_FLAG_ACCESS_READ | TEE_DATA_FLAG_ACCESS_WRITE, NULL, &initial_value,
+		    sizeof(initial_value), &counter);
 		if (ret != TEE_SUCCESS)
 			OT_LOG(LOG_ERR, "TEE_CreatePersistentObject failed: 0x%x", ret);
 		else
@@ -107,10 +106,7 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 	return ret;
 }
 
-void TA_EXPORT TA_DestroyEntryPoint(void)
-{
-	OT_LOG(LOG_DEBUG, "Calling the Destroy entry point");
-}
+void TA_EXPORT TA_DestroyEntryPoint(void) { OT_LOG(LOG_DEBUG, "Calling the Destroy entry point"); }
 
 TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes, TEE_Param params[4],
 					      void **sessionContext)

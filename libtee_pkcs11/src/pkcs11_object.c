@@ -17,11 +17,9 @@
 #include "cryptoki.h"
 #include "hal.h"
 
-static CK_RV get_or_set_object_attr(uint32_t command_id,
-                                    CK_SESSION_HANDLE hSession,
-                                    CK_OBJECT_HANDLE hObject,
-                                    CK_ATTRIBUTE_PTR pTemplate,
-                                    CK_ULONG ulCount)
+static CK_RV get_or_set_object_attr(uint32_t command_id, CK_SESSION_HANDLE hSession,
+				    CK_OBJECT_HANDLE hObject, CK_ATTRIBUTE_PTR pTemplate,
+				    CK_ULONG ulCount)
 {
 	if (hSession == CK_INVALID_HANDLE)
 		return CKR_SESSION_HANDLE_INVALID;
@@ -35,16 +33,14 @@ static CK_RV get_or_set_object_attr(uint32_t command_id,
 	if (!is_lib_initialized())
 		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
-        return hal_get_or_set_object_attr(command_id, hSession, hObject, pTemplate, ulCount);
+	return hal_get_or_set_object_attr(command_id, hSession, hObject, pTemplate, ulCount);
 }
 
 /*
  * 11.7 OBJECT MANAGEMENT FUNCTIONS
  */
 
-CK_RV C_CreateObject(CK_SESSION_HANDLE hSession,
-		     CK_ATTRIBUTE_PTR pTemplate,
-		     CK_ULONG ulCount,
+CK_RV C_CreateObject(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount,
 		     CK_OBJECT_HANDLE_PTR phObject)
 {
 	if (hSession == CK_INVALID_HANDLE)
@@ -59,11 +55,8 @@ CK_RV C_CreateObject(CK_SESSION_HANDLE hSession,
 	return hal_create_object(hSession, pTemplate, ulCount, phObject);
 }
 
-CK_RV C_CopyObject(CK_SESSION_HANDLE hSession,
-		   CK_OBJECT_HANDLE hObject,
-		   CK_ATTRIBUTE_PTR pTemplate,
-		   CK_ULONG ulCount,
-		   CK_OBJECT_HANDLE_PTR phNewObject)
+CK_RV C_CopyObject(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject, CK_ATTRIBUTE_PTR pTemplate,
+		   CK_ULONG ulCount, CK_OBJECT_HANDLE_PTR phNewObject)
 {
 	hSession = hSession;
 	hObject = hObject;
@@ -92,25 +85,19 @@ CK_RV C_GetObjectSize(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject, CK_U
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_GetAttributeValue(CK_SESSION_HANDLE hSession,
-			  CK_OBJECT_HANDLE hObject,
-			  CK_ATTRIBUTE_PTR pTemplate,
-			  CK_ULONG ulCount)
+CK_RV C_GetAttributeValue(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject,
+			  CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount)
 {
-        return get_or_set_object_attr(TEE_GET_ATTR_VALUE, hSession, hObject, pTemplate, ulCount);
+	return get_or_set_object_attr(TEE_GET_ATTR_VALUE, hSession, hObject, pTemplate, ulCount);
 }
 
-CK_RV C_SetAttributeValue(CK_SESSION_HANDLE hSession,
-			  CK_OBJECT_HANDLE hObject,
-			  CK_ATTRIBUTE_PTR pTemplate,
-			  CK_ULONG ulCount)
+CK_RV C_SetAttributeValue(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject,
+			  CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount)
 {
-        return get_or_set_object_attr(TEE_SET_ATTR_VALUE, hSession, hObject, pTemplate, ulCount);
+	return get_or_set_object_attr(TEE_SET_ATTR_VALUE, hSession, hObject, pTemplate, ulCount);
 }
 
-CK_RV C_FindObjectsInit(CK_SESSION_HANDLE hSession,
-			CK_ATTRIBUTE_PTR pTemplate,
-			CK_ULONG ulCount)
+CK_RV C_FindObjectsInit(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount)
 {
 	if (hSession == CK_INVALID_HANDLE)
 		return CKR_SESSION_HANDLE_INVALID;
@@ -121,10 +108,8 @@ CK_RV C_FindObjectsInit(CK_SESSION_HANDLE hSession,
 	return hal_find_objects_init(hSession, pTemplate, ulCount);
 }
 
-CK_RV C_FindObjects(CK_SESSION_HANDLE hSession,
-		    CK_OBJECT_HANDLE_PTR phObject,
-		    CK_ULONG ulMaxObjectCount,
-		    CK_ULONG_PTR pulObjectCount)
+CK_RV C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR phObject,
+		    CK_ULONG ulMaxObjectCount, CK_ULONG_PTR pulObjectCount)
 {
 	if (hSession == CK_INVALID_HANDLE)
 		return CKR_SESSION_HANDLE_INVALID;

@@ -12,5 +12,3 @@ docker run -it --rm=true --net=host --ipc=host \
        -v $(pwd)/../..:/home/docker/opentee \
        -v /dev/log:/dev/log \
        opentee
-
-

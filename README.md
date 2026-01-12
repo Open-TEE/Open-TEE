@@ -49,7 +49,7 @@ NOTE: [We have also a docker envronment](#docker)!
       $ mkdir -p ~/bin
       $ curl http://commondatastorage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
       $ chmod +x ~/bin/repo
-     
+
       # mbedtls 3.1.0: fetch, compile and install
       # (Note: Tested with 3.1.0, but 3.x.x version should be sufficient)
       # (Note: Currently Apt package contains 2.x.x version)
@@ -58,21 +58,21 @@ NOTE: [We have also a docker envronment](#docker)!
       $ tar -xf v3.1.0.tar.gz && cd mbedtls-3.1.0
       $ cmake -DUSE_SHARED_MBEDTLS_LIBRARY=On .
       $ make -j && make install
-      
+
       # Clone opentee
       $ mkdir opentee && cd opentee
       $ ~/bin/repo init -u https://github.com/Open-TEE/manifest.git
       $ ~/bin/repo sync -j10
-      
+
       # Build opentee and install (cd into opentee source folder)
       # Note: Install location is "/opt/OpenTee"
       $ mkdir build && cd build
       $ ../autogen.sh
       $ make -j && sudo make install
-      
+
       # Generate opentee conf
       $ sudo echo -e "[PATHS]\nta_dir_path = /opt/OpenTee/lib/TAs\ncore_lib_path = /opt/OpenTee/lib\nsubprocess_manager = libManagerApi.so\nsubprocess_launcher = libLauncherApi.so" > /etc/opentee.conf
-      
+
       # Run opentee and connection test program
       # /opt/OpenTee/bin/opentee
       # /opt/OpenTee/bin/conn_test
@@ -87,12 +87,12 @@ Docker environment tested on Ubuntu 20.04 (Focal Fossa) and Community docker eng
      # Please see quickstart guide points
      # 1. Google repo (skip if you already have it)
      # 2. Clone opentee
-     
+
      # Run Docker
      $ cd docker
      $ ./build-docker.sh
      $ ./run-docker.sh
-     
+
      # Inside docker: Compile and run opentee
      # Please see quickrstart guide points
      # 1. Build opentee and install
@@ -100,14 +100,14 @@ Docker environment tested on Ubuntu 20.04 (Focal Fossa) and Community docker eng
 
 #### Docker environment tips
 
-    a) OpenTEE prints its debug prints to syslog and therefore /dev/log 
+    a) OpenTEE prints its debug prints to syslog and therefore /dev/log
        is mounted. You can read logs from your host machine
-    b) You can pass "--prefix="-option to autogen.sh and you can 
+    b) You can pass "--prefix="-option to autogen.sh and you can
        avoid sudo-location installation!
-    c) Remember to change /etc/opentee.conf file paths if you are 
+    c) Remember to change /etc/opentee.conf file paths if you are
        using "--prefix="-option
-    d) Dockers "--ipc=host"-options allows to connect from outside to 
-       inside container. So you can run opentee deamon inside docker 
+    d) Dockers "--ipc=host"-options allows to connect from outside to
+       inside container. So you can run opentee deamon inside docker
        and your CA can connect it from outside docker container
 
 
@@ -170,11 +170,11 @@ Those wishing to contribute to Open-TEE need signup to the [GerritHub](http://ge
 
 To submit changes to GerritHub you'll also need to add the following to your `~/.ssh/config`:
 
->  
-> host review.gerrithub.io  
->       port 29418  
->       user <github-username-here>  
->  
+>
+> host review.gerrithub.io
+>       port 29418
+>       user <github-username-here>
+>
 
 Have `repo` fetch the repositories defined in the manifests:
 
@@ -219,25 +219,25 @@ Open the configuration file with your preferred editor:
 
 Add the sample configuration given below to the configuration file:
 
->  
-> [PATHS]  
-> ta\_dir\_path = _PATH_/_TO_/_TADIR_  
-> core\_lib\_path = _PATH_/_TO_/_LIBDIR_  
-> subprocess\_manager = libManagerApi.<span></span>so  
-> subprocess\_launcher = libLauncherApi.<span></span>so  
+>
+> [PATHS]
+> ta\_dir\_path = _PATH_/_TO_/_TADIR_
+> core\_lib\_path = _PATH_/_TO_/_LIBDIR_
+> subprocess\_manager = libManagerApi.<span></span>so
+> subprocess\_launcher = libLauncherApi.<span></span>so
 >
 
 where _PATHNAME_ is replaced with the absolute path to the parent directory of the Open-TEE directory you created earlier. The pathname must **not** include special variables such as `~` or `$HOME`.
 
 For an autotools build you can use
 
->  
-> [PATHS]  
-> ta\_dir\_path = /opt/OpenTee/lib/TAs  
-> core\_lib\_path = /opt/OpenTee/lib  
-> subprocess\_manager = libManagerApi.<span></span>so  
-> subprocess\_launcher = libLauncherApi.<span></span>so  
->  
+>
+> [PATHS]
+> ta\_dir\_path = /opt/OpenTee/lib/TAs
+> core\_lib\_path = /opt/OpenTee/lib
+> subprocess\_manager = libManagerApi.<span></span>so
+> subprocess\_launcher = libLauncherApi.<span></span>so
+>
 
 ### Running and Debugging
 
@@ -247,16 +247,16 @@ For an autotools build:
 
     $ /opt/Open-TEE/bin/opentee-engine
 
-Verify that Open-TEE is running with `ps`:  
+Verify that Open-TEE is running with `ps`:
 
     $ ps waux | grep tee
 
 You should see output similar to the example below:
 
 >
-> gcc-debug$ ps waux |grep tee  
-> brian     5738  0.0  0.0  97176   852 ?        Sl   10:40   0:00 tee_manager  
-> brian     5739  0.0  0.0  25216  1144 ?        S    10:40   0:00 tee_launcher  
+> gcc-debug$ ps waux |grep tee
+> brian     5738  0.0  0.0  97176   852 ?        Sl   10:40   0:00 tee_manager
+> brian     5739  0.0  0.0  25216  1144 ?        S    10:40   0:00 tee_launcher
 >
 
 Now launch and attach `gdb` to the `tee_launcher` process:
@@ -272,22 +272,22 @@ In second terminal run the client application:
 You should now expect to see output similar to the following:
 
 >
-> ./conn_test_app  
-> START: conn test app  
-> Initializing context: 
+> ./conn_test_app
+> START: conn test app
+> Initializing context:
 >
 
 Back in `gdb` you can now step through and debug the trusted application the `conn_test_app` is connected to. If you continue execution you should see output from the `conn_test_app` similar to the following:
 
 >
-> gcc-debug$ ./conn_test_app  
-> START: conn test app  
-> Initializing context: initialized  
-> Openning session: opened  
-> yyyyyyyyyyyyyyyyyyyyxxxxx  
-> Invoking command: invoked  
-> Closing session: Closed  
-> Finalizing ctx: Finalized  
+> gcc-debug$ ./conn_test_app
+> START: conn test app
+> Initializing context: initialized
+> Openning session: opened
+> yyyyyyyyyyyyyyyyyyyyxxxxx
+> Invoking command: invoked
+> Closing session: Closed
+> Finalizing ctx: Finalized
 > END: conn test app
 >
 
@@ -300,38 +300,38 @@ The `opentee-engine` executable supports the following command line options:
 
 Usage: `./bin/opentee-engine [OPTION...]`
 
-* `-p`, `--pid-dir=PATH`  
-  Specify path to keep pid file.  
+* `-p`, `--pid-dir=PATH`
+  Specify path to keep pid file.
   Defaults to:
   - `/var/run/opentee` when run by root, or
   - `/tmp/opentee when` run by a non-root user.
 
 
-* `-c`, `--config=FILE`  
-  Specify path to configuration file.  
+* `-c`, `--config=FILE`
+  Specify path to configuration file.
   Defaults to: `/etc/opentee.conf`
 
 
-* `-f`, `--foreground`  
+* `-f`, `--foreground`
   Do not daemonize but start the process in foreground.
 
 
-* `-h`, `--help`  
+* `-h`, `--help`
   Print list of command line options.
 
 ### Environmental Variables
 
 The following environmental variables control the behaviour of Open-TEE:
 
-* `OPENTEE_SOCKET_FILE_PATH`  
-  Defines path to socket used for communication between `tee_manager` and `libtee`.  
-  Defaults to `/tmp/open_tee_sock` on Linux  
+* `OPENTEE_SOCKET_FILE_PATH`
+  Defines path to socket used for communication between `tee_manager` and `libtee`.
+  Defaults to `/tmp/open_tee_sock` on Linux
   Defaults to `/data/local/tmp/open_tee_sock` on Android
 
 
-* `OPENTEE_STORAGE_PATH`  
-  Defines directory used for object storage.  
-  Defaults to `$HOME/.TEE_secure_storage` on Linux  
+* `OPENTEE_STORAGE_PATH`
+  Defines directory used for object storage.
+  Defaults to `$HOME/.TEE_secure_storage` on Linux
   Defaults to `/data` on Android
 
 FAQ
@@ -339,16 +339,16 @@ FAQ
 
 If you get the following error when trying to attach `gdb` to `tee_launcher`:
 
->  
-> Could not attach to process.  If your uid matches the uid of the target  
-> process, check the setting of /proc/sys/kernel/yama/ptrace_scope, or try  
-> again as the root user.  For more details, see /etc/sysctl.d/10-ptrace.conf  
-> ptrace: Operation not permitted.  
->  
+>
+> Could not attach to process.  If your uid matches the uid of the target
+> process, check the setting of /proc/sys/kernel/yama/ptrace_scope, or try
+> again as the root user.  For more details, see /etc/sysctl.d/10-ptrace.conf
+> ptrace: Operation not permitted.
+>
 
 Run the following command and invoke `gdb` again:
 
-    $ echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope 
+    $ echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
 
 Contact
 ------
@@ -360,4 +360,3 @@ License
 ------
 
 Open-TEE is licensed under the Apache License 2.0 (see LICENSE).
-

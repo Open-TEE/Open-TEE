@@ -50,8 +50,6 @@ struct __TEE_ObjectEnumHandle {
 
 #define COM_MGR_CMD_ID_WRITE_CREATE_INIT_DATA 0x0F
 
-
-
 struct com_mrg_open_persistent {
 	uint32_t storageID;
 	uint32_t flags;

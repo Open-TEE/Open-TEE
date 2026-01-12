@@ -213,7 +213,7 @@ int lib_main_loop(struct core_control *ctl_params)
 			if (shm_fd_count > 0 && shm_fd_count <= 4) {
 				recv_open_msg->msg_hdr.shareable_fd_count = shm_fd_count;
 				memcpy(recv_open_msg->msg_hdr.shareable_fd, shm_fds,
-				       sizeof(int)*shm_fd_count);
+				       sizeof(int) * shm_fd_count);
 			}
 
 			/* Extrac info from message */
@@ -251,7 +251,6 @@ int lib_main_loop(struct core_control *ctl_params)
 			if (new_proc_pid == -1) {
 				send_err_msg_to_manager(ctl_params->comm_sock_fd, &new_ta_info);
 				goto close_pair;
-
 			}
 
 			new_ta_info.pid = new_proc_pid;
@@ -261,33 +260,32 @@ int lib_main_loop(struct core_control *ctl_params)
 
 			if (ret == sizeof(struct com_msg_ta_created)) {
 
-				if (send_fd(ctl_params->comm_sock_fd, &sockfd[0], 1, NULL, 0)
-				    == -1) {
+				if (send_fd(ctl_params->comm_sock_fd, &sockfd[0], 1, NULL, 0) ==
+				    -1) {
 					OT_LOG(LOG_ERR, "Failed to send TA sock");
 					kill(new_proc_pid, SIGKILL);
 					/* TODO: Check what is causing error, but for now
-						 * lets hope the error clears itself*/
+					 * lets hope the error clears itself*/
 				}
 
 			} else {
 				OT_LOG(LOG_ERR, "Failed to send response msg");
 				kill(new_proc_pid, SIGKILL);
 				/* TODO: Check what is causing error, but for now lets
-					 *  hope the error clears itself*/
+				 *  hope the error clears itself*/
 			}
-close_pair:
+		close_pair:
 			/* parent process will stay as the launcher */
 			close(sockfd[0]);
 			close(sockfd[1]);
-close_fd:
+		close_fd:
 			/* close possibly forwarded file descriptors */
 			while (recv_open_msg->msg_hdr.shareable_fd_count > 0) {
 				recv_open_msg->msg_hdr.shareable_fd_count--;
-				close(recv_open_msg->msg_hdr.shareable_fd
-						[recv_open_msg->msg_hdr.shareable_fd_count]);
+				close(recv_open_msg->msg_hdr
+					  .shareable_fd[recv_open_msg->msg_hdr.shareable_fd_count]);
 			}
 			free(recv_open_msg);
-
 		}
 	}
 }

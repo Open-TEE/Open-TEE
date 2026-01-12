@@ -29,18 +29,18 @@
 #include <string.h>
 
 #define OBJ_ID_LEN CK_OBJECT_HANDLE
-#define GENERATED_BY_TEE	0xFA
-#define SET_TEMPLATE		0xFB
-#define CREATE_TEMPLATE		0xFC
+#define GENERATED_BY_TEE 0xFA
+#define SET_TEMPLATE 0xFB
+#define CREATE_TEMPLATE 0xFC
 
 static char CPY_SET_OBJ_ID[] = "set_object_cpy_id";
 
 struct pTemplate {
-	void *buffer; /* Pointing to first attribute */
-	CK_ULONG attr_count; /* Attributes count in pTemplate */
-	size_t buffer_size; /* Buffer size in bytes */
+	void *buffer;		  /* Pointing to first attribute */
+	CK_ULONG attr_count;	  /* Attributes count in pTemplate */
+	size_t buffer_size;	  /* Buffer size in bytes */
 	uint8_t generated_by_who; /* Who is generated template. TEE or recv from usr */
-	uint8_t template_for; /* set/get/create template */
+	uint8_t template_for;	  /* set/get/create template */
 };
 
 static CK_RV get_next_free_object_id(CK_OBJECT_HANDLE *next_id)
@@ -57,8 +57,8 @@ static CK_RV get_next_free_object_id(CK_OBJECT_HANDLE *next_id)
 	size_t read_bytes;
 
 	tee_rv = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, &id_object_id, sizeof(OBJ_ID_LEN),
-					    TEE_DATA_FLAG_ACCESS_WRITE, NULL,
-					    &previous_object_id, sizeof(CK_OBJECT_HANDLE), NULL);
+					    TEE_DATA_FLAG_ACCESS_WRITE, NULL, &previous_object_id,
+					    sizeof(CK_OBJECT_HANDLE), NULL);
 	if (tee_rv == TEE_SUCCESS) {
 		/* Special case: First object ID is previous ID */
 		*next_id = previous_object_id;
@@ -66,10 +66,9 @@ static CK_RV get_next_free_object_id(CK_OBJECT_HANDLE *next_id)
 	} else if (tee_rv == TEE_ERROR_ACCESS_CONFLICT) {
 
 		/* Read previously signed ID */
-		tee_rv = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, &id_object_id,
-						  sizeof(CK_OBJECT_HANDLE),
-						  (TEE_DATA_FLAG_ACCESS_WRITE |
-						   TEE_DATA_FLAG_ACCESS_READ), &id_object);
+		tee_rv = TEE_OpenPersistentObject(
+		    TEE_STORAGE_PRIVATE, &id_object_id, sizeof(CK_OBJECT_HANDLE),
+		    (TEE_DATA_FLAG_ACCESS_WRITE | TEE_DATA_FLAG_ACCESS_READ), &id_object);
 
 		if (tee_rv != TEE_SUCCESS)
 			goto out;
@@ -91,8 +90,8 @@ static CK_RV get_next_free_object_id(CK_OBJECT_HANDLE *next_id)
 		if (tee_rv != TEE_SUCCESS)
 			goto out;
 
-		tee_rv = TEE_WriteObjectData(id_object, &previous_object_id,
-					     sizeof(CK_OBJECT_HANDLE));
+		tee_rv =
+		    TEE_WriteObjectData(id_object, &previous_object_id, sizeof(CK_OBJECT_HANDLE));
 	} else {
 		/* Something went wrong */
 		*next_id = 0;
@@ -111,8 +110,7 @@ static void release_object_id(CK_ULONG released_id)
 	released_id = released_id;
 }
 
-static void get_next_attr_from_template(struct pTemplate *ptemplate,
-					uint32_t *pos,
+static void get_next_attr_from_template(struct pTemplate *ptemplate, uint32_t *pos,
 					CK_ATTRIBUTE *attr)
 {
 	/* Attribute type */
@@ -128,8 +126,7 @@ static void get_next_attr_from_template(struct pTemplate *ptemplate,
 	*pos += attr->ulValueLen;
 }
 
-static CK_RV get_attr_from_template(struct pTemplate *ptemplate,
-				    CK_ATTRIBUTE_TYPE type,
+static CK_RV get_attr_from_template(struct pTemplate *ptemplate, CK_ATTRIBUTE_TYPE type,
 				    CK_ATTRIBUTE *ret_attr)
 {
 	uint32_t pos = 0, i = 0;
@@ -151,9 +148,7 @@ static CK_RV get_attr_from_template(struct pTemplate *ptemplate,
 	return CKR_TEMPLATE_INCOMPLETE;
 }
 
-static CK_RV cpy_attr2buf(CK_ATTRIBUTE *ck_attr,
-			  void *buf,
-			  uint32_t buf_len)
+static CK_RV cpy_attr2buf(CK_ATTRIBUTE *ck_attr, void *buf, uint32_t buf_len)
 {
 	/* Zero size is not correct! */
 	if (buf_len < ck_attr->ulValueLen || !ck_attr->ulValueLen)
@@ -252,10 +247,8 @@ static CK_RV template_contain_correct_types(struct pTemplate *ptemplate)
  * \return
  */
 static CK_RV write_obj_template_to_object(struct pTemplate *ptemplate,
-					  struct object_header *obj_header,
-					  TEE_ObjectHandle object,
-					  CK_RV (*callback)(TEE_ObjectHandle,
-							    struct pTemplate *))
+					  struct object_header *obj_header, TEE_ObjectHandle object,
+					  CK_RV (*callback)(TEE_ObjectHandle, struct pTemplate *))
 {
 	CK_RV ck_rv = CKR_OK;
 	TEE_Result tee_rv;
@@ -307,8 +300,7 @@ static CK_RV write_attr2object(CK_ATTRIBUTE *ck_attr, TEE_ObjectHandle object)
 	return CKR_OK;
 }
 
-static CK_RV write_key_pkcs11_ctl_attrs(TEE_ObjectHandle object,
-					struct pTemplate *ptemplate)
+static CK_RV write_key_pkcs11_ctl_attrs(TEE_ObjectHandle object, struct pTemplate *ptemplate)
 {
 	CK_ATTRIBUTE write_attr, template_attr;
 	CK_ATTRIBUTE_TYPE pkcs11_always_attrs[2] = {CKA_ALWAYS_SENSITIVE, CKA_NEVER_EXTRACTABLE};
@@ -324,9 +316,9 @@ static CK_RV write_key_pkcs11_ctl_attrs(TEE_ObjectHandle object,
 	/* CKA_TOKEN: This attribute is kept at object header, but this need to be written
 	 * to object as a proper attribute. This is written for eg. wrap key function. Then
 	 * all attributes are in object data section */
-	 if (ptemplate->template_for == CREATE_TEMPLATE) {
+	if (ptemplate->template_for == CREATE_TEMPLATE) {
 
-		 write_attr.type = CKA_TOKEN;
+		write_attr.type = CKA_TOKEN;
 		if (CKR_OK != get_attr_from_template(ptemplate, CKA_TOKEN, &write_attr))
 			*((CK_BBOOL *)write_attr.pValue) = CK_FALSE;
 
@@ -377,8 +369,8 @@ static CK_RV write_key_pkcs11_ctl_attrs(TEE_ObjectHandle object,
 			}
 		}
 
-		if (get_attr_from_template(ptemplate,
-				     template_always_attr[i], &template_attr) == CKR_OK) {
+		if (get_attr_from_template(ptemplate, template_always_attr[i], &template_attr) ==
+		    CKR_OK) {
 
 			if (*((CK_BBOOL *)template_attr.pValue) == CK_TRUE)
 				*((CK_BBOOL *)write_attr.pValue) = CK_FALSE;
@@ -456,8 +448,7 @@ static CK_RV create_RSA_private_key_object(struct pTemplate *ptemplate)
 	return ck_rv;
 }
 
-static CK_RV create_key_object(struct pTemplate *ptemplate,
-			       struct object_header *obj_header,
+static CK_RV create_key_object(struct pTemplate *ptemplate, struct object_header *obj_header,
 			       CK_OBJECT_HANDLE *new_obj_id)
 {
 	/* For now, three is max number of key components. This also could be TODO */
@@ -523,12 +514,11 @@ static CK_RV create_key_object(struct pTemplate *ptemplate,
 	 * Note: Object is created and closed
 	 * Note: Full template is saved and therefore we have some reduntance information. This
 	 * need to be done if we would like to support warp/unwrap key functions! */
-	tee_rv = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, new_obj_id,
-					    sizeof(CK_OBJECT_HANDLE),
-					    TEE_DATA_FLAG_ACCESS_READ |
-					    TEE_DATA_FLAG_ACCESS_WRITE |
-					    TEE_DATA_FLAG_ACCESS_WRITE_META,
-					    NULL, NULL, 0, &pers_object);
+	tee_rv =
+	    TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, new_obj_id, sizeof(CK_OBJECT_HANDLE),
+				       TEE_DATA_FLAG_ACCESS_READ | TEE_DATA_FLAG_ACCESS_WRITE |
+					   TEE_DATA_FLAG_ACCESS_WRITE_META,
+				       NULL, NULL, 0, &pers_object);
 	if (tee_rv != TEE_SUCCESS) {
 		ck_rv = map_teec2ck(tee_rv);
 		goto err_1;
@@ -538,8 +528,8 @@ static CK_RV create_key_object(struct pTemplate *ptemplate,
 	 * pkcs11 implementation. Header need to be updated */
 	obj_header->attr_count += 4 + ptemplate->attr_count;
 
-	ck_rv = write_obj_template_to_object(ptemplate, obj_header,
-					     pers_object, write_key_pkcs11_ctl_attrs);
+	ck_rv = write_obj_template_to_object(ptemplate, obj_header, pers_object,
+					     write_key_pkcs11_ctl_attrs);
 	if (ck_rv != CKR_OK)
 		goto err_2;
 
@@ -579,9 +569,9 @@ static CK_RV can_session_create_object(struct object_header *obj_header,
 	int is_pub_obj;
 
 	/* Read only session can not create Token object */
-	if (obj_header->cka_token == CK_TRUE
-	    && (session->sessionInfo.state == CKS_RO_PUBLIC_SESSION ||
-		session->sessionInfo.state == CKS_RO_USER_FUNCTIONS))
+	if (obj_header->cka_token == CK_TRUE &&
+	    (session->sessionInfo.state == CKS_RO_PUBLIC_SESSION ||
+	     session->sessionInfo.state == CKS_RO_USER_FUNCTIONS))
 		return CKR_SESSION_READ_ONLY;
 
 	/* Public session can only create public object */
@@ -599,8 +589,7 @@ static CK_RV can_session_create_object(struct object_header *obj_header,
 	return ck_rv;
 }
 
-static void init_pTemplate_struct(struct pTemplate *pTemplate,
-				  void *recv_template,
+static void init_pTemplate_struct(struct pTemplate *pTemplate, void *recv_template,
 				  uint32_t recv_template_size)
 {
 	TEE_MemFill(pTemplate, 0, sizeof(struct pTemplate));
@@ -613,10 +602,8 @@ static void init_pTemplate_struct(struct pTemplate *pTemplate,
 	pTemplate->buffer_size = recv_template_size - sizeof(CK_ULONG);
 }
 
-static CK_RV read_usr_send_template(struct pTemplate *pTemplate,
-				    struct object_header *obj_header,
-				    void *recv_template,
-				    uint32_t recv_template_size)
+static CK_RV read_usr_send_template(struct pTemplate *pTemplate, struct object_header *obj_header,
+				    void *recv_template, uint32_t recv_template_size)
 {
 	CK_ATTRIBUTE ck_attr;
 	CK_RV ck_rv = CKR_OK;
@@ -640,8 +627,8 @@ static CK_RV read_usr_send_template(struct pTemplate *pTemplate,
 	if (get_attr_from_template(pTemplate, CKA_TOKEN, &ck_attr) == CKR_OK) {
 
 		/* Token attribute is found */
-		ck_rv = cpy_attr2buf(&ck_attr, &obj_header->cka_token,
-				     sizeof(obj_header->cka_token));
+		ck_rv =
+		    cpy_attr2buf(&ck_attr, &obj_header->cka_token, sizeof(obj_header->cka_token));
 		if (ck_rv != CKR_OK)
 			return ck_rv;
 	} else {
@@ -651,8 +638,7 @@ static CK_RV read_usr_send_template(struct pTemplate *pTemplate,
 	return CKR_OK;
 }
 
-CK_RV get_object_header(TEE_ObjectHandle object,
-			CK_OBJECT_HANDLE obj_id,
+CK_RV get_object_header(TEE_ObjectHandle object, CK_OBJECT_HANDLE obj_id,
 			struct object_header *obj_header)
 {
 	bool obj_was_open = object == NULL ? false : true;
@@ -662,9 +648,9 @@ CK_RV get_object_header(TEE_ObjectHandle object,
 	if (!obj_was_open) {
 
 		/* Object is not opened */
-		tee_ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, &obj_id,
-						   sizeof(CK_OBJECT_HANDLE),
-						   TEE_DATA_FLAG_ACCESS_READ, &object);
+		tee_ret =
+		    TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, &obj_id, sizeof(CK_OBJECT_HANDLE),
+					     TEE_DATA_FLAG_ACCESS_READ, &object);
 		if (tee_ret != TEE_SUCCESS)
 			return map_teec2ck(tee_ret);
 
@@ -677,8 +663,7 @@ CK_RV get_object_header(TEE_ObjectHandle object,
 	}
 
 	/* Object header is beginning of object */
-	tee_ret = TEE_ReadObjectData(object, obj_header,
-				     sizeof(struct object_header), &read_bytes);
+	tee_ret = TEE_ReadObjectData(object, obj_header, sizeof(struct object_header), &read_bytes);
 
 	/* Object is closed */
 	if (!obj_was_open)
@@ -690,8 +675,7 @@ CK_RV get_object_header(TEE_ObjectHandle object,
 	return CKR_OK;
 }
 
-static CK_RV can_attr_revealed(TEE_ObjectHandle object,
-			       CK_ATTRIBUTE *attr)
+static CK_RV can_attr_revealed(TEE_ObjectHandle object, CK_ATTRIBUTE *attr)
 {
 	CK_ATTRIBUTE obj_attr = {0};
 	CK_BBOOL ck_bool;
@@ -726,9 +710,7 @@ static CK_RV can_attr_revealed(TEE_ObjectHandle object,
 	return ck_rv;
 }
 
-static void write_attr2buffer(uint8_t *buffer,
-			      uint32_t *pos,
-			      CK_ATTRIBUTE *attr)
+static void write_attr2buffer(uint8_t *buffer, uint32_t *pos, CK_ATTRIBUTE *attr)
 {
 	/* Function will write serialized manner attirbute into buffer. It will update position
 	 * according to write == how many bytes is written */
@@ -748,7 +730,6 @@ static void write_attr2buffer(uint8_t *buffer,
 		*pos += attr->ulValueLen;
 	}
 }
-
 
 static CK_RV is_attr_modifiable(CK_ATTRIBUTE_TYPE type)
 {
@@ -805,12 +786,11 @@ static CK_RV init_next_attr_from_object(TEE_ObjectHandle object)
 {
 	/* Set to point first attribute */
 
-	return map_teec2ck(TEE_SeekObjectData(object,
-					      sizeof(struct object_header), TEE_DATA_SEEK_SET));
+	return map_teec2ck(
+	    TEE_SeekObjectData(object, sizeof(struct object_header), TEE_DATA_SEEK_SET));
 }
 
-static CK_RV get_next_attr_from_object(TEE_ObjectHandle object,
-				       CK_ATTRIBUTE *ck_attr)
+static CK_RV get_next_attr_from_object(TEE_ObjectHandle object, CK_ATTRIBUTE *ck_attr)
 {
 	TEE_Result tee_ret;
 	size_t read_bytes;
@@ -821,8 +801,8 @@ static CK_RV get_next_attr_from_object(TEE_ObjectHandle object,
 		return map_teec2ck(tee_ret);
 
 	/* ulValueLen */
-	tee_ret = TEE_ReadObjectData(object, &ck_attr->ulValueLen,
-				     sizeof(ck_attr->ulValueLen), &read_bytes);
+	tee_ret = TEE_ReadObjectData(object, &ck_attr->ulValueLen, sizeof(ck_attr->ulValueLen),
+				     &read_bytes);
 	if (tee_ret != TEE_SUCCESS || sizeof(ck_attr->ulValueLen) != read_bytes)
 		return map_teec2ck(tee_ret);
 
@@ -840,9 +820,7 @@ static CK_RV get_next_attr_from_object(TEE_ObjectHandle object,
 	return CKR_OK;
 }
 
-CK_RV get_object(struct pkcs11_session *session,
-		 CK_OBJECT_HANDLE obj_id,
-		 TEE_ObjectHandle *object,
+CK_RV get_object(struct pkcs11_session *session, CK_OBJECT_HANDLE obj_id, TEE_ObjectHandle *object,
 		 uint32_t addidional_flags)
 {
 	struct object_header obj_header;
@@ -872,28 +850,28 @@ CK_RV get_object(struct pkcs11_session *session,
 	    session->sessionInfo.state == CKS_RW_PUBLIC_SESSION) {
 
 		if (public_object == 0)
-			flags = TEE_DATA_FLAG_ACCESS_WRITE |
-				TEE_DATA_FLAG_ACCESS_READ | TEE_DATA_FLAG_ACCESS_WRITE_META;
+			flags = TEE_DATA_FLAG_ACCESS_WRITE | TEE_DATA_FLAG_ACCESS_READ |
+				TEE_DATA_FLAG_ACCESS_WRITE_META;
 		else
 			return CKR_SESSION_READ_ONLY;
 
 	} else if (session->sessionInfo.state == CKS_RW_USER_FUNCTIONS) {
-		flags = TEE_DATA_FLAG_ACCESS_WRITE |
-			TEE_DATA_FLAG_ACCESS_READ | TEE_DATA_FLAG_ACCESS_WRITE_META;
+		flags = TEE_DATA_FLAG_ACCESS_WRITE | TEE_DATA_FLAG_ACCESS_READ |
+			TEE_DATA_FLAG_ACCESS_WRITE_META;
 
 	} else if (session->sessionInfo.state == CKS_RO_USER_FUNCTIONS) {
 
 		if (obj_header.cka_token == CK_TRUE)
-			flags = TEE_DATA_FLAG_ACCESS_WRITE |
-				TEE_DATA_FLAG_ACCESS_READ | TEE_DATA_FLAG_ACCESS_WRITE_META;
+			flags = TEE_DATA_FLAG_ACCESS_WRITE | TEE_DATA_FLAG_ACCESS_READ |
+				TEE_DATA_FLAG_ACCESS_WRITE_META;
 		else
 			flags = TEE_DATA_FLAG_ACCESS_READ;
 
 	} else if (session->sessionInfo.state == CKS_RO_PUBLIC_SESSION) {
 
 		if (public_object == 0 && obj_header.cka_token == CK_FALSE)
-			flags = TEE_DATA_FLAG_ACCESS_WRITE |
-				TEE_DATA_FLAG_ACCESS_READ | TEE_DATA_FLAG_ACCESS_WRITE_META;
+			flags = TEE_DATA_FLAG_ACCESS_WRITE | TEE_DATA_FLAG_ACCESS_READ |
+				TEE_DATA_FLAG_ACCESS_WRITE_META;
 		else if (public_object == 0 && obj_header.cka_token == CK_TRUE)
 			flags = TEE_DATA_FLAG_ACCESS_READ;
 		else
@@ -904,8 +882,7 @@ CK_RV get_object(struct pkcs11_session *session,
 		return CKR_SESSION_READ_ONLY;
 	}
 
-	tee_ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE,
-					   &obj_id, sizeof(OBJ_ID_LEN),
+	tee_ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, &obj_id, sizeof(OBJ_ID_LEN),
 					   flags | addidional_flags, object);
 	if (tee_ret != TEE_SUCCESS)
 		return map_teec2ck(tee_ret);
@@ -913,9 +890,7 @@ CK_RV get_object(struct pkcs11_session *session,
 	return CKR_OK;
 }
 
-CK_RV get_attr_from_object(TEE_ObjectHandle object,
-			   CK_ATTRIBUTE_TYPE type,
-			   CK_ATTRIBUTE *ck_attr)
+CK_RV get_attr_from_object(TEE_ObjectHandle object, CK_ATTRIBUTE_TYPE type, CK_ATTRIBUTE *ck_attr)
 {
 	struct object_header obj_header;
 	TEE_ObjectInfo object_info;
@@ -936,8 +911,8 @@ CK_RV get_attr_from_object(TEE_ObjectHandle object,
 	for (i = 0; i < obj_header.attr_count; ++i) {
 
 		/* Attribute type */
-		tee_ret = TEE_ReadObjectData(object, &iter_attr.type,
-					     sizeof(iter_attr.type), &read_bytes);
+		tee_ret = TEE_ReadObjectData(object, &iter_attr.type, sizeof(iter_attr.type),
+					     &read_bytes);
 		if (tee_ret != TEE_SUCCESS || sizeof(iter_attr.type) != read_bytes) {
 			ck_rv = map_teec2ck(tee_ret);
 			goto out;
@@ -954,8 +929,8 @@ CK_RV get_attr_from_object(TEE_ObjectHandle object,
 		/* If attribute is not queried attribute, skip pvalue */
 		if (type != iter_attr.type) {
 
-			tee_ret = TEE_SeekObjectData(object,
-						     iter_attr.ulValueLen, TEE_DATA_SEEK_CUR);
+			tee_ret =
+			    TEE_SeekObjectData(object, iter_attr.ulValueLen, TEE_DATA_SEEK_CUR);
 			if (tee_ret != TEE_SUCCESS) {
 				ck_rv = map_teec2ck(tee_ret);
 				goto out;
@@ -986,8 +961,8 @@ CK_RV get_attr_from_object(TEE_ObjectHandle object,
 			}
 
 			ck_attr->ulValueLen = iter_attr.ulValueLen;
-			tee_ret = TEE_ReadObjectData(object, ck_attr->pValue,
-						     ck_attr->ulValueLen, &read_bytes);
+			tee_ret = TEE_ReadObjectData(object, ck_attr->pValue, ck_attr->ulValueLen,
+						     &read_bytes);
 			if (tee_ret != TEE_SUCCESS || ck_attr->ulValueLen != read_bytes) {
 				ck_rv = map_teec2ck(tee_ret);
 				goto out;
@@ -1002,8 +977,8 @@ CK_RV get_attr_from_object(TEE_ObjectHandle object,
 				goto out;
 			}
 
-			tee_ret = TEE_ReadObjectData(object, ck_attr->pValue,
-						     ck_attr->ulValueLen, &read_bytes);
+			tee_ret = TEE_ReadObjectData(object, ck_attr->pValue, ck_attr->ulValueLen,
+						     &read_bytes);
 			if (tee_ret != TEE_SUCCESS || ck_attr->ulValueLen != read_bytes) {
 				TEE_Free(ck_attr->pValue);
 				ck_attr->pValue = NULL;
@@ -1029,9 +1004,7 @@ out:
 	return ck_rv;
 }
 
-TEE_Result create_object(struct application *app,
-			 uint32_t paramTypes,
-			 TEE_Param *params)
+TEE_Result create_object(struct application *app, uint32_t paramTypes, TEE_Param *params)
 {
 	CK_OBJECT_HANDLE new_obj_id = CKR_OBJECT_HANDLE_INVALID;
 	struct pkcs11_session *session;
@@ -1052,8 +1025,8 @@ TEE_Result create_object(struct application *app,
 		goto end;
 
 	/* Read received template info */
-	ck_rv = read_usr_send_template(&ptemplate, &obj_header,
-				       params[0].memref.buffer, params[2].value.a);
+	ck_rv = read_usr_send_template(&ptemplate, &obj_header, params[0].memref.buffer,
+				       params[2].value.a);
 	if (ck_rv != CKR_OK)
 		goto end;
 
@@ -1104,9 +1077,7 @@ end:
 	return TEE_SUCCESS;
 }
 
-TEE_Result object_get_attr_value(struct application *app,
-				 uint32_t paramTypes,
-				 TEE_Param *params)
+TEE_Result object_get_attr_value(struct application *app, uint32_t paramTypes, TEE_Param *params)
 {
 	CK_ATTRIBUTE template_attr = {0}, obj_attr = {0};
 	struct pTemplate ptemplate;
@@ -1168,8 +1139,7 @@ TEE_Result object_get_attr_value(struct application *app,
 		}
 
 		/* Check return values of previous functions */
-		if (ck_rv == CKR_ATTRIBUTE_SENSITIVE ||
-		    ck_rv == CKR_ATTRIBUTE_TYPE_INVALID ||
+		if (ck_rv == CKR_ATTRIBUTE_SENSITIVE || ck_rv == CKR_ATTRIBUTE_TYPE_INVALID ||
 		    ck_rv == CKR_BUFFER_TOO_SMALL) {
 			obj_attr.ulValueLen = -1;
 			params[3].value.a = ck_rv; /* Last error message is returned */
@@ -1223,9 +1193,7 @@ void delete_object(CK_ULONG obj_id)
 	TEE_CloseAndDeletePersistentObject1(del_obj);
 }
 
-TEE_Result find_objects_init(struct application *app,
-			     uint32_t paramTypes,
-			     TEE_Param *params)
+TEE_Result find_objects_init(struct application *app, uint32_t paramTypes, TEE_Param *params)
 {
 	struct pkcs11_session *session;
 	CK_RV ck_rv = CKR_OK;
@@ -1283,8 +1251,7 @@ err_1:
 	return TEE_SUCCESS;
 }
 
-static CK_RV mechanism_are_listed(CK_ATTRIBUTE *queried_mechs,
-				  CK_ATTRIBUTE *object_mechs)
+static CK_RV mechanism_are_listed(CK_ATTRIBUTE *queried_mechs, CK_ATTRIBUTE *object_mechs)
 {
 	CK_BBOOL mech_found;
 	uint32_t i, j;
@@ -1304,9 +1271,9 @@ static CK_RV mechanism_are_listed(CK_ATTRIBUTE *queried_mechs,
 		for (j = 0; j < object_mechs->ulValueLen / sizeof(object_mechs->type); j++) {
 
 			if (TEE_MemCompare((uint8_t *)queried_mechs->pValue +
-					   (i * sizeof(queried_mechs->type)),
+					       (i * sizeof(queried_mechs->type)),
 					   (uint8_t *)object_mechs->pValue +
-					   (j * sizeof(object_mechs->type)),
+					       (j * sizeof(object_mechs->type)),
 					   sizeof(queried_mechs->type)) == 0) {
 				mech_found = CK_TRUE;
 				break;
@@ -1320,9 +1287,7 @@ static CK_RV mechanism_are_listed(CK_ATTRIBUTE *queried_mechs,
 	return CKR_OK;
 }
 
-TEE_Result find_objects(struct application *app,
-		       uint32_t paramTypes,
-		       TEE_Param *params)
+TEE_Result find_objects(struct application *app, uint32_t paramTypes, TEE_Param *params)
 {
 	uint32_t j, template_pos = 0, buffer_pos = 0;
 	CK_ATTRIBUTE template_attr = {0}, object_attr = {0};
@@ -1359,24 +1324,24 @@ TEE_Result find_objects(struct application *app,
 	/* Find operation.
 	 * Inout memory size is telling how many object handle can be returned. Memory size is in
 	 * bytes. */
-	for (i = 0; i < params[2].value.a / sizeof(CK_OBJECT_HANDLE); ) {
+	for (i = 0; i < params[2].value.a / sizeof(CK_OBJECT_HANDLE);) {
 
 		/* Set object match. If object is not matches, for-loop will change this value */
 		object_match = CK_TRUE;
 		ck_rv = CKR_OK;
-                object_id_len = TEE_OBJECT_ID_MAX_LEN;
+		object_id_len = TEE_OBJECT_ID_MAX_LEN;
 
 		/* Get next object ID */
 		tee_rv = TEE_GetNextPersistentObject(session->find_op.ss_enumerator, NULL,
-                                                     temp_object_id, &object_id_len);
+						     temp_object_id, &object_id_len);
 		if (tee_rv == TEE_ERROR_ITEM_NOT_FOUND) {
-                        goto out;
-                } else if (tee_rv == TEE_SUCCESS) {
-                    if (object_id_len != sizeof(CK_OBJECT_HANDLE)) {
-                            continue;
-                    } else {
-                            memcpy(&object_id, temp_object_id, sizeof(CK_OBJECT_HANDLE));
-                    }
+			goto out;
+		} else if (tee_rv == TEE_SUCCESS) {
+			if (object_id_len != sizeof(CK_OBJECT_HANDLE)) {
+				continue;
+			} else {
+				memcpy(&object_id, temp_object_id, sizeof(CK_OBJECT_HANDLE));
+			}
 		} else {
 			goto err;
 		}
@@ -1415,10 +1380,11 @@ TEE_Result find_objects(struct application *app,
 
 			} else {
 
-				/* Attribute is found. Lets compare if it a match to queried template */
+				/* Attribute is found. Lets compare if it a match to queried
+				 * template */
 				if (template_attr.ulValueLen != object_attr.ulValueLen ||
-				    TEE_MemCompare(object_attr.pValue,
-						   template_attr.pValue, object_attr.ulValueLen))
+				    TEE_MemCompare(object_attr.pValue, template_attr.pValue,
+						   object_attr.ulValueLen))
 					object_match = CK_FALSE;
 			}
 
@@ -1437,8 +1403,8 @@ TEE_Result find_objects(struct application *app,
 			continue;
 
 		/* Object is matchs */
-		TEE_MemMove((uint8_t *)params[0].memref.buffer + buffer_pos,
-				&object_id, sizeof(CK_OBJECT_HANDLE));
+		TEE_MemMove((uint8_t *)params[0].memref.buffer + buffer_pos, &object_id,
+			    sizeof(CK_OBJECT_HANDLE));
 		buffer_pos += sizeof(CK_OBJECT_HANDLE);
 		i++;
 	}
@@ -1456,9 +1422,7 @@ err:
 	return TEE_SUCCESS;
 }
 
-TEE_Result find_objects_final(struct application *app,
-			     uint32_t paramTypes,
-			     TEE_Param *params)
+TEE_Result find_objects_final(struct application *app, uint32_t paramTypes, TEE_Param *params)
 {
 	struct pkcs11_session *session;
 	CK_RV ck_rv = CKR_OK;
@@ -1486,9 +1450,7 @@ out:
 	return TEE_SUCCESS;
 }
 
-TEE_Result object_set_attr_value(struct application *app,
-				 uint32_t paramTypes,
-				 TEE_Param *params)
+TEE_Result object_set_attr_value(struct application *app, uint32_t paramTypes, TEE_Param *params)
 {
 	TEE_ObjectHandle set_object = NULL, cpy_set_object = NULL;
 	CK_ATTRIBUTE template_attr = {0}, obj_attr = {0};
@@ -1522,8 +1484,8 @@ TEE_Result object_set_attr_value(struct application *app,
 		goto err_1;
 
 	/* Note: Function will only return object if session can view the object ! */
-	ck_rv = get_object(session, params[1].value.a,
-			&set_object, TEE_DATA_FLAG_ACCESS_WRITE_META);
+	ck_rv =
+	    get_object(session, params[1].value.a, &set_object, TEE_DATA_FLAG_ACCESS_WRITE_META);
 	if (ck_rv != CKR_OK)
 		goto err_1;
 
@@ -1547,13 +1509,11 @@ TEE_Result object_set_attr_value(struct application *app,
 	 * rename temporary object. This is done, if some set attr might fail then object
 	 * is not left corrupted state */
 
-	tee_rv = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, &CPY_SET_OBJ_ID,
-					    sizeof(CPY_SET_OBJ_ID),
-					    TEE_DATA_FLAG_OVERWRITE |
-					    TEE_DATA_FLAG_ACCESS_READ |
-					    TEE_DATA_FLAG_ACCESS_WRITE |
-					    TEE_DATA_FLAG_ACCESS_WRITE_META, NULL,
-					    NULL, 0, &cpy_set_object);
+	tee_rv = TEE_CreatePersistentObject(
+	    TEE_STORAGE_PRIVATE, &CPY_SET_OBJ_ID, sizeof(CPY_SET_OBJ_ID),
+	    TEE_DATA_FLAG_OVERWRITE | TEE_DATA_FLAG_ACCESS_READ | TEE_DATA_FLAG_ACCESS_WRITE |
+		TEE_DATA_FLAG_ACCESS_WRITE_META,
+	    NULL, NULL, 0, &cpy_set_object);
 	if (tee_rv != TEE_SUCCESS) {
 		ck_rv = map_teec2ck(tee_rv);
 		goto err_1;
@@ -1581,8 +1541,8 @@ TEE_Result object_set_attr_value(struct application *app,
 	case CKO_PRIVATE_KEY:
 	case CKO_SECRET_KEY:
 
-		ck_rv = write_obj_template_to_object(&ptemplate, &set_obj_header,
-						     cpy_set_object, write_key_pkcs11_ctl_attrs);
+		ck_rv = write_obj_template_to_object(&ptemplate, &set_obj_header, cpy_set_object,
+						     write_key_pkcs11_ctl_attrs);
 		if (ck_rv != CKR_OK)
 			goto err_2;
 		break;
@@ -1635,8 +1595,8 @@ TEE_Result object_set_attr_value(struct application *app,
 	TEE_CloseAndDeletePersistentObject1(set_object);
 	set_object = NULL;
 
-	tee_rv = TEE_RenamePersistentObject(cpy_set_object,
-					    &params[1].value.a, sizeof(CK_OBJECT_HANDLE));
+	tee_rv = TEE_RenamePersistentObject(cpy_set_object, &params[1].value.a,
+					    sizeof(CK_OBJECT_HANDLE));
 	if (tee_rv != CKR_OK)
 		goto err_4;
 
@@ -1659,9 +1619,7 @@ err_1:
 	return TEE_SUCCESS;
 }
 
-TEE_Result destroy_object(struct application *app,
-			  uint32_t paramTypes,
-			  TEE_Param *params)
+TEE_Result destroy_object(struct application *app, uint32_t paramTypes, TEE_Param *params)
 {
 	struct pkcs11_session *session;
 	TEE_ObjectHandle object = NULL;

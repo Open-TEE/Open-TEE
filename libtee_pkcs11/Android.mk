@@ -57,4 +57,3 @@ LOCAL_COPY_HEADERS += \
                include/pkcs11.h   \
                include/pkcs11t.h
 include $(BUILD_STATIC_LIBRARY)
-

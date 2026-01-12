@@ -25,7 +25,6 @@
 #define CMD_CREATE_ROOT_KEY 0x00000001
 #define CMD_DO_CRYPTO 0X00000002
 
-
 /*
  * The OPERATIONS that can be performed by doCrypto
  */
@@ -68,8 +67,8 @@ uint32_t omnishare_init(uint8_t *root_key, uint32_t size);
  * \return 0 on success
  */
 uint32_t omnishare_do_crypto(uint8_t *key_chain, uint32_t key_count, uint32_t key_len,
-			     uint8_t op_cmd, uint8_t *src, uint32_t src_len,
-			     uint8_t *dest, uint32_t *dest_len);
+			     uint8_t op_cmd, uint8_t *src, uint32_t src_len, uint8_t *dest,
+			     uint32_t *dest_len);
 
 /*!
  * \brief finalize

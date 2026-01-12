@@ -23,7 +23,6 @@
 #define CMD_CREATE_ROOT_KEY 0x00000001
 #define CMD_DO_CRYPTO 0X00000002
 
-
 /*
  * The OPERATIONS that can be performed by doCrypto
  */
@@ -36,9 +35,9 @@
  * Structure to hold all of the key hirarachy needed to protect the keys
  */
 struct key_chain_data {
-	uint32_t key_count;	/*!< The number of keys in the chain */
-	uint32_t key_len;	/*!< The size of each key */
-	uint8_t keys[];		/*!< The keys themselves */
+	uint32_t key_count; /*!< The number of keys in the chain */
+	uint32_t key_len;   /*!< The size of each key */
+	uint8_t keys[];	    /*!< The keys themselves */
 };
 
 /* GP framework is defining session context parameter for opensession, invokecmd and closesession
@@ -48,8 +47,8 @@ struct session_ctx {
 };
 
 /* VaLid session types */
-#define OMS_CTX_TYPE_CREATE_ROOT_DIR    0x23
-#define OMS_CTX_TYPE_DO_CRYPTO          0x24
+#define OMS_CTX_TYPE_CREATE_ROOT_DIR 0x23
+#define OMS_CTX_TYPE_DO_CRYPTO 0x24
 
 /* Omnishare TEE spesific RSA key is generated once and only once at create entry point function.
  * RSA key is saved into secure storage (ss). */
@@ -59,37 +58,29 @@ static TEE_ObjectHandle oms_RSA_keypair_object;
 static TEE_ObjectHandle oms_AES_key_object;
 
 /* Helper macro for converting bits to bytes. */
-#define BYTES2BITS(bytes)	(bytes * 8)
+#define BYTES2BITS(bytes) (bytes * 8)
 
 /* This is defining the key sizes of omnishare. */
-#define OMS_RSA_MODULO_SIZE	128
-#define OMS_AES_SIZE		32
-#define OMS_AES_IV_SIZE		16
+#define OMS_RSA_MODULO_SIZE 128
+#define OMS_AES_SIZE 32
+#define OMS_AES_IV_SIZE 16
 
 /* Corresponding IV vector. For simplicity sake, the IV vector in every AES operation is kept
  * as a zero and this with AES CTR mode is very very unsecure, Very bad. */
 static uint8_t oms_aes_iv[OMS_AES_IV_SIZE];
-
 
 /* Setting TA properties */
 #ifdef TA_PLUGIN
 #include "tee_ta_properties.h" /* Setting TA properties */
 
 /* UUID must be unique */
-SET_TA_PROPERTIES(
-{ 0x12345678, 0x8765, 0x4321, { 'O', 'M', 'N', 'I', 'S', 'H', 'A', 'R'} }, /* UUID */
-		512, /* dataSize */
-		255, /* stackSize */
-		1, /* singletonInstance */
-		1, /* multiSession */
-		1) /* instanceKeepAlive */
+SET_TA_PROPERTIES({0x12345678, 0x8765, 0x4321, {'O', 'M', 'N', 'I', 'S', 'H', 'A', 'R'}}, /* UUID */
+		  512, /* dataSize */
+		  255, /* stackSize */
+		  1,   /* singletonInstance */
+		  1,   /* multiSession */
+		  1)   /* instanceKeepAlive */
 #endif
-
-
-
-
-
-
 
 /*
  *
@@ -107,18 +98,16 @@ SET_TA_PROPERTIES(
  * \param out_data_len Output data length
  * \return GP return values.
  */
-static TEE_Result wrap_oms_RSA_operation(TEE_OperationMode mode,/*TEE_OperationMod:TEECoreAPIp-138*/
-					 void *in_data,
-					 uint32_t in_data_len,
-					 void *out_data,
-					 uint32_t *out_data_len)
+static TEE_Result
+wrap_oms_RSA_operation(TEE_OperationMode mode, /*TEE_OperationMod:TEECoreAPIp-138*/
+		       void *in_data, uint32_t in_data_len, void *out_data, uint32_t *out_data_len)
 {
 	TEE_OperationHandle rsa_operation = NULL; /* Opaque handle. */
-	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
+	TEE_Result tee_rv = TEE_SUCCESS;	  /* Return values: TEE Core API p-31 */
 
 	/* Allocating RSA operation. TEE_AllocateOperation: TEE Core API p-140 */
-	tee_rv = TEE_AllocateOperation(&rsa_operation, TEE_ALG_RSAES_PKCS1_V1_5,
-				       mode, BYTES2BITS(OMS_RSA_MODULO_SIZE));
+	tee_rv = TEE_AllocateOperation(&rsa_operation, TEE_ALG_RSAES_PKCS1_V1_5, mode,
+				       BYTES2BITS(OMS_RSA_MODULO_SIZE));
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_AllocateOperation failed: 0x%x", tee_rv);
 		goto err;
@@ -135,8 +124,8 @@ static TEE_Result wrap_oms_RSA_operation(TEE_OperationMode mode,/*TEE_OperationM
 	if (mode == TEE_MODE_ENCRYPT) {
 
 		/* Encrypting. TEE_AsymmetricDecrypt: TEE Core API p-167 */
-		tee_rv = TEE_AsymmetricEncrypt(rsa_operation, NULL, 0, in_data,
-					       in_data_len, out_data, out_data_len);
+		tee_rv = TEE_AsymmetricEncrypt(rsa_operation, NULL, 0, in_data, in_data_len,
+					       out_data, out_data_len);
 		if (tee_rv != TEE_SUCCESS) {
 			OT_LOG(LOG_ERR, "TEE_AsymmetricEncrypt failed : 0x%x", tee_rv);
 			goto err;
@@ -145,8 +134,8 @@ static TEE_Result wrap_oms_RSA_operation(TEE_OperationMode mode,/*TEE_OperationM
 	} else if (mode == TEE_MODE_DECRYPT) {
 
 		/* Decrypting. TEE_AsymmetricDecrypt: TEE Core API p-167 */
-		tee_rv = TEE_AsymmetricDecrypt(rsa_operation, NULL, 0, in_data,
-					       in_data_len, out_data, out_data_len);
+		tee_rv = TEE_AsymmetricDecrypt(rsa_operation, NULL, 0, in_data, in_data_len,
+					       out_data, out_data_len);
 		if (tee_rv != TEE_SUCCESS) {
 			OT_LOG(LOG_ERR, "TEE_AsymmetricDecrypt failed : 0x%x", tee_rv);
 			goto err;
@@ -175,21 +164,17 @@ err:
  * \param out_data_len
  * \return GP return values.
  */
-static TEE_Result wrap_aes_operation(TEE_ObjectHandle key, /* Opaque handle */
+static TEE_Result wrap_aes_operation(TEE_ObjectHandle key,   /* Opaque handle */
 				     TEE_OperationMode mode, /* TEE_OperationMode: TEECoreAPIp-138*/
-				     void *IV,
-				     uint32_t IV_len,
-				     void *in_data,
-				     uint32_t in_data_len,
-				     void *out_data,
-				     uint32_t *out_data_len)
+				     void *IV, uint32_t IV_len, void *in_data, uint32_t in_data_len,
+				     void *out_data, uint32_t *out_data_len)
 {
 	TEE_OperationHandle aes_operation = NULL; /* Opaque handle */
-	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
+	TEE_Result tee_rv = TEE_SUCCESS;	  /* Return values: TEE Core API p-31 */
 
 	/* Allocating RSA operation. TEE_AllocateOperation: TEE Core API p-140 */
-	tee_rv = TEE_AllocateOperation(&aes_operation,
-				       TEE_ALG_AES_CTR, mode, BYTES2BITS(OMS_AES_SIZE));
+	tee_rv =
+	    TEE_AllocateOperation(&aes_operation, TEE_ALG_AES_CTR, mode, BYTES2BITS(OMS_AES_SIZE));
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_AllocateOperation failed (TEE_ALG_AES_CTR) : 0x%x", tee_rv);
 		goto err;
@@ -228,17 +213,16 @@ err:
  * Note: aes_key_object should be freed after usage.
  * \return GP return values.
  */
-static TEE_Result create_oms_aes_key(uint8_t *aes_key,
-				     uint32_t *aes_key_size,
+static TEE_Result create_oms_aes_key(uint8_t *aes_key, uint32_t *aes_key_size,
 				     TEE_ObjectHandle *aes_key_object) /* Opaque handle */
 {
 	TEE_ObjectHandle new_aes_key_object = NULL; /* Opaque handle */
-	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
+	TEE_Result tee_rv = TEE_SUCCESS;	    /* Return values: TEE Core API p-31 */
 
 	/* Function is generating a transient object for AES key
 	 * TEE_AllocateTransientObject: TEE Core API p-102 */
-	tee_rv = TEE_AllocateTransientObject(TEE_TYPE_AES,
-					     BYTES2BITS(OMS_AES_SIZE), &new_aes_key_object);
+	tee_rv = TEE_AllocateTransientObject(TEE_TYPE_AES, BYTES2BITS(OMS_AES_SIZE),
+					     &new_aes_key_object);
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_AllocateTransientObject failed : 0x%x", tee_rv);
 		goto err;
@@ -305,13 +289,13 @@ err:
  * \return GP return values.
  */
 static TEE_Result get_dir_key(uint32_t paramTypes,
-			       TEE_Param *params, /* TEE_Param: TEE Core API p-36 */
-			       TEE_ObjectHandle *dir_key) /* Opaque handle */
+			      TEE_Param *params,	 /* TEE_Param: TEE Core API p-36 */
+			      TEE_ObjectHandle *dir_key) /* Opaque handle */
 {
 	uint32_t next_aes_key_size = OMS_AES_SIZE;
 	uint8_t next_aes_key[OMS_AES_SIZE];
 	TEE_Attribute tee_aes_attr = {0}; /* TEE_Attribute: TEE Core API p-92 */
-	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
+	TEE_Result tee_rv = TEE_SUCCESS;  /* Return values: TEE Core API p-31 */
 	struct key_chain_data *key_chain;
 	uint32_t i = 0;
 
@@ -362,8 +346,8 @@ static TEE_Result get_dir_key(uint32_t paramTypes,
 		TEE_ResetTransientObject(*dir_key);
 
 		/* Initing a TEE attribute. TEE_InitRefAttribute: TEE Core API p-111 */
-		TEE_InitRefAttribute(&tee_aes_attr, TEE_ATTR_SECRET_VALUE,
-				     next_aes_key, next_aes_key_size);
+		TEE_InitRefAttribute(&tee_aes_attr, TEE_ATTR_SECRET_VALUE, next_aes_key,
+				     next_aes_key_size);
 
 		/* Populating an uninitialzed transient object with previously decrypted key
 		 * TEE_PopulateTransientObject: TEE Core API p-107 */
@@ -412,9 +396,9 @@ static TEE_Result do_crypto_create_dir_key(TEE_ObjectHandle dir_key, /* Opaque h
 		return tee_rv;
 
 	/* Encrypt the key into output buffer */
-	return wrap_aes_operation(dir_key, TEE_MODE_ENCRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
-				  aes_key, aes_key_size,
-				  params[3].memref.buffer, (uint32_t *)&params[3].memref.size);
+	return wrap_aes_operation(dir_key, TEE_MODE_ENCRYPT, oms_aes_iv, OMS_AES_IV_SIZE, aes_key,
+				  aes_key_size, params[3].memref.buffer,
+				  (uint32_t *)&params[3].memref.size);
 }
 
 /*!
@@ -431,7 +415,7 @@ static TEE_Result do_crypto_encrypt_file(TEE_ObjectHandle dir_key, /* Opaque han
 	uint32_t aes_key_size = OMS_AES_SIZE;
 	uint8_t aes_key[OMS_AES_SIZE];
 	TEE_ObjectHandle new_file_key = NULL; /* Opaque handle */
-	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
+	TEE_Result tee_rv = TEE_SUCCESS;      /* Return values: TEE Core API p-31 */
 	uint32_t write_bytes = params[3].memref.size;
 
 	/* If output buffer is big enough to hold the encrypted key and encrypted data.
@@ -449,9 +433,8 @@ static TEE_Result do_crypto_encrypt_file(TEE_ObjectHandle dir_key, /* Opaque han
 		goto out;
 
 	/* Encrypt file key into beginning of the file */
-	tee_rv = wrap_aes_operation(dir_key, TEE_MODE_ENCRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
-				    aes_key, aes_key_size,
-				    params[3].memref.buffer, &write_bytes);
+	tee_rv = wrap_aes_operation(dir_key, TEE_MODE_ENCRYPT, oms_aes_iv, OMS_AES_IV_SIZE, aes_key,
+				    aes_key_size, params[3].memref.buffer, &write_bytes);
 	if (tee_rv != TEE_SUCCESS)
 		goto out;
 
@@ -461,8 +444,8 @@ static TEE_Result do_crypto_encrypt_file(TEE_ObjectHandle dir_key, /* Opaque han
 	/* Encrypt the plain data with newly created key */
 	tee_rv = wrap_aes_operation(new_file_key, TEE_MODE_ENCRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
 				    params[2].memref.buffer, params[2].memref.size,
-			(uint8_t *)params[3].memref.buffer + write_bytes,
-			(uint32_t *)&params[3].memref.size);
+				    (uint8_t *)params[3].memref.buffer + write_bytes,
+				    (uint32_t *)&params[3].memref.size);
 
 	/* Output buffer size is holding the "encrypted" plain data size, but this buffer is
 	 * containing the file key at the beginning of file and therefore we are adding also
@@ -488,7 +471,7 @@ static TEE_Result do_crypto_decrypt_file(TEE_ObjectHandle dir_key, /* Opaque han
 	uint8_t aes_key[OMS_AES_SIZE];
 	TEE_ObjectHandle file_key = NULL;
 	TEE_Attribute tee_aes_attr = {0}; /* TEE_Attribute: TEE Core API p-92 */
-	TEE_Result tee_rv; /* Return values: TEE Core API p-31 */
+	TEE_Result tee_rv;		  /* Return values: TEE Core API p-31 */
 
 	/* Zero is not a valid input size */
 	if (params[2].memref.size == 0) {
@@ -505,8 +488,7 @@ static TEE_Result do_crypto_decrypt_file(TEE_ObjectHandle dir_key, /* Opaque han
 
 	/* Decrypt file key with directory key */
 	tee_rv = wrap_aes_operation(dir_key, TEE_MODE_DECRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
-				    params[2].memref.buffer, OMS_AES_SIZE,
-				    aes_key, &aes_key_size);
+				    params[2].memref.buffer, OMS_AES_SIZE, aes_key, &aes_key_size);
 	if (tee_rv != TEE_SUCCESS)
 		return tee_rv;
 
@@ -532,8 +514,8 @@ static TEE_Result do_crypto_decrypt_file(TEE_ObjectHandle dir_key, /* Opaque han
 	/* Decrypting the file */
 	tee_rv = wrap_aes_operation(file_key, TEE_MODE_DECRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
 				    (uint8_t *)params[2].memref.buffer + OMS_AES_SIZE,
-			params[2].memref.size - OMS_AES_SIZE,
-			params[3].memref.buffer, (uint32_t *)&params[3].memref.size);
+				    params[2].memref.size - OMS_AES_SIZE, params[3].memref.buffer,
+				    (uint32_t *)&params[3].memref.size);
 
 out:
 	/* TEE_FreeTransientObject: TEE Core API p-105 */
@@ -569,8 +551,7 @@ static TEE_Result do_crypto(uint32_t paramTypes,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	if ((params[1].value.a == OM_OP_ENCRYPT_FILE ||
-	     params[1].value.a == OM_OP_DECRYPT_FILE) &&
+	if ((params[1].value.a == OM_OP_ENCRYPT_FILE || params[1].value.a == OM_OP_DECRYPT_FILE) &&
 	    TEE_PARAM_TYPE_GET(paramTypes, 2) != TEE_PARAM_TYPE_MEMREF_INPUT) {
 		OT_LOG(LOG_ERR, "Bad parameter at index 2: expexted memref input");
 		return TEE_ERROR_BAD_PARAMETERS;
@@ -662,7 +643,7 @@ static TEE_Result set_oms_aes_key(TEE_Param *params) /* TEE_Param: TEE Core API 
 	uint32_t aes_key_size = OMS_RSA_MODULO_SIZE;
 	uint8_t aes_key[OMS_RSA_MODULO_SIZE];
 	TEE_Attribute tee_aes_attr = {0}; /* TEE_Attribute: TEE Core API p-92 */
-	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
+	TEE_Result tee_rv = TEE_SUCCESS;  /* Return values: TEE Core API p-31 */
 
 	/* Expected input buffer should be at least as big as omnishare RSA modulo.
 	 * Input buffer is at index zero */
@@ -673,7 +654,7 @@ static TEE_Result set_oms_aes_key(TEE_Param *params) /* TEE_Param: TEE Core API 
 
 	/* Decrypt input buffer with omnishare RSA key */
 	tee_rv = wrap_oms_RSA_operation(TEE_MODE_DECRYPT, params[0].memref.buffer,
-			params[0].memref.size, aes_key, &aes_key_size);
+					params[0].memref.size, aes_key, &aes_key_size);
 	if (tee_rv != TEE_SUCCESS)
 		return tee_rv;
 
@@ -686,8 +667,8 @@ static TEE_Result set_oms_aes_key(TEE_Param *params) /* TEE_Param: TEE Core API 
 	/* Next we are initing the first key of keychain. It is previously decrypted AES key */
 
 	/* TEE_AllocateTransientObject: TEE Core API p-102 */
-	tee_rv = TEE_AllocateTransientObject(TEE_TYPE_AES,
-					     BYTES2BITS(OMS_AES_SIZE), &oms_AES_key_object);
+	tee_rv = TEE_AllocateTransientObject(TEE_TYPE_AES, BYTES2BITS(OMS_AES_SIZE),
+					     &oms_AES_key_object);
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_AllocateTransientObject failed: 0x%x", tee_rv);
 		return tee_rv;
@@ -710,11 +691,6 @@ static TEE_Result set_oms_aes_key(TEE_Param *params) /* TEE_Param: TEE Core API 
 	return tee_rv;
 }
 
-
-
-
-
-
 /*
  *
  * TEE Core API defined five entry point functions
@@ -726,7 +702,7 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
 	char oms_rsa_keypair_id[] = "oms_rsa_keypair_object_id";
 	TEE_ObjectHandle rsa_keypair = NULL; /* Opaque handle */
-	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
+	TEE_Result tee_rv = TEE_SUCCESS;     /* Return values: TEE Core API p-31 */
 
 	/* Create entry point is trying to find the omnishare spesific RSA key and open it. If
 	 * key is not found, the key is created and saved into secure storage */
@@ -734,9 +710,8 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 	/* Using open persisten object for determing if RSA key exist. We also could be using
 	 * persistent storage enumerator for this task.
 	 * TEE_OpenPersistentObject: TEE Core API p-117 */
-	tee_rv = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE,
-					  oms_rsa_keypair_id, sizeof(oms_rsa_keypair_id),
-					  0, &oms_RSA_keypair_object);
+	tee_rv = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, oms_rsa_keypair_id,
+					  sizeof(oms_rsa_keypair_id), 0, &oms_RSA_keypair_object);
 	if (tee_rv == TEE_SUCCESS) {
 		/* RSA key exist. No action needed. Note: Leaving handle open. */
 		return tee_rv;
@@ -752,8 +727,8 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 	/* Creating a transient object for the new RSA key. Transient object is needed, because
 	 * generate key is accepting only transient objects
 	 * TEE_AllocateTransientObject: TEE Core API p-102 */
-	tee_rv = TEE_AllocateTransientObject(TEE_TYPE_RSA_KEYPAIR,
-					     BYTES2BITS(OMS_RSA_MODULO_SIZE), &rsa_keypair);
+	tee_rv = TEE_AllocateTransientObject(TEE_TYPE_RSA_KEYPAIR, BYTES2BITS(OMS_RSA_MODULO_SIZE),
+					     &rsa_keypair);
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_AllocateTransientObject failed: 0x%x", tee_rv);
 		goto out;
@@ -769,9 +744,9 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 
 	/* Saving key into secure storage and leaving the handle open
 	 * TEE_CreatePersistentObject: TEE Core API p-119 */
-	tee_rv = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE,
-					    oms_rsa_keypair_id, sizeof(oms_rsa_keypair_id),
-					    0, rsa_keypair, NULL, 0, &oms_RSA_keypair_object);
+	tee_rv = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE, oms_rsa_keypair_id,
+					    sizeof(oms_rsa_keypair_id), 0, rsa_keypair, NULL, 0,
+					    &oms_RSA_keypair_object);
 	if (tee_rv != TEE_SUCCESS)
 		OT_LOG(LOG_ERR, "TEE_CreatePersistentObject failed: 0x%x", tee_rv);
 
@@ -794,7 +769,7 @@ void TA_EXPORT TA_DestroyEntryPoint(void)
 /* TA_OpenSessionEntryPoint: TEE Core API p-44 */
 TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 					      TEE_Param params[4], /* TEE_Param: TEE Core API p-36*/
-                                              void **sessionContext)
+					      void **sessionContext)
 {
 	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
 	struct session_ctx *new_session_ctx = NULL;
@@ -834,7 +809,7 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 	/* Session is not opened if return value going to be something else than TEE_SUCCESS and
 	 * in that case we need all memory that we are allocated in Open Session function */
 	if (tee_rv != TEE_SUCCESS)
-		 /* TEE_Free: TEE Core API p-86 */
+		/* TEE_Free: TEE Core API p-86 */
 		TEE_Free(new_session_ctx);
 	else
 		*sessionContext = new_session_ctx;
@@ -860,10 +835,9 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 }
 
 /* TA_InvokeCommandEntryPoint: TEE Core API p-47 */
-TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
-						uint32_t commandID,
-						uint32_t paramTypes,
-						TEE_Param params[4])/*TEE_Param: TEE Core API p-36*/
+TEE_Result TA_EXPORT
+TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t commandID, uint32_t paramTypes,
+			   TEE_Param params[4]) /*TEE_Param: TEE Core API p-36*/
 {
 	sessionContext = sessionContext; /* Not used */
 

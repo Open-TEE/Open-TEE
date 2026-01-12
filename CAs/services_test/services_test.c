@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const TEEC_UUID uuid = { 0x3E93632E, 0xA710, 0x469E, { 'C', 'O', 'U', 'N', 'T', 'E', 'R' } };
+static const TEEC_UUID uuid = {0x3E93632E, 0xA710, 0x469E, {'C', 'O', 'U', 'N', 'T', 'E', 'R'}};
 
 static TEEC_Result invoke_command(TEEC_Session *session, TEEC_SharedMemory *inout_mem,
 				  uint32_t command_type)
@@ -106,8 +106,8 @@ int main()
 
 	/* Open session */
 	printf("Opening session: ");
-	ret = TEEC_OpenSession(&context, &session, &uuid, connection_method,
-			       NULL, &operation, NULL);
+	ret =
+	    TEEC_OpenSession(&context, &session, &uuid, connection_method, NULL, &operation, NULL);
 	if (ret != TEEC_SUCCESS) {
 		printf("TEEC_OpenSession failed: 0x%x\n", ret);
 		goto end_2;

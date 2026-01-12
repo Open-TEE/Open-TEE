@@ -24,25 +24,24 @@
 #include <string.h>
 
 static const TEEC_UUID uuid = {
-	0x12345678, 0x8765, 0x4321, { 'D', 'I', 'G', 'E', 'S', 'T', '0', '0'}
-};
+    0x12345678, 0x8765, 0x4321, {'D', 'I', 'G', 'E', 'S', 'T', '0', '0'}};
 
 /* Data buffer sizes */
-#define DATA_SIZE	256
-#define SHA1_SIZE	20
+#define DATA_SIZE 256
+#define SHA1_SIZE 20
 
 /* Hash TA command IDs for this applet */
-#define HASH_UPDATE	0x00000001
-#define HASH_DO_FINAL	0x00000002
-#define HASH_RESET	0x00000003
+#define HASH_UPDATE 0x00000001
+#define HASH_DO_FINAL 0x00000002
+#define HASH_RESET 0x00000003
 
 /* Hash algoithm */
-#define HASH_MD5	0x00000001
-#define HASH_SHA1	0x00000002
-#define HASH_SHA224	0x00000003
-#define HASH_SHA256	0x00000004
-#define HASH_SHA384	0x00000005
-#define HASH_SHA512	0x00000006
+#define HASH_MD5 0x00000001
+#define HASH_SHA1 0x00000002
+#define HASH_SHA224 0x00000003
+#define HASH_SHA256 0x00000004
+#define HASH_SHA384 0x00000005
+#define HASH_SHA512 0x00000006
 
 int main()
 {
@@ -65,7 +64,6 @@ int main()
 	memset(data, 'y', DATA_SIZE);
 	memset(sha1, 0, SHA1_SIZE);
 
-
 	/*
 	 * Initialize context towards TEE
 	 */
@@ -78,9 +76,6 @@ int main()
 		printf("initialized\n");
 	}
 
-
-
-
 	/*
 	 * Open session towards Digest TA
 	 */
@@ -88,16 +83,14 @@ int main()
 	operation.params[0].value.a = HASH_SHA1; /* Open session is expecting HASH algorithm */
 
 	printf("Openning session: ");
-	tee_rv = TEEC_OpenSession(&context, &session, &uuid, TEEC_LOGIN_PUBLIC,
-				  NULL, &operation, NULL);
+	tee_rv =
+	    TEEC_OpenSession(&context, &session, &uuid, TEEC_LOGIN_PUBLIC, NULL, &operation, NULL);
 	if (tee_rv != TEEC_SUCCESS) {
 		printf("TEEC_OpenSession failed: 0x%x\n", tee_rv);
 		goto end_2;
 	} else {
 		printf("opened\n");
 	}
-
-
 
 	/*
 	 * Register shared memory for input
@@ -112,9 +105,6 @@ int main()
 		goto end_3;
 	}
 	printf("Registered in mem..\n");
-
-
-
 
 	/*
 	 * Invoke command from digest TA
@@ -131,8 +121,6 @@ int main()
 		printf("done\n");
 	}
 
-
-
 	/*
 	 * Register shared memory for output (for has result)
 	 */
@@ -147,17 +135,14 @@ int main()
 	}
 	printf("Registered out mem..\n");
 
-
-
-
 	/* Invoke second time from digest TA:
 	 * Send some more data to calculate the hash over, this will be added to the origional hash.
 	 * This is not strictly needed it is a test for passing 2 memref params in a single
 	 * operation
 	 */
 	memset(data, 'Z', DATA_SIZE);
-	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_MEMREF_WHOLE,
-						TEEC_NONE, TEEC_NONE);
+	operation.paramTypes =
+	    TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_MEMREF_WHOLE, TEEC_NONE, TEEC_NONE);
 	/*
 	 * reuse the origional input shared memory, because we have just updated the contents
 	 * of the buffer
@@ -174,8 +159,6 @@ int main()
 		printf("done\n");
 	}
 
-
-
 	/*
 	 * Printf sha1 buf
 	 */
@@ -183,9 +166,6 @@ int main()
 	for (i = 0; i < SHA1_SIZE; i++)
 		printf("%02x", sha1[i]);
 	printf("\n");
-
-
-
 
 	/* Cleanup used connection/resources */
 end_4:

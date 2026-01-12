@@ -151,5 +151,4 @@ CK_RV session_set_pin(struct application *app, uint32_t paramTypes, TEE_Param pa
  */
 CK_RV this_session_object(struct pkcs11_session *session, CK_OBJECT_HANDLE object_id);
 
-
 #endif // PKCS11_SESSION_H

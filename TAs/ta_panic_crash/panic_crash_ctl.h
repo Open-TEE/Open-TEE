@@ -15,8 +15,8 @@
 *****************************************************************************/
 
 /* TA valid commands */
-#define CMD_NO_CRASH     0xAA45A123
-#define CMD_PANIC        0xBA45A123
-#define CMD_SEG_FAULT    0xCA45A123
+#define CMD_NO_CRASH 0xAA45A123
+#define CMD_PANIC 0xBA45A123
+#define CMD_SEG_FAULT 0xCA45A123
 
 #define PANIC_RETURNCODE 123
