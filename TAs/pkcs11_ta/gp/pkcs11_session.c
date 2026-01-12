@@ -41,7 +41,8 @@ void clean_session(struct pkcs11_session *session)
 
 	if (!list_is_empty(&session->list)) {
 
-		LIST_FOR_EACH_SAFE(pos, la, &session->list) {
+		LIST_FOR_EACH_SAFE(pos, la, &session->list)
+		{
 			ses_obj = LIST_ENTRY(pos, struct session_object, list);
 			list_unlink(&ses_obj->list);
 			delete_object(ses_obj->ID);
@@ -143,7 +144,8 @@ void rm_session_object(struct pkcs11_session *session, CK_OBJECT_HANDLE object_i
 	if (list_is_empty(&session->list))
 		return;
 
-	LIST_FOR_EACH_SAFE(pos, la, &session->list) {
+	LIST_FOR_EACH_SAFE(pos, la, &session->list)
+	{
 		ses_obj = LIST_ENTRY(pos, struct session_object, list);
 		if (ses_obj->ID != object_id)
 			continue;
@@ -183,8 +185,8 @@ CK_RV app_logout_session(struct application *app, uint32_t paramTypes, TEE_Param
 	    TEE_PARAM_TYPE_GET(paramTypes, 3) != TEE_PARAM_TYPE_VALUE_OUTPUT)
 		return CKR_ARGUMENTS_BAD;
 
-	params[3].value.a  = is_session_logged_in(app, params[0].value.a);
-	if (params[3].value.a  != CKR_OK)
+	params[3].value.a = is_session_logged_in(app, params[0].value.a);
+	if (params[3].value.a != CKR_OK)
 		return TEE_SUCCESS;
 
 	application_set_logout(app);
@@ -236,8 +238,8 @@ CK_RV session_set_pin(struct application *app, uint32_t paramTypes, TEE_Param pa
 		return ret;
 
 	if (!(session->sessionInfo.state == CKS_RW_PUBLIC_SESSION ||
-	    session->sessionInfo.state == CKS_RW_USER_FUNCTIONS ||
-	    session->sessionInfo.state == CKS_RW_SO_FUNCTIONS))
+	      session->sessionInfo.state == CKS_RW_USER_FUNCTIONS ||
+	      session->sessionInfo.state == CKS_RW_SO_FUNCTIONS))
 		return CKR_SESSION_READ_ONLY;
 
 	if (params[2].value.a == 0 || params[2].value.b == 0)
@@ -264,7 +266,8 @@ CK_RV this_session_object(struct pkcs11_session *session, CK_OBJECT_HANDLE objec
 	if (list_is_empty(&session->list))
 		return CKR_GENERAL_ERROR;
 
-	LIST_FOR_EACH(pos, &session->list) {
+	LIST_FOR_EACH(pos, &session->list)
+	{
 		ses_obj = LIST_ENTRY(pos, struct session_object, list);
 		if (object_id == ses_obj->ID)
 			return CKR_OK;

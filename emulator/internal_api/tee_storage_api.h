@@ -134,9 +134,7 @@ TEE_Result TEE_RestrictObjectUsage1(TEE_ObjectHandle object, uint32_t objectUsag
  * \param size
  * \return
  */
-TEE_Result TEE_GetObjectBufferAttribute(TEE_ObjectHandle object,
-					uint32_t attributeID,
-					void *buffer,
+TEE_Result TEE_GetObjectBufferAttribute(TEE_ObjectHandle object, uint32_t attributeID, void *buffer,
 					size_t *size);
 
 /*!
@@ -147,9 +145,7 @@ TEE_Result TEE_GetObjectBufferAttribute(TEE_ObjectHandle object,
  * \param b
  * \return
  */
-TEE_Result TEE_GetObjectValueAttribute(TEE_ObjectHandle object,
-				       uint32_t attributeID,
-				       uint32_t *a,
+TEE_Result TEE_GetObjectValueAttribute(TEE_ObjectHandle object, uint32_t attributeID, uint32_t *a,
 				       uint32_t *b);
 
 /*!
@@ -169,8 +165,7 @@ void TEE_CloseObject(TEE_ObjectHandle object);
  * \param object
  * \return
  */
-TEE_Result TEE_AllocateTransientObject(uint32_t objectType,
-				       uint32_t maxObjectSize,
+TEE_Result TEE_AllocateTransientObject(uint32_t objectType, uint32_t maxObjectSize,
 				       TEE_ObjectHandle *object);
 
 /*!
@@ -244,11 +239,8 @@ TEE_Result TEE_GenerateKey(TEE_ObjectHandle object, uint32_t keySize, TEE_Attrib
  * \param object
  * \return
  */
-TEE_Result TEE_OpenPersistentObject(uint32_t storageID,
-				    void *objectID,
-				    size_t objectIDLen,
-				    uint32_t flags,
-				    TEE_ObjectHandle *object);
+TEE_Result TEE_OpenPersistentObject(uint32_t storageID, void *objectID, size_t objectIDLen,
+				    uint32_t flags, TEE_ObjectHandle *object);
 
 /*!
  * \brief TEE_CreatePersistentObject
@@ -262,13 +254,9 @@ TEE_Result TEE_OpenPersistentObject(uint32_t storageID,
  * \param object
  * \return
  */
-TEE_Result TEE_CreatePersistentObject(uint32_t storageID,
-				      void *objectID,
-				      size_t objectIDLen,
-				      uint32_t flags,
-				      TEE_ObjectHandle attributes,
-				      void *initialData,
-				      uint32_t initialDataLen,
+TEE_Result TEE_CreatePersistentObject(uint32_t storageID, void *objectID, size_t objectIDLen,
+				      uint32_t flags, TEE_ObjectHandle attributes,
+				      void *initialData, uint32_t initialDataLen,
 				      TEE_ObjectHandle *object);
 
 /*!
@@ -284,8 +272,7 @@ TEE_Result TEE_CloseAndDeletePersistentObject1(TEE_ObjectHandle object);
  * \param newObjectIDLen
  * \return
  */
-TEE_Result TEE_RenamePersistentObject(TEE_ObjectHandle object,
-				      void *newObjectID,
+TEE_Result TEE_RenamePersistentObject(TEE_ObjectHandle object, void *newObjectID,
 				      size_t newObjectIDLen);
 
 /*
@@ -329,8 +316,7 @@ TEE_Result TEE_StartPersistentObjectEnumerator(TEE_ObjectEnumHandle objectEnumer
  * \return
  */
 TEE_Result TEE_GetNextPersistentObject(TEE_ObjectEnumHandle objectEnumerator,
-				       TEE_ObjectInfo *objectInfo,
-				       void *objectID,
+				       TEE_ObjectInfo *objectInfo, void *objectID,
 				       size_t *objectIDLen);
 
 /*
@@ -345,10 +331,7 @@ TEE_Result TEE_GetNextPersistentObject(TEE_ObjectEnumHandle objectEnumerator,
  * \param count
  * \return
  */
-TEE_Result TEE_ReadObjectData(TEE_ObjectHandle object,
-			      void *buffer,
-			      size_t size,
-			      size_t *count);
+TEE_Result TEE_ReadObjectData(TEE_ObjectHandle object, void *buffer, size_t size, size_t *count);
 
 /*!
  * \brief TEE_WriteObjectData
@@ -357,9 +340,7 @@ TEE_Result TEE_ReadObjectData(TEE_ObjectHandle object,
  * \param size
  * \return
  */
-TEE_Result TEE_WriteObjectData(TEE_ObjectHandle object,
-			       void *buffer,
-			       size_t size);
+TEE_Result TEE_WriteObjectData(TEE_ObjectHandle object, void *buffer, size_t size);
 
 /*!
  * \brief TEE_TruncateObjectData

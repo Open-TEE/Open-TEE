@@ -51,8 +51,8 @@ static bool __attribute__((constructor)) mbetls_init()
 	mbedtls_ctr_drbg_init(&ot_mbedtls_ctr_drbg);
 	mbedtls_entropy_init(&ot_mbedtls_entropy);
 
-	if(mbedtls_ctr_drbg_seed(&ot_mbedtls_ctr_drbg, mbedtls_entropy_func, &ot_mbedtls_entropy,
-				 (const unsigned char *)pers, strlen(pers))) {
+	if (mbedtls_ctr_drbg_seed(&ot_mbedtls_ctr_drbg, mbedtls_entropy_func, &ot_mbedtls_entropy,
+				  (const unsigned char *)pers, strlen(pers))) {
 		OT_LOG(LOG_ERR, "Failed mbedtls_ctr_drbg_seed");
 		return false;
 	}
@@ -97,10 +97,10 @@ void TEE_FreeOperation(TEE_OperationHandle operation)
 
 	} else if (operation->operation_info.operationClass == TEE_OPERATION_AE) {
 		free_gp_ae(operation);
-		
+
 	} else if (operation->operation_info.operationClass == TEE_OPERATION_KEY_DERIVATION) {
 		free_gp_asym(operation);
-		
+
 	} else {
 		OT_LOG(LOG_ERR, "Not supported operation class [%u]",
 		       operation->operation_info.operationClass);
@@ -112,17 +112,15 @@ void TEE_FreeOperation(TEE_OperationHandle operation)
 	operation = 0;
 }
 
-TEE_Result TEE_AllocateOperation(TEE_OperationHandle *operation,
-				 uint32_t algorithm,
-				 uint32_t mode,
+TEE_Result TEE_AllocateOperation(TEE_OperationHandle *operation, uint32_t algorithm, uint32_t mode,
 				 uint32_t maxKeySize)
 {
-	// Function should do the static alloc for crypto operation 
+	// Function should do the static alloc for crypto operation
 
 	TEE_OperationHandle tmp_handle = NULL;
 	TEE_Result ret = TEE_SUCCESS;
 	uint32_t key_count;
-	
+
 	if (operation == NULL) {
 		OT_LOG_ERR("TEE_AllocateOperation panicking due operation handle NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
@@ -130,24 +128,27 @@ TEE_Result TEE_AllocateOperation(TEE_OperationHandle *operation,
 
 	if (!supported_algorithms(algorithm, maxKeySize, &key_count)) {
 		OT_LOG_ERR("TEE_AllocateOperation algorithm [%u] AND/OR "
-			   "maxKeySize [%u] not supported", algorithm, maxKeySize);
+			   "maxKeySize [%u] not supported",
+			   algorithm, maxKeySize);
 		return TEE_ERROR_NOT_SUPPORTED;
 	}
-	
+
 	if (valid_mode_and_algorithm(algorithm, mode)) {
 		OT_LOG_ERR("TEE_AllocateOperation algorithm [%u] and "
-			   "mode [%u] combination is not valid", algorithm, mode);
+			   "mode [%u] combination is not valid",
+			   algorithm, mode);
 		return TEE_ERROR_NOT_SUPPORTED;
 	}
 
 	if (!valid_key_size_for_algorithm(algorithm, maxKeySize)) {
 		OT_LOG_ERR("TEE_AllocateOperation algorithm [%u] and "
-			   "maxKeySize [%u] combination is not valid", algorithm, maxKeySize);
+			   "maxKeySize [%u] combination is not valid",
+			   algorithm, maxKeySize);
 		return TEE_ERROR_NOT_SUPPORTED;
 	}
 
-	tmp_handle = (struct __TEE_OperationHandle *)
-		     TEE_Malloc(sizeof(struct __TEE_OperationHandle), 1);
+	tmp_handle =
+	    (struct __TEE_OperationHandle *)TEE_Malloc(sizeof(struct __TEE_OperationHandle), 1);
 	if (tmp_handle == NULL) {
 		ret = TEE_ERROR_OUT_OF_MEMORY;
 		OT_LOG_ERR("TEE_AllocateOperation out of memoery");
@@ -176,16 +177,16 @@ TEE_Result TEE_AllocateOperation(TEE_OperationHandle *operation,
 		ret = init_gp_ae(tmp_handle);
 		if (ret != TEE_SUCCESS)
 			goto err;
-		
+
 		break;
 	case TEE_ALG_AES_ECB_NOPAD:
 	case TEE_ALG_AES_CBC_NOPAD:
-	case TEE_ALG_AES_CTR:	
+	case TEE_ALG_AES_CTR:
 	case TEE_ALG_DES_ECB_NOPAD:
 	case TEE_ALG_DES_CBC_NOPAD:
 	case TEE_ALG_DES3_ECB_NOPAD:
 	case TEE_ALG_DES3_CBC_NOPAD:
-		//Nothing to do!
+		// Nothing to do!
 		break;
 
 	case TEE_ALG_MD5:
@@ -246,7 +247,7 @@ TEE_Result TEE_AllocateOperation(TEE_OperationHandle *operation,
 		ret = TEE_ERROR_NOT_SUPPORTED;
 		goto err;
 	}
-	
+
 	*operation = tmp_handle;
 	return ret;
 
@@ -256,11 +257,10 @@ err:
 	return ret;
 }
 
-void TEE_GetOperationInfo(TEE_OperationHandle operation,
-			  TEE_OperationInfo *operationInfo)
+void TEE_GetOperationInfo(TEE_OperationHandle operation, TEE_OperationInfo *operationInfo)
 {
 	TEE_OperationInfo rv_info;
-	
+
 	if (operation == NULL) {
 		OT_LOG_ERR("TEE_GetOperationInfo due panics operation NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
@@ -269,12 +269,12 @@ void TEE_GetOperationInfo(TEE_OperationHandle operation,
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
 
-	//Internal check
+	// Internal check
 	if (operation->operation_info.numberOfKeys != 1) {
 		OT_LOG_ERR("TEE_GetOperationInfo internal error");
 		TEE_Panic(TEE_ERROR_NOT_SUPPORTED);
 	}
-	
+
 	rv_info.algorithm = operation->operation_info.algorithm;
 	rv_info.digestLength = operation->operation_info.digestLength;
 	rv_info.handleState = operation->operation_info.handleState;
@@ -303,18 +303,19 @@ TEE_Result TEE_GetOperationInfoMultiple(TEE_OperationHandle operation,
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
 
-	//Internal check
+	// Internal check
 	if (operation->operation_info.numberOfKeys > 1) {
 		OT_LOG_ERR("TEE_GetOperationInfoMultiple internal error");
 		TEE_Panic(TEE_ERROR_NOT_SUPPORTED);
 	}
-	
+
 	memset(operationInfoMultiple, 0, sizeof(TEE_OperationInfoMultiple));
-	memcpy(operationInfoMultiple, &operation->operation_info, sizeof(TEE_OperationInfoMultiple));
-	
-	//TODO (NOTE): Not sure about what is this
+	memcpy(operationInfoMultiple, &operation->operation_info,
+	       sizeof(TEE_OperationInfoMultiple));
+
+	// TODO (NOTE): Not sure about what is this
 	*operationSize = 0;
-	
+
 	return TEE_SUCCESS;
 }
 
@@ -335,34 +336,34 @@ void TEE_ResetOperation(TEE_OperationHandle operation)
 
 		operation->operation_info.operationState = TEE_OPERATION_STATE_INITIAL;
 		operation->operation_info.handleState = TEE_HANDLE_FLAG_KEY_SET;
-		
+
 	} else if (operation->operation_info.operationClass == TEE_OPERATION_DIGEST) {
 
 		reset_gp_digest(operation);
-		
+
 		// Just setting operation state
 		operation->operation_info.operationState = TEE_OPERATION_STATE_INITIAL;
 
 	} else if (operation->operation_info.operationClass == TEE_OPERATION_MAC) {
 
-		// Just setting operation state 
+		// Just setting operation state
 		reset_gp_mac(operation);
 		operation->operation_info.operationState = TEE_OPERATION_STATE_INITIAL;
 		operation->operation_info.handleState = TEE_HANDLE_FLAG_KEY_SET;
-		
+
 	} else if (operation->operation_info.operationClass == TEE_OPERATION_ASYMMETRIC_CIPHER ||
 		   operation->operation_info.operationClass == TEE_OPERATION_ASYMMETRIC_SIGNATURE) {
 
 		/* Only for documenting purpose. This is single stage operation */
-		
+
 	} else if (operation->operation_info.operationClass == TEE_OPERATION_AE) {
 
 		reset_gp_ae(operation);
-		
+
 		operation->operation_info.operationState = TEE_OPERATION_STATE_INITIAL;
 		operation->operation_info.handleState = TEE_HANDLE_FLAG_KEY_SET;
 		operation->operation_info.digestLength = 0;
-		
+
 	} else if (operation->operation_info.operationClass == TEE_OPERATION_KEY_DERIVATION) {
 
 		/* Only for documenting purpose. This is single stage operation */
@@ -372,8 +373,7 @@ void TEE_ResetOperation(TEE_OperationHandle operation)
 	}
 }
 
-TEE_Result TEE_SetOperationKey(TEE_OperationHandle operation,
-			       TEE_ObjectHandle key)
+TEE_Result TEE_SetOperationKey(TEE_OperationHandle operation, TEE_ObjectHandle key)
 {
 	TEE_Result ret = TEE_SUCCESS;
 
@@ -381,7 +381,8 @@ TEE_Result TEE_SetOperationKey(TEE_OperationHandle operation,
 		OT_LOG_ERR("TEE_SetOperationKey panicking due operation NULL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	} else if (operation->operation_info.operationState != TEE_OPERATION_STATE_INITIAL) {
-		OT_LOG_ERR("TEE_SetOperationKey panicking due operation state not TEE_OPERATION_STATE_INITIAL"); 
+		OT_LOG_ERR("TEE_SetOperationKey panicking due operation state not "
+			   "TEE_OPERATION_STATE_INITIAL");
 		TEE_Panic(TEE_ERROR_BAD_PARAMETERS);
 	}
 
@@ -395,29 +396,30 @@ TEE_Result TEE_SetOperationKey(TEE_OperationHandle operation,
 		remove_operation_key(operation);
 		return TEE_SUCCESS;
 	}
-	
+
 	ret = valid_key_and_operation(key, operation);
 	if (ret != TEE_SUCCESS) {
-		OT_LOG_ERR("TEE_SetOperationKey panicking (search \"OperationKeyError\" from syslog)");
-		TEE_Panic(ret); //Error logged
+		OT_LOG_ERR(
+		    "TEE_SetOperationKey panicking (search \"OperationKeyError\" from syslog)");
+		TEE_Panic(ret); // Error logged
 	}
 
 	if (operation->operation_info.handleState & TEE_HANDLE_FLAG_KEY_SET) {
 		remove_operation_key(operation);
 	}
-	
-	//Algorithm specific operations
+
+	// Algorithm specific operations
 	if (operation->operation_info.operationClass == TEE_OPERATION_CIPHER) {
 
 		assign_key_cipher(operation, key);
-		
+
 	} else if (operation->operation_info.operationClass == TEE_OPERATION_DIGEST) {
-		//No key
+		// No key
 
 	} else if (operation->operation_info.operationClass == TEE_OPERATION_MAC) {
 
 		assign_key_mac(operation, key);
-		
+
 	} else if (operation->operation_info.operationClass == TEE_OPERATION_ASYMMETRIC_CIPHER ||
 		   operation->operation_info.operationClass == TEE_OPERATION_ASYMMETRIC_SIGNATURE ||
 		   operation->operation_info.operationClass == TEE_OPERATION_KEY_DERIVATION) {
@@ -425,18 +427,18 @@ TEE_Result TEE_SetOperationKey(TEE_OperationHandle operation,
 		if (!assign_asym_key(operation, key)) {
 			return TEE_ERROR_GENERIC;
 		}
-		
+
 	} else if (operation->operation_info.operationClass == TEE_OPERATION_AE) {
 
 		assign_key_ae(operation, key);
-		
+
 	} else {
 		OT_LOG(LOG_ERR, "Not supported operation class");
 		TEE_Panic(TEE_ERROR_NOT_SUPPORTED);
 	}
 
 	operation->key_data = key->key;
-	key->key->reference_count++;	
+	key->key->reference_count++;
 	operation->operation_info.handleState |= TEE_HANDLE_FLAG_KEY_SET;
 	operation->operation_info.keyInformation[0].keySize = BYTES_TO_BITS(key->key->key_lenght);
 	operation->operation_info.keyInformation[0].requiredKeyUsage = 0;
@@ -445,14 +447,13 @@ TEE_Result TEE_SetOperationKey(TEE_OperationHandle operation,
 	return TEE_SUCCESS;
 }
 
-TEE_Result TEE_SetOperationKey2(TEE_OperationHandle operation,
-				TEE_ObjectHandle key1,
+TEE_Result TEE_SetOperationKey2(TEE_OperationHandle operation, TEE_ObjectHandle key1,
 				TEE_ObjectHandle key2)
 {
 	operation = operation;
 	key1 = key1;
 	key2 = key2;
-	
+
 	return TEE_ERROR_NOT_IMPLEMENTED;
 }
 

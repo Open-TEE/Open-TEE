@@ -25,19 +25,17 @@
 #include "tee_ta_properties.h"
 
 /* UUID must be unique */
-SET_TA_PROPERTIES(
-	{ 0x12345678, 0x8765, 0x4321, { 'T', 'A', 'C', 'O', 'N', 'N', 'T', 'E'} }, /* UUID */
-		512, /* dataSize */
-		255, /* stackSize */
-		1, /* singletonInstance */
-		1, /* multiSession */
-		0) /* instanceKeepAlive */
+SET_TA_PROPERTIES({0x12345678, 0x8765, 0x4321, {'T', 'A', 'C', 'O', 'N', 'N', 'T', 'E'}}, /* UUID */
+		  512, /* dataSize */
+		  255, /* stackSize */
+		  1,   /* singletonInstance */
+		  1,   /* multiSession */
+		  0)   /* instanceKeepAlive */
 #endif
 
 /* Dirty, but cleanest and fastest for now */
 static uint8_t in_vector[] = IN_KNOWN_VECTOR;
 static uint8_t out_vector[] = OUT_KNOWN_VECTOR;
-
 
 /*!
  * \brief reverse_buffer
@@ -48,9 +46,7 @@ static uint8_t out_vector[] = OUT_KNOWN_VECTOR;
  * back, the size is also altered. The reversed buffer size can be queried also with macro
  * (REVERSED_SIZE). Can be also NULL, if no intered for out size.
  */
-static void reverse_buffer(uint8_t *buffer,
-			   uint32_t buffer_length,
-			   size_t *reversed_size)
+static void reverse_buffer(uint8_t *buffer, uint32_t buffer_length, size_t *reversed_size)
 {
 	uint32_t i, j;
 	uint8_t tmp;
@@ -65,8 +61,7 @@ static void reverse_buffer(uint8_t *buffer,
 		*reversed_size = REVERSED_SIZE(buffer_length);
 }
 
-static TEE_Result check_recv_params(uint32_t paramTypes,
-				    TEE_Param *params)
+static TEE_Result check_recv_params(uint32_t paramTypes, TEE_Param *params)
 {
 	uint32_t i;
 
@@ -135,8 +130,7 @@ static void fill_response_params(TEE_Param *params)
 	reverse_buffer(params[3].memref.buffer, params[3].memref.size, &params[3].memref.size);
 }
 
-static TEE_Result handle_params(uint32_t paramTypes,
-				TEE_Param *params)
+static TEE_Result handle_params(uint32_t paramTypes, TEE_Param *params)
 {
 	TEE_Result tee_rv = TEE_SUCCESS;
 
@@ -148,11 +142,6 @@ static TEE_Result handle_params(uint32_t paramTypes,
 
 	return tee_rv;
 }
-
-
-
-
-
 
 TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
@@ -180,8 +169,7 @@ void TA_EXPORT TA_DestroyEntryPoint(void)
 	OT_LOG(LOG_INFO, "TA_DestroyEntryPoint: end");
 }
 
-TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
-					      TEE_Param params[4],
+TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes, TEE_Param params[4],
 					      void **sessionContext)
 {
 	TEE_Result tee_rv = TEE_SUCCESS;
@@ -233,10 +221,8 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 	TEE_Free(sessionContext);
 }
 
-TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
-						uint32_t commandID,
-						uint32_t paramTypes,
-						TEE_Param params[4])
+TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t commandID,
+						uint32_t paramTypes, TEE_Param params[4])
 {
 	TEE_Result tee_rv = TEE_SUCCESS;
 
@@ -248,8 +234,7 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
 		return TEE_ERROR_GENERIC;
 	}
 
-	if (!(commandID == INVOKE_CMD_ID_1 ||
-	      commandID == INVOKE_CMD_ID_2)) {
+	if (!(commandID == INVOKE_CMD_ID_1 || commandID == INVOKE_CMD_ID_2)) {
 		OT_LOG(LOG_ERR, "Not a valid command ID");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}

@@ -32,16 +32,9 @@
 #include "tee_storage_api.h"
 #include "tee_time_api.h"
 
+static bool multiple_of_8(uint32_t number) { return !(number % 8) ? true : false; }
 
-static bool multiple_of_8(uint32_t number)
-{
-	return !(number % 8) ? true : false;
-}
-
-static bool multiple_of_64(uint32_t number)
-{
-	return !(number % 64) ? true : false;
-}
+static bool multiple_of_64(uint32_t number) { return !(number % 64) ? true : false; }
 
 void free_gp_attributes(struct gp_attributes *gp_attr)
 {
@@ -58,8 +51,8 @@ void free_gp_attributes(struct gp_attributes *gp_attr)
 	for (i = 0; i < gp_attr->attrs_count; i++) {
 		// Zero is illegal attributeID.
 		if (gp_attr->attrs[i].attributeID == 0) {
-			//We might jump out, but this function supports
-			//middle alloc free
+			// We might jump out, but this function supports
+			// middle alloc free
 			continue;
 		}
 
@@ -75,23 +68,21 @@ void free_gp_attributes(struct gp_attributes *gp_attr)
 
 uint32_t keysize_in_bits(uint32_t key_in_bytes)
 {
-	//TODO: Move to "common between storage/crypto"
-	//TODO: Overflow check.
-	return key_in_bytes * 8; 
+	// TODO: Move to "common between storage/crypto"
+	// TODO: Overflow check.
+	return key_in_bytes * 8;
 }
 
 int keysize_in_bytes(uint32_t key_in_bits)
 {
-	//TODO: Move to "common between storage/crypto"
+	// TODO: Move to "common between storage/crypto"
 	if (key_in_bits <= UINT_MAX - 7)
 		key_in_bits += 7;
 
 	return key_in_bits / 8;
 }
 
-TEE_Attribute *get_attr_from_attrArr(uint32_t ID,
-				     TEE_Attribute *attrs,
-				     uint32_t attrCount)
+TEE_Attribute *get_attr_from_attrArr(uint32_t ID, TEE_Attribute *attrs, uint32_t attrCount)
 {
 	uint32_t i;
 
@@ -120,17 +111,17 @@ void close_persistan_object(void *objectID, uint32_t objectIDLen)
 	}
 
 	closeObject = payload.data;
-	memcpy(((struct com_mrg_close_persistent *)payload.data)->objectID, (uint8_t *)objectID, objectIDLen);
+	memcpy(((struct com_mrg_close_persistent *)payload.data)->objectID, (uint8_t *)objectID,
+	       objectIDLen);
 	closeObject->objectIDLen = objectIDLen;
 
-	TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_CLOSE_OBJECT, &payload, &returnPayload);
+	TEE_InvokeMGRCommand(TEE_TIMEOUT_INFINITE, COM_MGR_CMD_ID_CLOSE_OBJECT, &payload,
+			     &returnPayload);
 
 	free(payload.data);
 }
 
-
-int valid_object_type_and_max_size(uint32_t obj_type,
-				   uint32_t obj_size)
+int valid_object_type_and_max_size(uint32_t obj_type, uint32_t obj_size)
 {
 	switch (obj_type) {
 	case TEE_TYPE_AES:
@@ -217,8 +208,7 @@ int valid_object_type_and_max_size(uint32_t obj_type,
 	case TEE_TYPE_ECDH_PUBLIC_KEY:
 	case TEE_TYPE_ECDSA_PUBLIC_KEY:
 	case TEE_TYPE_ECDSA_KEYPAIR:
-		if (obj_size == 192 || obj_size == 224 ||
-		    obj_size == 256 || obj_size == 384 ||
+		if (obj_size == 192 || obj_size == 224 || obj_size == 256 || obj_size == 384 ||
 		    obj_size == 521) {
 			return 0;
 		}
@@ -240,8 +230,7 @@ int is_value_attribute(uint32_t attr_ID)
 	return attr_ID & TEE_ATTR_FLAG_VALUE;
 }
 
-int expected_object_attr_count(uint32_t obj_type,
-			       uint32_t *expected_attr_count)
+int expected_object_attr_count(uint32_t obj_type, uint32_t *expected_attr_count)
 {
 	switch (obj_type) {
 	case TEE_TYPE_AES:
@@ -304,27 +293,27 @@ void free_gp_key(struct gp_key *key)
 	// mbedtls RSA key
 	if (key->gp_key_type == TEE_TYPE_RSA_PUBLIC_KEY ||
 	    key->gp_key_type == TEE_TYPE_RSA_KEYPAIR) {
-		//Nothing
+		// Nothing
 	} else if (key->gp_key_type == TEE_TYPE_AES) {
-		//TODO: No key? Investiage.
+		// TODO: No key? Investiage.
 	} else if (key->gp_key_type == TEE_TYPE_HMAC_MD5 ||
 		   key->gp_key_type == TEE_TYPE_HMAC_SHA1 ||
 		   key->gp_key_type == TEE_TYPE_HMAC_SHA224 ||
 		   key->gp_key_type == TEE_TYPE_HMAC_SHA256 ||
 		   key->gp_key_type == TEE_TYPE_HMAC_SHA384 ||
 		   key->gp_key_type == TEE_TYPE_HMAC_SHA512) {
-		//TODO: Nothing?
+		// TODO: Nothing?
 	} else if (key->gp_key_type == TEE_TYPE_ECDSA_PUBLIC_KEY ||
-		  key->gp_key_type == TEE_TYPE_ECDSA_KEYPAIR ||
-		  key->gp_key_type == TEE_TYPE_ECDH_KEYPAIR ||
-		  key->gp_key_type == TEE_TYPE_ECDH_PUBLIC_KEY) {
-		//Nothing
+		   key->gp_key_type == TEE_TYPE_ECDSA_KEYPAIR ||
+		   key->gp_key_type == TEE_TYPE_ECDH_KEYPAIR ||
+		   key->gp_key_type == TEE_TYPE_ECDH_PUBLIC_KEY) {
+		// Nothing
 	} else if (key->gp_key_type == TEE_TYPE_GENERIC_SECRET) {
-		//Nothing
+		// Nothing
 	} else {
 		OT_LOG(LOG_ERR, "Not supported key [%u]\n", key->gp_key_type);
-		
-		//TODO: Uncomment when release_ss_file() moved away from this file
+
+		// TODO: Uncomment when release_ss_file() moved away from this file
 		TEE_Panic(TEE_ERROR_GENERIC);
 	}
 

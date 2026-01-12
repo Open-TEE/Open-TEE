@@ -55,50 +55,50 @@ struct __TEE_ObjectEnumHandle {
 #define COM_MGR_PERSISTENT_DATA_OBJECT 0xCD
 
 struct com_mrg_open_persistent {
-	char objectID[TEE_OBJECT_ID_MAX_LEN];//[IN]
-	struct persistant_object per_object;//[IN]
-	TEE_ObjectInfo info;//[OUT]
-	uint32_t storageID;//[IN]
-	uint32_t flags;//[IN]
-	size_t objectIDLen;//[IN]
-	uint32_t attrsSize;//[OUT](zeroable)
-	//attributes: start at the end of struc (if attrsize > 0)
+	char objectID[TEE_OBJECT_ID_MAX_LEN]; //[IN]
+	struct persistant_object per_object;  //[IN]
+	TEE_ObjectInfo info;		      //[OUT]
+	uint32_t storageID;		      //[IN]
+	uint32_t flags;			      //[IN]
+	size_t objectIDLen;		      //[IN]
+	uint32_t attrsSize;		      //[OUT](zeroable)
+	// attributes: start at the end of struc (if attrsize > 0)
 } __attribute__((aligned));
 
 struct com_mrg_close_persistent {
-	char objectID[TEE_OBJECT_ID_MAX_LEN];//[IN]
-	uint32_t objectIDLen;//[IN]
+	char objectID[TEE_OBJECT_ID_MAX_LEN]; //[IN]
+	uint32_t objectIDLen;		      //[IN]
 } __attribute__((aligned));
 
 struct com_mrg_create_persistent {
-	uint8_t objectID[TEE_OBJECT_ID_MAX_LEN];//[IN]
-	TEE_ObjectInfo info;//[OUT](filled)
-	struct persistant_object perObj;//[OUT](filled)
-	uint32_t keySize;//IN[IN]
-	size_t objectIDLen;//[IN]
-	uint32_t storageID;//[IN]
-	uint32_t flags;//[IN]
-	uint32_t initialDataLen;//[IN]
-	size_t attributeSize;//[IN]
-	size_t initialDataSize;//[IN]
-	uint8_t data_object; //[IN]COM_MGR_PERSISTENT_DATA_OBJECT
-	//attributes: start at the end of struct
-	//initialData: start at the end of attributes
+	uint8_t objectID[TEE_OBJECT_ID_MAX_LEN]; //[IN]
+	TEE_ObjectInfo info;			 //[OUT](filled)
+	struct persistant_object perObj;	 //[OUT](filled)
+	uint32_t keySize;			 // IN[IN]
+	size_t objectIDLen;			 //[IN]
+	uint32_t storageID;			 //[IN]
+	uint32_t flags;				 //[IN]
+	uint32_t initialDataLen;		 //[IN]
+	size_t attributeSize;			 //[IN]
+	size_t initialDataSize;			 //[IN]
+	uint8_t data_object;			 //[IN]COM_MGR_PERSISTENT_DATA_OBJECT
+						 // attributes: start at the end of struct
+						 // initialData: start at the end of attributes
 } __attribute__((aligned));
 
 struct com_mrg_rename_persistent {
-	uint8_t objectID[TEE_OBJECT_ID_MAX_LEN];//[IN]
-	size_t objectIDLen;//[IN]
-	char newObjectID[TEE_OBJECT_ID_MAX_LEN];//[IN]
-	size_t newObjectIDLen;//[IN]
+	uint8_t objectID[TEE_OBJECT_ID_MAX_LEN]; //[IN]
+	size_t objectIDLen;			 //[IN]
+	char newObjectID[TEE_OBJECT_ID_MAX_LEN]; //[IN]
+	size_t newObjectIDLen;			 //[IN]
 } __attribute__((aligned));
 
 struct com_mrg_transfer_data_persistent {
-	uint8_t objectID[TEE_OBJECT_ID_MAX_LEN];//[IN]
-	size_t objectIDLen;//[IN]
-	uint32_t dataPosition;//[IN]
-	size_t dataSize;//[IN/OUT]
-	//data: start at the end of struct [IN/OUT]
+	uint8_t objectID[TEE_OBJECT_ID_MAX_LEN]; //[IN]
+	size_t objectIDLen;			 //[IN]
+	uint32_t dataPosition;			 //[IN]
+	size_t dataSize;			 //[IN/OUT]
+						 // data: start at the end of struct [IN/OUT]
 } __attribute__((aligned));
 
 struct com_mrg_enum_command {
@@ -121,8 +121,7 @@ struct com_mrg_enum_command_next {
  * returnOrigin - error status from the command executed by manager
  */
 
-TEE_Result TEE_InvokeMGRCommand(uint32_t cancellationRequestTimeout,
-				uint32_t commandID,
+TEE_Result TEE_InvokeMGRCommand(uint32_t cancellationRequestTimeout, uint32_t commandID,
 				struct com_mgr_invoke_cmd_payload *payload,
 				struct com_mgr_invoke_cmd_payload *returnPayload);
 

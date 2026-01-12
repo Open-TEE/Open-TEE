@@ -30,10 +30,7 @@ static void list_remove_between(struct list_head *start, struct list_head *end)
 	end->prev = start;
 }
 
-int list_is_empty(struct list_head *head)
-{
-	return head->next == head;
-}
+int list_is_empty(struct list_head *head) { return head->next == head; }
 
 void list_add_after(struct list_head *ele, struct list_head *after)
 {

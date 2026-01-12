@@ -33,15 +33,14 @@
 #define PROPERTY_SEC_NAME ".ta_properties"
 
 #define SET_TA_PROPERTIES(...)                                                                     \
-	struct gpd_ta_config ta_pro __attribute__((section(PROPERTY_SEC_NAME))) = { __VA_ARGS__ };
+	struct gpd_ta_config ta_pro __attribute__((section(PROPERTY_SEC_NAME))) = {__VA_ARGS__};
 
 /*!
-* \brief The gpd_ta_config struct
-* This structure defines the Standard Configuration Properties of an applet as outlined in
-* table 4-11 of the Internal API spec
-*/
-struct gpd_ta_config
-{
+ * \brief The gpd_ta_config struct
+ * This structure defines the Standard Configuration Properties of an applet as outlined in
+ * table 4-11 of the Internal API spec
+ */
+struct gpd_ta_config {
 	TEE_UUID appID;
 	size_t dataSize;
 	size_t stackSize;

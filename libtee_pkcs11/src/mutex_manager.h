@@ -27,9 +27,7 @@
  * \param lock [IN] The callback to aquire the mutex
  * \param unlock [IN] The callback to release the mutex
  */
-void init_mutex_callbacks(CK_CREATEMUTEX create,
-			  CK_DESTROYMUTEX destroy,
-			  CK_LOCKMUTEX lock,
+void init_mutex_callbacks(CK_CREATEMUTEX create, CK_DESTROYMUTEX destroy, CK_LOCKMUTEX lock,
 			  CK_UNLOCKMUTEX unlock);
 
 /*!

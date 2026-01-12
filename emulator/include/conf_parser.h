@@ -23,10 +23,10 @@
  * Emulator config parameters
  */
 struct emulator_config {
-	char *ta_dir_path;	 /*!< Folder that contais TAs */
+	char *ta_dir_path;	   /*!< Folder that contais TAs */
 	char *subprocess_manager;  /*!< The library that implements the manager fucnctionality */
 	char *subprocess_launcher; /*!< The library that implements the TA launcher functionality */
-	char *core_lib_path;       /*!< The path where the libraries are stored */
+	char *core_lib_path;	   /*!< The path where the libraries are stored */
 };
 
 /*!

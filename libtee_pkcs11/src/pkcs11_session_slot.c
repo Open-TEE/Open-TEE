@@ -53,7 +53,7 @@ CK_RV C_GetSlotList(CK_BBOOL tokenPresent, CK_SLOT_ID_PTR pSlotList, CK_ULONG_PT
 	if (*pulCount >= SLOT_COUNT)
 		pSlotList[0] = TEE_SLOT_ID;
 	else
-		ret =  CKR_BUFFER_TOO_SMALL;
+		ret = CKR_BUFFER_TOO_SMALL;
 
 out:
 	*pulCount = 1;
@@ -131,8 +131,7 @@ static CK_RV populate_user_mechanism_list(CK_MECHANISM_TYPE_PTR pMechanismList,
 	return ret;
 }
 
-CK_RV C_GetMechanismList(CK_SLOT_ID slotID,
-			 CK_MECHANISM_TYPE_PTR pMechanismList,
+CK_RV C_GetMechanismList(CK_SLOT_ID slotID, CK_MECHANISM_TYPE_PTR pMechanismList,
 			 CK_ULONG_PTR pulCount)
 {
 	CK_RV ret = 0;
@@ -151,7 +150,6 @@ CK_RV C_GetMechanismList(CK_SLOT_ID slotID,
 	ret = hal_get_info(TEE_GET_MECHANISM_LIST, g_supported_mechanisms, &size);
 	if (ret != CKR_BUFFER_TOO_SMALL)
 		return ret;
-
 
 	g_supported_mechanisms = calloc(1, size);
 	if (g_supported_mechanisms == NULL)
@@ -211,9 +209,7 @@ CK_RV C_GetMechanismInfo(CK_SLOT_ID slotID, CK_MECHANISM_TYPE type, CK_MECHANISM
 	return CKR_MECHANISM_INVALID;
 }
 
-CK_RV C_InitToken(CK_SLOT_ID slotID,
-		  CK_UTF8CHAR_PTR pPin,
-		  CK_ULONG ulPinLen,
+CK_RV C_InitToken(CK_SLOT_ID slotID, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen,
 		  CK_UTF8CHAR_PTR pLabel)
 {
 	if (slotID != TEE_SLOT_ID)
@@ -230,11 +226,8 @@ CK_RV C_InitPIN(CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPin
 	return hal_init_pin(hSession, pPin, ulPinLen);
 }
 
-CK_RV C_SetPIN(CK_SESSION_HANDLE hSession,
-	       CK_UTF8CHAR_PTR pOldPin,
-	       CK_ULONG ulOldLen,
-	       CK_UTF8CHAR_PTR pNewPin,
-	       CK_ULONG ulNewLen)
+CK_RV C_SetPIN(CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pOldPin, CK_ULONG ulOldLen,
+	       CK_UTF8CHAR_PTR pNewPin, CK_ULONG ulNewLen)
 {
 	if (hSession == CK_INVALID_HANDLE)
 		return CKR_SESSION_HANDLE_INVALID;
@@ -246,10 +239,7 @@ CK_RV C_SetPIN(CK_SESSION_HANDLE hSession,
  * 11.6 SESSION MANAGEMENT
  */
 
-CK_RV C_OpenSession(CK_SLOT_ID slotID,
-		    CK_FLAGS flags,
-		    CK_VOID_PTR pApplication,
-		    CK_NOTIFY Notify,
+CK_RV C_OpenSession(CK_SLOT_ID slotID, CK_FLAGS flags, CK_VOID_PTR pApplication, CK_NOTIFY Notify,
 		    CK_SESSION_HANDLE_PTR phSession)
 {
 	if (slotID != TEE_SLOT_ID)
@@ -291,8 +281,7 @@ CK_RV C_GetSessionInfo(CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo)
 	return hal_get_session_info(hSession, pInfo);
 }
 
-CK_RV C_GetOperationState(CK_SESSION_HANDLE hSession,
-			  CK_BYTE_PTR pOperationState,
+CK_RV C_GetOperationState(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pOperationState,
 			  CK_ULONG_PTR pulOperationStateLen)
 {
 	hSession = hSession;
@@ -301,10 +290,8 @@ CK_RV C_GetOperationState(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_SetOperationState(CK_SESSION_HANDLE hSession,
-			  CK_BYTE_PTR pOperationState,
-			  CK_ULONG ulOperationStateLen,
-			  CK_OBJECT_HANDLE hEncryptionKey,
+CK_RV C_SetOperationState(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pOperationState,
+			  CK_ULONG ulOperationStateLen, CK_OBJECT_HANDLE hEncryptionKey,
 			  CK_OBJECT_HANDLE hAuthenticationKey)
 {
 	hSession = hSession;
@@ -315,9 +302,7 @@ CK_RV C_SetOperationState(CK_SESSION_HANDLE hSession,
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
-CK_RV C_Login(CK_SESSION_HANDLE hSession,
-	      CK_USER_TYPE userType,
-	      CK_UTF8CHAR_PTR pPin,
+CK_RV C_Login(CK_SESSION_HANDLE hSession, CK_USER_TYPE userType, CK_UTF8CHAR_PTR pPin,
 	      CK_ULONG ulPinLen)
 {
 	if (pPin == NULL)

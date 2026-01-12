@@ -60,7 +60,6 @@ bool get_data_from_elf(const char *elf_file, const char *sec_name, void *buf, si
 	if (elf_kind(file) != ELF_K_ELF)
 		goto end; /* No error message, this might cause log fill */
 
-
 	if (elf_getshdrstrndx(file, &shstrndx) != 0) {
 		OT_LOG(LOG_ERR, "elf getshdrstrndx : %s", elf_errmsg(elf_errno()));
 		goto end;

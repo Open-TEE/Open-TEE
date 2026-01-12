@@ -77,7 +77,4 @@ int wrap_epoll_wait(struct epoll_event *events, int max_events)
 	return epoll_wait(epollfd, events, max_events, -1);
 }
 
-void cleanup_epoll()
-{
-	close(epollfd);
-}
+void cleanup_epoll() { close(epollfd); }

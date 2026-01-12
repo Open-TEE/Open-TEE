@@ -153,7 +153,6 @@ struct com_msg_open_session {
 	uint32_t return_origin;
 } __attribute__((aligned));
 
-
 /**
  * !brief
  * container for data to be passed as part of the mgr_invoke command
@@ -262,7 +261,7 @@ struct com_msg_ta_rem_from_dir {
  * \brief The com_msg_request_cancellation struct
  * Requestion operation cancellation. Message is send by CA
  */
-struct com_msg_request_cancellation  {
+struct com_msg_request_cancellation {
 	struct com_msg_hdr msg_hdr;
 	uint64_t operation_id;
 } __attribute__((aligned));
@@ -302,7 +301,7 @@ struct com_msg_manager_termination {
 
 /*
  * Function for receiving and  sending messages
-*/
+ */
 
 /*!
  * \brief send_fd

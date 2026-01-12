@@ -39,10 +39,7 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 	return initialize_apps();
 }
 
-void TA_EXPORT TA_DestroyEntryPoint(void)
-{
-
-}
+void TA_EXPORT TA_DestroyEntryPoint(void) {}
 
 TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes, TEE_Param params[4],
 					      void **sessionContext)
@@ -130,7 +127,7 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t c
 	case TEE_GENERATE_RANDOM:
 		ret = crypto_generate_random(app, paramTypes, params);
 		goto out;
-        case TEE_GET_ATTR_VALUE:
+	case TEE_GET_ATTR_VALUE:
 		ret = object_get_attr_value(app, paramTypes, params);
 		goto out;
 	case TEE_FIND_OBJECTS_INIT:

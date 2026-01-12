@@ -199,8 +199,7 @@ CK_RV application_set_logged_in(struct application *app, CK_USER_TYPE user_type)
 	for (i = 0; i < MAX_SESSIONS; i++) {
 		if (app->sessions[i].is_initialized == true) {
 			app->sessions[i].sessionInfo.state =
-					calculate_state(user_type,
-							app->sessions[i].sessionInfo.flags);
+			    calculate_state(user_type, app->sessions[i].sessionInfo.flags);
 		}
 	}
 
@@ -224,8 +223,7 @@ void application_set_logout(struct application *app)
 	}
 }
 
-CK_RV is_session_logged_in(struct application *app,
-			   uint32_t session_id)
+CK_RV is_session_logged_in(struct application *app, uint32_t session_id)
 {
 	struct pkcs11_session *session;
 	CK_RV ck_rv;

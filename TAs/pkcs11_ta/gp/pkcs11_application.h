@@ -66,8 +66,7 @@ void delete_application(struct application *old_app);
  * \param session The new session that is connected to the application
  * \return 0 on success
  */
-CK_RV create_session_handle(struct application *app,
-			    CK_FLAGS flags,
+CK_RV create_session_handle(struct application *app, CK_FLAGS flags,
 			    struct pkcs11_session **session);
 
 /*!
@@ -78,8 +77,7 @@ CK_RV create_session_handle(struct application *app,
  * \param session a pointer to the session if it exists
  * \return 0 on success
  */
-CK_RV app_get_session(struct application *app,
-		      uint32_t session_id,
+CK_RV app_get_session(struct application *app, uint32_t session_id,
 		      struct pkcs11_session **session);
 
 /*!
@@ -122,7 +120,6 @@ void application_set_logout(struct application *app);
  * \param session_id id of queried session
  * \return CKR_OK in case of logged in. CKR_USER_NOT_LOGGED_IN if not logged in.
  */
-CK_RV is_session_logged_in(struct application *app,
-			   uint32_t session_id);
+CK_RV is_session_logged_in(struct application *app, uint32_t session_id);
 
 #endif // __PKCS11_APPLICATION_H__

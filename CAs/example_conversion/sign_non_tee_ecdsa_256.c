@@ -24,7 +24,7 @@
 #include <mbedtls/ecdsa.h>
 #include <mbedtls/bignum.h>
 
-//Note: Please readme
+// Note: Please readme
 
 void handle_mbedtls_error(int mbedtls_errno)
 {
@@ -46,43 +46,45 @@ int main()
 	size_t sig_len;
 	int rv;
 	FILE *f;
-	
+
 	memset(hash, 0x23, 32);
 	memset(sig, 0, MBEDTLS_ECDSA_MAX_LEN);
-	
+
 	// Initialize crypto lib
 	mbedtls_ctr_drbg_init(&mbedtls_ctr_drbg);
 	mbedtls_entropy_init(&mbedtls_entropy);
-	
-	if ((rv = mbedtls_ctr_drbg_seed(&mbedtls_ctr_drbg, mbedtls_entropy_func,
-				       &mbedtls_entropy,
+
+	if ((rv = mbedtls_ctr_drbg_seed(&mbedtls_ctr_drbg, mbedtls_entropy_func, &mbedtls_entropy,
 					(const unsigned char *)pers, strlen(pers))) != 0) {
 		handle_mbedtls_error(rv);
 		goto err_1;
 	}
-	
-	//Initialize crypto operation
+
+	// Initialize crypto operation
 	mbedtls_ecdsa_init(&ctx_sign);
-	
-	//Create key
-	if ((rv = mbedtls_ecdsa_genkey(&ctx_sign, MBEDTLS_ECP_DP_SECP256R1,
-				      mbedtls_ctr_drbg_random, &mbedtls_ctr_drbg)) != 0) {
+
+	// Create key
+	if ((rv = mbedtls_ecdsa_genkey(&ctx_sign, MBEDTLS_ECP_DP_SECP256R1, mbedtls_ctr_drbg_random,
+				       &mbedtls_ctr_drbg)) != 0) {
 		handle_mbedtls_error(rv);
 		goto err_2;
 	}
 
-	//Save key to disk
-	f = fopen("ecdsa-key", "w+" );
+	// Save key to disk
+	f = fopen("ecdsa-key", "w+");
 	if (f) {
-		if ((rv = mbedtls_mpi_write_file("Qx: ", &ctx_sign.private_Q.private_X, 16, f)) != 0) {
+		if ((rv = mbedtls_mpi_write_file("Qx: ", &ctx_sign.private_Q.private_X, 16, f)) !=
+		    0) {
 			handle_mbedtls_error(rv);
 			goto err_3;
 		}
-		if ((rv = mbedtls_mpi_write_file("Qy: ", &ctx_sign.private_Q.private_Y, 16, f)) != 0) {
+		if ((rv = mbedtls_mpi_write_file("Qy: ", &ctx_sign.private_Q.private_Y, 16, f)) !=
+		    0) {
 			handle_mbedtls_error(rv);
 			goto err_3;
 		}
-		if ((rv = mbedtls_mpi_write_file("Qz: ", &ctx_sign.private_Q.private_Z, 16, f)) != 0) {
+		if ((rv = mbedtls_mpi_write_file("Qz: ", &ctx_sign.private_Q.private_Z, 16, f)) !=
+		    0) {
 			handle_mbedtls_error(rv);
 			goto err_3;
 		}
@@ -95,19 +97,18 @@ int main()
 	}
 
 	// Sign hash
-	if((rv = mbedtls_ecdsa_write_signature(&ctx_sign, MBEDTLS_MD_SHA256,
-					       hash, 32,
-					       sig, MBEDTLS_ECDSA_MAX_LEN, &sig_len,
-					       mbedtls_ctr_drbg_random, &mbedtls_ctr_drbg)) != 0) {
+	if ((rv = mbedtls_ecdsa_write_signature(&ctx_sign, MBEDTLS_MD_SHA256, hash, 32, sig,
+						MBEDTLS_ECDSA_MAX_LEN, &sig_len,
+						mbedtls_ctr_drbg_random, &mbedtls_ctr_drbg)) != 0) {
 		handle_mbedtls_error(rv);
 		goto err_2;
 	}
-	
- err_3:
-	fclose(f); //skipping error check
- err_2:
+
+err_3:
+	fclose(f); // skipping error check
+err_2:
 	mbedtls_ecdsa_free(&ctx_sign);
- err_1:	
+err_1:
 	mbedtls_ctr_drbg_free(&mbedtls_ctr_drbg);
 	mbedtls_entropy_free(&mbedtls_entropy);
 

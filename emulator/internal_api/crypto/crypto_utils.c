@@ -29,8 +29,7 @@
 // Value not used in GP specs
 static uint32_t not_valid_ecc_key_size = 4345623455;
 
-static int key_usage_allow_operation(uint32_t obj_usage,
-				     uint32_t operation_mode,
+static int key_usage_allow_operation(uint32_t obj_usage, uint32_t operation_mode,
 				     uint32_t algorithm)
 {
 	/* RSA no padding is a special case */
@@ -92,12 +91,11 @@ static int key_usage_allow_operation(uint32_t obj_usage,
 	return 1;
 }
 
-static int valid_key_type_for_operation_algorithm(uint32_t key_type,
-						  uint32_t operation_algorithm)
+static int valid_key_type_for_operation_algorithm(uint32_t key_type, uint32_t operation_algorithm)
 {
 	// Note: All algorithms. Missing optional elliptic curve algorithms
 	// TODO: Add elliptic stuff
-	
+
 	switch (key_type) {
 	case TEE_TYPE_GENERIC_SECRET:
 		return 0;
@@ -195,13 +193,13 @@ static int valid_key_type_for_operation_algorithm(uint32_t key_type,
 		if (operation_algorithm == TEE_ALG_DH_DERIVE_SHARED_SECRET)
 			return 0;
 		return 1;
-		
+
 	case TEE_TYPE_ECDH_KEYPAIR:
 	case TEE_TYPE_ECDH_PUBLIC_KEY:
 		if (operation_algorithm == TEE_ALG_ECDH_DERIVE_SHARED_SECRET)
 			return 0;
 		return 1;
-		
+
 	case TEE_TYPE_ECDSA_KEYPAIR:
 	case TEE_TYPE_ECDSA_PUBLIC_KEY:
 		switch (operation_algorithm) {
@@ -214,7 +212,7 @@ static int valid_key_type_for_operation_algorithm(uint32_t key_type,
 		default:
 			return 1;
 		}
-		
+
 	default:
 		return 1;
 	}
@@ -231,7 +229,7 @@ static int object_type_compatible_to_op(uint32_t obj_type, uint32_t operation_mo
 
 	if (obj_type == TEE_TYPE_ECDSA_PUBLIC_KEY && operation_mode != TEE_MODE_VERIFY)
 		return false;
-	
+
 	return true;
 }
 
@@ -248,8 +246,6 @@ uint32_t valid_ecc_curve(TEE_Attribute *curve_attr)
 	return valid_ecc_curve_and_keysize(curve_attr, not_valid_ecc_key_size);
 }
 
-
-
 uint32_t valid_ecc_curve_and_keysize(TEE_Attribute *curve_attr, uint32_t key_size)
 {
 	switch (curve_attr->content.value.a) {
@@ -257,7 +253,7 @@ uint32_t valid_ecc_curve_and_keysize(TEE_Attribute *curve_attr, uint32_t key_siz
 		if (key_size == not_valid_ecc_key_size || 192 == key_size)
 			return 0;
 		return 1;
-		
+
 	case TEE_ECC_CURVE_NIST_P224:
 		if (key_size == not_valid_ecc_key_size || 224 == key_size)
 			return 0;
@@ -266,17 +262,17 @@ uint32_t valid_ecc_curve_and_keysize(TEE_Attribute *curve_attr, uint32_t key_siz
 		if (key_size == not_valid_ecc_key_size || 256 == key_size)
 			return 0;
 		return 1;
-		
+
 	case TEE_ECC_CURVE_NIST_P384:
 		if (key_size == not_valid_ecc_key_size || 384 == key_size)
 			return 0;
 		return 1;
-		
+
 	case TEE_ECC_CURVE_NIST_P521:
 		if (key_size == not_valid_ecc_key_size || 521 == key_size)
 			return 0;
 		return 1;
-		
+
 	default:
 		OT_LOG_ERR("ECC curve is not supported [%u] "
 			   "(NOTE: expected curve in \"a\"-value)",
@@ -302,7 +298,7 @@ size_t get_alg_hash_lenght(uint32_t algorithm)
 	case TEE_ALG_SHA224:
 	case TEE_ALG_HMAC_SHA224:
 	case TEE_ALG_RSASSA_PKCS1_V1_5_SHA224:
-	case TEE_ALG_ECDSA_SHA224:		
+	case TEE_ALG_ECDSA_SHA224:
 		return SHA224_SIZE;
 
 	case TEE_ALG_SHA256:
@@ -413,7 +409,7 @@ bool supported_algorithms(uint32_t algorithm, uint32_t key_size, uint32_t *key_c
 {
 	// Currently not need
 	key_size = key_size;
-	
+
 	switch (algorithm) {
 
 	// AES: Encrypt and decrypt
@@ -432,7 +428,7 @@ bool supported_algorithms(uint32_t algorithm, uint32_t key_size, uint32_t *key_c
 	case TEE_ALG_SHA512:
 		*key_count = 0;
 		return true;
-		
+
 		/* HMAC */
 	case TEE_ALG_HMAC_MD5:
 	case TEE_ALG_HMAC_SHA1:
@@ -474,7 +470,7 @@ bool supported_algorithms(uint32_t algorithm, uint32_t key_size, uint32_t *key_c
 	case TEE_ALG_ECDH_DERIVE_SHARED_SECRET:
 		*key_count = 1;
 		return true;
-		
+
 	default:
 		return false;
 	}
@@ -491,8 +487,7 @@ bool valid_key_size_for_algorithm(uint32_t algorithm, uint32_t key)
 		if (key == 128 || key == 192 || key == 256)
 			return true;
 		return false;
-		
-		
+
 	case TEE_ALG_MD5:
 	case TEE_ALG_SHA1:
 	case TEE_ALG_SHA224:
@@ -553,9 +548,7 @@ bool valid_key_size_for_algorithm(uint32_t algorithm, uint32_t key)
 	case TEE_ALG_ECDSA_SHA256:
 	case TEE_ALG_ECDSA_SHA384:
 	case TEE_ALG_ECDSA_SHA512:
-		if (key == 192 || key == 224 ||
-		    key == 256 || key == 384 ||
-		    key == 521)
+		if (key == 192 || key == 224 || key == 256 || key == 384 || key == 521)
 			return true;
 		return false;
 
@@ -719,8 +712,7 @@ int valid_mode_and_algorithm(uint32_t algorithm, uint32_t mode)
 	}
 }
 
-TEE_Result valid_key_and_operation(TEE_ObjectHandle key,
-				   TEE_OperationHandle operation)
+TEE_Result valid_key_and_operation(TEE_ObjectHandle key, TEE_OperationHandle operation)
 {
 	if (!(key->objectInfo.handleFlags & TEE_HANDLE_FLAG_INITIALIZED)) {
 		OT_LOG_ERR("OperationKeyError: Key object is not initialized");
@@ -747,33 +739,38 @@ TEE_Result valid_key_and_operation(TEE_ObjectHandle key,
 	}
 
 	if (key->objectInfo.maxObjectSize > operation->operation_info.maxKeySize) {
-		OT_LOG_ERR("OperationKeyError: Object key maxKeySize too big (key[%u]; operation[%u]",
-			   key->objectInfo.maxObjectSize, operation->operation_info.maxKeySize);
+		OT_LOG_ERR(
+		    "OperationKeyError: Object key maxKeySize too big (key[%u]; operation[%u]",
+		    key->objectInfo.maxObjectSize, operation->operation_info.maxKeySize);
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
 	if (!object_type_compatible_to_op(key->objectInfo.objectType,
 					  operation->operation_info.mode)) {
-		OT_LOG_ERR("OperationKeyError: Key object type conflicts with operation mode (keyObjectType[%u]; opeationMode[%u])",
+		OT_LOG_ERR("OperationKeyError: Key object type conflicts with operation mode "
+			   "(keyObjectType[%u]; opeationMode[%u])",
 			   key->objectInfo.objectType, operation->operation_info.mode);
 		return TEE_ERROR_BAD_STATE;
 	}
 
 	if (valid_key_type_for_operation_algorithm(key->objectInfo.objectType,
 						   operation->operation_info.algorithm)) {
-		OT_LOG_ERR("OperationKeyError: Key object type conflict with operation algorithm (keyObjectType[%u]; opeationAlg[%u])",
+		OT_LOG_ERR("OperationKeyError: Key object type conflict with operation algorithm "
+			   "(keyObjectType[%u]; opeationAlg[%u])",
 			   key->objectInfo.objectType, operation->operation_info.algorithm);
 		return TEE_ERROR_BAD_STATE;
 	}
 
-	if (key_usage_allow_operation(key->objectInfo.objectUsage,
-				      operation->operation_info.mode,
+	if (key_usage_allow_operation(key->objectInfo.objectUsage, operation->operation_info.mode,
 				      operation->operation_info.algorithm)) {
-		OT_LOG_ERR("OperationKeyError: Key object usage conflict with operation mode or/and operation algorithm (keyObjectUsage[%u]; opeationMode[%u]; opeationAlg[%u])",
-			   key->objectInfo.objectUsage, operation->operation_info.mode, operation->operation_info.algorithm);
+		OT_LOG_ERR(
+		    "OperationKeyError: Key object usage conflict with operation mode or/and "
+		    "operation algorithm (keyObjectUsage[%u]; opeationMode[%u]; opeationAlg[%u])",
+		    key->objectInfo.objectUsage, operation->operation_info.mode,
+		    operation->operation_info.algorithm);
 		return TEE_ERROR_BAD_STATE;
 	}
-	
+
 	return TEE_SUCCESS;
 }
 

@@ -76,7 +76,7 @@ TEE_Result TEE_GetTAPersistentTime(TEE_Time *time)
 	/* check if the current time is less than the mark time. This would indicate that
 	 * the clock has been reset, so we can no longer trust it as a source thus we must request a
 	 * reset */
-	if (timercmp(&tv, &mark_time, < ))
+	if (timercmp(&tv, &mark_time, <))
 		return TEE_ERROR_TIME_NEEDS_RESET;
 
 	/* Calculate the delta between now and when the persistent time was set */
@@ -110,7 +110,4 @@ TEE_Result TEE_SetTAPersistentTime(TEE_Time *time)
 	return TEE_SUCCESS;
 }
 
-void TEE_GetREETime(TEE_Time *time)
-{
-	TEE_GetSystemTime(time);
-}
+void TEE_GetREETime(TEE_Time *time) { TEE_GetSystemTime(time); }

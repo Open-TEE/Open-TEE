@@ -29,9 +29,7 @@
 /* !brief
  * Allocates path to object
  */
-TEE_Result alloc_storage_path(void *objectID,
-			      size_t objectIDLen,
-			      char **name_with_dir_path,
+TEE_Result alloc_storage_path(void *objectID, size_t objectIDLen, char **name_with_dir_path,
 			      char **return_dir_path);
 
 /* !brief
@@ -51,7 +49,6 @@ uint32_t ext_open_storage_blob(char *objectID, size_t objectIDlen, bool create_i
  */
 void ext_close_storage_blob(uint32_t storage_blob_id);
 
-
 /* !brief
  * closes and deletes valid storage id,
  * should only be called once for object
@@ -63,15 +60,11 @@ uint32_t ext_delete_storage_blob(uint32_t storage_blob_id, void *objectID, size_
  */
 size_t ext_get_storage_blob_size(uint32_t storage_blob_id);
 
-
 /* ! brief atomic operation to change object id of storage blob
  *  storage id remains same for the new object id
  */
-bool ext_change_object_ID(uint32_t storage_blob_id,
-			  void *objectID,
-			  size_t objectIDLen,
-			  void *new_objectID,
-			  size_t new_objectIDLen);
+bool ext_change_object_ID(uint32_t storage_blob_id, void *objectID, size_t objectIDLen,
+			  void *new_objectID, size_t new_objectIDLen);
 
 /* !brief reads datalen amount of bytes from offset of storage_blob return bytes read
  *

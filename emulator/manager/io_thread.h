@@ -82,7 +82,6 @@ int check_if_valid_proc_in_msg(struct manager_msg *msg);
  */
 void add_man_msg_inbound_queue_and_notify(struct manager_msg *msg);
 
-
 /*!
  * \brief clear_man_msg_from_inbound_outbound_queues
  * Removes and clears manager_msg structs from inbould and outbound queues matching the given proc

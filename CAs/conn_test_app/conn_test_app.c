@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 /*********************************************************************
  *
  * START: CONFIGURE SECTION
@@ -35,8 +34,10 @@
 static uint32_t full_treatment_loop_count = 5;
 #define PRI(str, ...) printf(str, ##__VA_ARGS__);
 #define PRIn(str, ...) printf(str "\n", ##__VA_ARGS__);
-static const TEEC_UUID uuid = {0x12345678, 0x8765, 0x4321, {'T','A','C','O','N','N','T','E'}};
-static const TEEC_UUID panic_crash_ta_UUID = {0x12345678, 0x8765, 0x4321, {'P','A','N','I','C','R','A','S'}};
+static const TEEC_UUID uuid = {
+    0x12345678, 0x8765, 0x4321, {'T', 'A', 'C', 'O', 'N', 'N', 'T', 'E'}};
+static const TEEC_UUID panic_crash_ta_UUID = {
+    0x12345678, 0x8765, 0x4321, {'P', 'A', 'N', 'I', 'C', 'R', 'A', 'S'}};
 /* Dirty, but cleanest and fastest for now */
 static uint8_t in_vector[] = IN_KNOWN_VECTOR;
 static uint8_t out_vector[] = OUT_KNOWN_VECTOR;
@@ -49,9 +50,7 @@ static uint8_t rand_buffer[RAND_BUFFER_SIZE];
  *
  *********************************************************************/
 
-static void reverse_buffer(uint8_t *buffer,
-			   uint32_t buffer_length,
-			   size_t *reversed_size)
+static void reverse_buffer(uint8_t *buffer, uint32_t buffer_length, size_t *reversed_size)
 {
 	uint32_t i, j;
 	uint8_t tmp;
@@ -69,7 +68,7 @@ static void reverse_buffer(uint8_t *buffer,
 static int seed_random()
 {
 	uint32_t seed;
-	FILE* urandom;
+	FILE *urandom;
 
 	urandom = fopen("/dev/urandom", "r");
 	if (urandom == NULL)
@@ -83,8 +82,7 @@ static int seed_random()
 	return 0;
 }
 
-static void fill_buffer_with_random(uint8_t *buffer,
-				    uint32_t buffer_length)
+static void fill_buffer_with_random(uint8_t *buffer, uint32_t buffer_length)
 {
 	uint32_t i;
 
@@ -92,16 +90,15 @@ static void fill_buffer_with_random(uint8_t *buffer,
 		buffer[i] = rand();
 }
 
-static void fill_operation_params(TEEC_Operation *operation,
-				  TEEC_SharedMemory *reg_inout_mem,
+static void fill_operation_params(TEEC_Operation *operation, TEEC_SharedMemory *reg_inout_mem,
 				  TEEC_SharedMemory *alloc_inout_mem)
 {
-	operation->paramTypes =	TEEC_PARAM_TYPES(TEEC_VALUE_INOUT, TEEC_MEMREF_WHOLE,
+	operation->paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INOUT, TEEC_MEMREF_WHOLE,
 						 TEEC_MEMREF_WHOLE, TEEC_MEMREF_TEMP_INOUT);
 
 	/* Value parameter */
-	operation->params[0].value.a  = IN_VALUE_A;
-	operation->params[0].value.b  = IN_VALUE_B;
+	operation->params[0].value.a = IN_VALUE_A;
+	operation->params[0].value.b = IN_VALUE_B;
 
 	/* Register memory */
 	reg_inout_mem->size = SIZE_OF_VEC(in_vector);
@@ -145,10 +142,10 @@ static int check_operation_params(TEEC_Operation *operation)
 			return 1;
 		}
 
-		if (memcmp(operation->params[i].memref.parent->buffer,
-			   out_vector, SIZE_OF_VEC(out_vector))) {
-		    PRIn("Parameter at %u is not expected (wrong data)", i);
-		    return 1;
+		if (memcmp(operation->params[i].memref.parent->buffer, out_vector,
+			   SIZE_OF_VEC(out_vector))) {
+			PRIn("Parameter at %u is not expected (wrong data)", i);
+			return 1;
 		}
 	}
 
@@ -159,20 +156,17 @@ static int check_operation_params(TEEC_Operation *operation)
 
 	reverse_buffer(rand_buffer, RAND_BUFFER_SIZE, NULL);
 
-	if (memcmp(operation->params[3].tmpref.buffer,
-		   rand_buffer, REVERSED_SIZE(RAND_BUFFER_SIZE))) {
-	    PRIn("Parameter at 3 is not expected (wrong data)");
-	    return 1;
+	if (memcmp(operation->params[3].tmpref.buffer, rand_buffer,
+		   REVERSED_SIZE(RAND_BUFFER_SIZE))) {
+		PRIn("Parameter at 3 is not expected (wrong data)");
+		return 1;
 	}
 
 	return 0;
 }
 
-static int reg_shared_memory(TEEC_Context *context,
-			     TEEC_SharedMemory *reg_shm,
-			     void *buffer,
-			     uint32_t buffer_size,
-			     uint32_t flags)
+static int reg_shared_memory(TEEC_Context *context, TEEC_SharedMemory *reg_shm, void *buffer,
+			     uint32_t buffer_size, uint32_t flags)
 {
 	TEEC_Result ret;
 
@@ -190,11 +184,8 @@ static int reg_shared_memory(TEEC_Context *context,
 	return 0;
 }
 
-
-static int alloc_shared_memory(TEEC_Context *context,
-			       TEEC_SharedMemory *alloc_shm,
-			       uint32_t buffer_size,
-			       uint32_t flags)
+static int alloc_shared_memory(TEEC_Context *context, TEEC_SharedMemory *alloc_shm,
+			       uint32_t buffer_size, uint32_t flags)
 {
 	TEEC_Result ret;
 
@@ -211,10 +202,8 @@ static int alloc_shared_memory(TEEC_Context *context,
 	return 0;
 }
 
-static int call_invoke_cmd(TEEC_Session *session,
-			   TEEC_SharedMemory *reg_shm,
-			   TEEC_SharedMemory *alloc_shm,
-			   uint32_t command_id)
+static int call_invoke_cmd(TEEC_Session *session, TEEC_SharedMemory *reg_shm,
+			   TEEC_SharedMemory *alloc_shm, uint32_t command_id)
 {
 	TEEC_Operation operation = {0};
 	uint32_t return_origin;
@@ -272,12 +261,11 @@ static int full_treatment_test()
 				TEEC_MEM_INPUT | TEEC_MEM_OUTPUT))
 		goto end_3;
 
-
 	/* Open session */
 	PRI("Openning session: ");
 	fill_operation_params(&operation, &reg_inout_mem, &alloc_inout_mem);
-	ret = TEEC_OpenSession(&context, &session, &uuid, connection_method,
-			       NULL, &operation, &return_origin);
+	ret = TEEC_OpenSession(&context, &session, &uuid, connection_method, NULL, &operation,
+			       &return_origin);
 	if (ret != TEEC_SUCCESS) {
 		PRIn("TEEC_OpenSession failed: 0x%x", ret);
 		goto end_4;
@@ -326,9 +314,7 @@ end_1:
 	return fn_ret;
 }
 
-static int do_crash_panic_test(uint32_t open_cmd,
-			       TEEC_Result exp_open_ret,
-			       uint32_t invoke_cmd,
+static int do_crash_panic_test(uint32_t open_cmd, TEEC_Result exp_open_ret, uint32_t invoke_cmd,
 			       TEEC_Result exp_inv_ret)
 {
 	TEEC_Context context;
@@ -339,30 +325,30 @@ static int do_crash_panic_test(uint32_t open_cmd,
 	uint32_t connection_method = TEEC_LOGIN_PUBLIC;
 	uint32_t fn_ret = 1; /* Default is error return */
 
-	//PRIn("Command: open_cmd 0x%x : exp_open_ret 0x%x ; invoke_cmd 0x%x : exp_inv_ret 0x%x\n", open_cmd, exp_open_ret, invoke_cmd, exp_inv_ret);
-	
+	// PRIn("Command: open_cmd 0x%x : exp_open_ret 0x%x ; invoke_cmd 0x%x : exp_inv_ret 0x%x\n",
+	// open_cmd, exp_open_ret, invoke_cmd, exp_inv_ret);
+
 	ret = TEEC_InitializeContext(NULL, &context);
 	if (ret != TEEC_SUCCESS) {
 		PRI("TEEC_InitializeContext failed: 0x%x", ret);
 		goto end_1;
 	}
-	
-	operation.paramTypes =	TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_NONE,
-						 TEEC_NONE, TEEC_NONE);
+
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_NONE, TEEC_NONE, TEEC_NONE);
 	operation.params[0].value.a = open_cmd;
-	ret = TEEC_OpenSession(&context, &session, &panic_crash_ta_UUID, connection_method,
-			       NULL, &operation, &return_origin);
+	ret = TEEC_OpenSession(&context, &session, &panic_crash_ta_UUID, connection_method, NULL,
+			       &operation, &return_origin);
 	if (ret != exp_open_ret) {
 		PRIn("TEEC_OpenSession failed: 0x%x : expected 0x%x", ret, exp_open_ret);
 		goto end_2;
 	}
-	
+
 	ret = TEEC_InvokeCommand(&session, invoke_cmd, NULL, &return_origin);
 	if (ret != exp_inv_ret) {
 		PRIn("TEEC_InvokeCommand failed: 0x%x : expected 0x%x\n", ret, exp_inv_ret);
 		goto end_3;
 	}
-	
+
 	fn_ret = 0; /* Success. If some void function fails, nothing to be done, here */
 end_3:
 	TEEC_CloseSession(&session);
@@ -370,7 +356,9 @@ end_2:
 	TEEC_FinalizeContext(&context);
 end_1:
 	if (fn_ret) {
-		PRIn("Failed command: open_cmd 0x%x : exp_open_ret 0x%x ; invoke_cmd 0x%x : exp_inv_ret 0x%x\n", open_cmd, exp_open_ret, invoke_cmd, exp_inv_ret);
+		PRIn("Failed command: open_cmd 0x%x : exp_open_ret 0x%x ; invoke_cmd 0x%x : "
+		     "exp_inv_ret 0x%x\n",
+		     open_cmd, exp_open_ret, invoke_cmd, exp_inv_ret);
 	}
 
 	return fn_ret;
@@ -379,10 +367,13 @@ end_1:
 static int crash_panic_test()
 {
 	if (do_crash_panic_test(CMD_NO_CRASH, TEEC_SUCCESS, CMD_NO_CRASH, TEEC_SUCCESS) ||
-	    do_crash_panic_test(CMD_PANIC, TEEC_ERROR_TARGET_DEAD, CMD_NO_CRASH, TEEC_ERROR_BAD_PARAMETERS) ||
-	    do_crash_panic_test(CMD_SEG_FAULT, TEEC_ERROR_TARGET_DEAD, CMD_NO_CRASH, TEEC_ERROR_BAD_PARAMETERS) ||
+	    do_crash_panic_test(CMD_PANIC, TEEC_ERROR_TARGET_DEAD, CMD_NO_CRASH,
+				TEEC_ERROR_BAD_PARAMETERS) ||
+	    do_crash_panic_test(CMD_SEG_FAULT, TEEC_ERROR_TARGET_DEAD, CMD_NO_CRASH,
+				TEEC_ERROR_BAD_PARAMETERS) ||
 	    do_crash_panic_test(CMD_NO_CRASH, TEEC_SUCCESS, CMD_PANIC, TEEC_ERROR_TARGET_DEAD) ||
-	    do_crash_panic_test(CMD_NO_CRASH, TEEC_SUCCESS, CMD_SEG_FAULT, TEEC_ERROR_TARGET_DEAD)) {
+	    do_crash_panic_test(CMD_NO_CRASH, TEEC_SUCCESS, CMD_SEG_FAULT,
+				TEEC_ERROR_TARGET_DEAD)) {
 		PRIn("Basic crash/panic test(s) have failed!");
 		return 1;
 	} else {
@@ -400,7 +391,7 @@ int main()
 		PRI("Error: Can't seed random");
 		goto err;
 	}
-	
+
 	for (i = 0; i < full_treatment_loop_count; i++) {
 		if (full_treatment_test())
 			goto err;
@@ -411,7 +402,7 @@ int main()
 			goto err;
 		PRIn("OK\n");
 	}
-	
+
 	PRIn("END: conn test app\n");
 
 	PRIn("\n");

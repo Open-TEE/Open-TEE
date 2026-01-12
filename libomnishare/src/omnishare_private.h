@@ -24,10 +24,9 @@
  * Structure to hold all of the key hirarachy needed to protect the keys
  */
 struct key_chain_data {
-	uint32_t key_count;	/*!< The number of keys in the chain */
-	uint32_t key_len;	/*!< The size of each key */
-	uint8_t keys[];		/*!< The keys themselves */
+	uint32_t key_count; /*!< The number of keys in the chain */
+	uint32_t key_len;   /*!< The size of each key */
+	uint8_t keys[];	    /*!< The keys themselves */
 };
 
 #endif // OMNISHARE_PRIVATE_H
-

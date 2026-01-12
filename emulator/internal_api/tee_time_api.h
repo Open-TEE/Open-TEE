@@ -22,8 +22,8 @@
 #include "tee_data_types.h"
 
 /*!
-  * \brief Specify a wait time that will only be interupted by seting a cancelation flag.
-  */
+ * \brief Specify a wait time that will only be interupted by seting a cancelation flag.
+ */
 #define TEE_TIMEOUT_INFINITE 0xFFFFFFFF
 
 typedef struct {

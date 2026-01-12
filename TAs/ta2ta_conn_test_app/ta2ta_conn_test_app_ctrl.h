@@ -19,9 +19,7 @@
 
 #include <stdint.h>
 
-const TEEC_UUID ta2ta_uuid = {
-	0x12345678, 0x8765, 0x4321, { 'T', 'A', '2', 'T', 'A', '0', '0', '0'}
-};
+const TEEC_UUID ta2ta_uuid = {0x12345678, 0x8765, 0x4321, {'T', 'A', '2', 'T', 'A', '0', '0', '0'}};
 
 #define CMD_HAS_CREATE_ENTRY_CALLED_ONCE 6532
 #define CMD_INVOKE_PARAMS_TEST 6533

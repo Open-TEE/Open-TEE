@@ -25,7 +25,6 @@
 
 extern TEE_UUID current_TA_uuid;
 
-
 struct ss_object_meta_info {
 	char obj_id[TEE_OBJECT_ID_MAX_LEN + 1];
 	TEE_ObjectInfo info;
@@ -37,40 +36,29 @@ struct ss_object_meta_info {
 };
 
 /* object handling */
-TEE_Result MGR_TEE_OpenPersistentObject(uint32_t storageID,
-					void *objectID,
-					size_t objectIDLen,
-					uint32_t flags,
-					void **attrs, uint32_t *attrSize,
+TEE_Result MGR_TEE_OpenPersistentObject(uint32_t storageID, void *objectID, size_t objectIDLen,
+					uint32_t flags, void **attrs, uint32_t *attrSize,
 					struct persistant_object *per_obj,
 					TEE_ObjectInfo *objectInfo);
 
-
 void MGR_TEE_CloseObject(void *objectID, uint32_t objectIDLen);
 
-TEE_Result MGR_TEE_CreatePersistentObject(uint32_t storageID,
-					  void *objectID,
-					  size_t objectIDLen,
-					  uint32_t flags,
-					  void *attrs,
-					  uint32_t attrSize,
-					  uint8_t persistent_type,
-					  TEE_ObjectInfo *info,
-					  struct persistant_object *per_obj,
-					  void *initialData,
+TEE_Result MGR_TEE_CreatePersistentObject(uint32_t storageID, void *objectID, size_t objectIDLen,
+					  uint32_t flags, void *attrs, uint32_t attrSize,
+					  uint8_t persistent_type, TEE_ObjectInfo *info,
+					  struct persistant_object *per_obj, void *initialData,
 					  size_t initialDataLen);
 
-
-TEE_Result MGR_TEE_RenamePersistentObject(void *objectID, size_t objectIDLen,
-					  void *newObjectID, size_t newObjectIDLen);
+TEE_Result MGR_TEE_RenamePersistentObject(void *objectID, size_t objectIDLen, void *newObjectID,
+					  size_t newObjectIDLen);
 
 TEE_Result MGR_TEE_CloseAndDeletePersistentObject(void *objectID, size_t objectIDLen);
 
 /* object data handling */
-TEE_Result MGR_TEE_ReadObjectData(void *objectID, size_t objectIDLen,
-				  void *buffer, size_t size,
+TEE_Result MGR_TEE_ReadObjectData(void *objectID, size_t objectIDLen, void *buffer, size_t size,
 				  uint32_t *count, size_t *pos);
-TEE_Result MGR_TEE_WriteObjectData(void *objectID, size_t objectIDLen, void *buffer, size_t size, size_t *pos);
+TEE_Result MGR_TEE_WriteObjectData(void *objectID, size_t objectIDLen, void *buffer, size_t size,
+				   size_t *pos);
 TEE_Result MGR_TEE_TruncateObjectData(void *objectID, size_t objectIDLen, size_t size, size_t *pos);
 TEE_Result MGR_TEE_SeekObjectData(TEE_ObjectHandle object, int32_t offset, TEE_Whence whence);
 

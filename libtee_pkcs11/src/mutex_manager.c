@@ -25,9 +25,7 @@ static CK_DESTROYMUTEX g_destroy;
 static CK_LOCKMUTEX g_lock;
 static CK_UNLOCKMUTEX g_unlock;
 
-void init_mutex_callbacks(CK_CREATEMUTEX create,
-			  CK_DESTROYMUTEX destroy,
-			  CK_LOCKMUTEX lock,
+void init_mutex_callbacks(CK_CREATEMUTEX create, CK_DESTROYMUTEX destroy, CK_LOCKMUTEX lock,
 			  CK_UNLOCKMUTEX unlock)
 {
 	g_create = create;
@@ -75,7 +73,7 @@ int destroy_mutex(void *mutex)
 		} while (1);
 
 		free(mutex);
-		return  (ret == 0) ? 0 : CKR_GENERAL_ERROR;
+		return (ret == 0) ? 0 : CKR_GENERAL_ERROR;
 	}
 }
 

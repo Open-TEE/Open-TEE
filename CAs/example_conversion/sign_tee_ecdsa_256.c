@@ -34,7 +34,7 @@ int main()
 	TEEC_Result tee_rv;
 	unsigned char hash[32];
 	unsigned char sig[72];
-	
+
 	memset((void *)&in_mem, 0, sizeof(in_mem));
 	memset((void *)&out_mem, 0, sizeof(out_mem));
 	memset((void *)&operation, 0, sizeof(operation));
@@ -46,9 +46,7 @@ int main()
 		goto end_1;
 	}
 
-	tee_rv = TEEC_OpenSession(&context, &session,
-				  &uuid, TEEC_LOGIN_PUBLIC,
-				  NULL, NULL, NULL);
+	tee_rv = TEEC_OpenSession(&context, &session, &uuid, TEEC_LOGIN_PUBLIC, NULL, NULL, NULL);
 	if (tee_rv != TEEC_SUCCESS) {
 		printf("TEEC_OpenSession failed: 0x%x\n", tee_rv);
 		goto end_2;
@@ -74,9 +72,8 @@ int main()
 		goto end_3;
 	}
 
-	
-	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_MEMREF_WHOLE,
-						TEEC_NONE, TEEC_NONE);
+	operation.paramTypes =
+	    TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_MEMREF_WHOLE, TEEC_NONE, TEEC_NONE);
 	operation.params[0].memref.parent = &in_mem;
 	operation.params[1].memref.parent = &out_mem;
 	tee_rv = TEEC_InvokeCommand(&session, SIGN_ECDSA_256_SIGN, &operation, NULL);
@@ -85,8 +82,8 @@ int main()
 		goto end_4;
 	}
 
-	//Signature stored: operation.params[1].memref
-	
+	// Signature stored: operation.params[1].memref
+
 end_4:
 	TEEC_ReleaseSharedMemory(&out_mem);
 

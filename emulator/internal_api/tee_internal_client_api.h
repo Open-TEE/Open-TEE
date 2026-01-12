@@ -20,8 +20,8 @@
 #include "tee_data_types.h"
 
 TEE_Result TEE_OpenTASession(TEE_UUID *destination, uint32_t cancellationRequestTimeout,
-			     uint32_t paramTypes, TEE_Param params[4],
-			     TEE_TASessionHandle *session, uint32_t *returnOrigin);
+			     uint32_t paramTypes, TEE_Param params[4], TEE_TASessionHandle *session,
+			     uint32_t *returnOrigin);
 
 void TEE_CloseTASession(TEE_TASessionHandle session);
 
