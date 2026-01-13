@@ -47,8 +47,9 @@ static uint8_t ecc_qx_p256[] = "\x1c\xcb\xe9\x1c\x07\x5f\xc7\xf4\xf0\x33\xbf\xa2
 			       "\xd3\x56\x5d\xe9\x4b\xbf\xb1\x2f\x3c\x59\xff\x46\xc2\x71\xbf\x83";
 static uint8_t ecc_qy_p256[] = "\xce\x40\x14\xc6\x88\x11\xf9\xa2\x1a\x1f\xdb\x2c\x0e\x61\x13\xe0"
 			       "\x6d\xb7\xca\x93\xb7\x40\x4e\x78\xdc\x7c\xcd\x5c\xa8\x9a\x4c\xa9";
-static uint8_t ecc_s_p256[] = "\x8b\xf7\x78\x19\xca\x05\xa6\xb2\x78\x6c\x76\x26\x2b\xf7\x37\x1c\xef"
-			      "\x97\xb2\x18\xe9\x6f\x17\x5a\x3c\xcd\xda\x2a\xcc\x05\x89\x03";
+static uint8_t ecc_s_p256[] __attribute__((unused)) =
+    "\x8b\xf7\x78\x19\xca\x05\xa6\xb2\x78\x6c\x76\x26\x2b\xf7\x37\x1c\xef"
+    "\x97\xb2\x18\xe9\x6f\x17\x5a\x3c\xcd\xda\x2a\xcc\x05\x89\x03";
 
 static char *ecc_rfc_msg_p256 = "sample";
 static uint8_t ecc_rfc_d_p256[] =
@@ -1188,7 +1189,7 @@ static uint32_t rfc_ecdsa_sign()
 {
 	TEE_Result ret;
 	TEE_ObjectHandle key = NULL;
-	TEE_OperationHandle op_sign = NULL, op_verify = NULL;
+	TEE_OperationHandle op_sign = NULL;
 	uint32_t key_size = 256;
 	uint32_t key_type = TEE_TYPE_ECDSA_KEYPAIR;
 	uint32_t op_alg = TEE_ALG_ECDSA_SHA256;
@@ -2887,13 +2888,11 @@ static uint32_t mac_compare_final()
 	TEE_ObjectHandle key = NULL;
 	TEE_OperationHandle operation = (TEE_OperationHandle)NULL;
 	uint32_t key_type = TEE_TYPE_HMAC_SHA1;
-	uint32_t key_size = SIZE_OF_VEC(hmac_sha1_key) * 8; // x * 8 = converts to bits
 	uint32_t max_key_size = 504;
 	uint32_t alg = TEE_ALG_HMAC_SHA1;
 	uint32_t op_mode = TEE_MODE_MAC;
 	uint32_t fn_ret = 1; /* Initialized error return */
 	TEE_Attribute hmac_key;
-	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META;
 
 	size_t msg_len = SIZE_OF_VEC(hmac_sha1_msg);
 	size_t expect_mac_len = SIZE_OF_VEC(hmac_sha1_mac);

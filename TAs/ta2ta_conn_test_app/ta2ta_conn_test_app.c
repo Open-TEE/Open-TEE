@@ -41,7 +41,8 @@ static TEE_Result has_create_entry_called_once()
 	return TEE_ERROR_GENERIC;
 }
 
-static TEE_Result invoke_params_test(uint32_t paramTypes, TEE_Param params[4])
+static TEE_Result invoke_params_test(uint32_t paramTypes __attribute__((unused)),
+				     TEE_Param params[4])
 {
 	if (TEE_PARAM_TYPE_GET(TEE_PARAM_TYPE_MEMREF_INPUT, 1)) {
 		OT_LOG_ERR("Not expected param type at 1");
@@ -118,8 +119,8 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 
 void TA_EXPORT TA_DestroyEntryPoint(void) { OT_LOG(LOG_INFO, "Calling the Destroy entry point"); }
 
-TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes, TEE_Param params[4],
-					      void **sessionContext)
+TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes __attribute__((unused)),
+					      TEE_Param params[4], void **sessionContext)
 {
 	sessionContext = sessionContext;
 

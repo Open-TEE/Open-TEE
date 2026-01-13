@@ -20,7 +20,7 @@
 #include <string.h>
 
 static CK_FUNCTION_LIST_PTR func_list;
-static char user_pin[8] = "12345678";
+static char user_pin[] = "12345678";
 
 #define SIZE_OF_VEC(vec) (sizeof(vec) - 1)
 
@@ -1534,7 +1534,7 @@ static int initialize_token(CK_SLOT_ID slot_id)
 	CK_SESSION_HANDLE session;
 	CK_TOKEN_INFO token_info;
 	CK_RV ret;
-	char password[8] = "12345678";
+	char password[] = "12345678";
 	char label[] = "TEE_TOKEN1";
 
 	memset(&token_info, 0, sizeof(token_info));

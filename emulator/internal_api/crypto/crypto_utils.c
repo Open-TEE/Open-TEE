@@ -27,7 +27,7 @@
 #include "tee_logging.h"
 
 // Value not used in GP specs
-static uint32_t not_valid_ecc_key_size = 4345623455;
+static uint32_t not_valid_ecc_key_size = 0xFFFFFFFF;
 
 static int key_usage_allow_operation(uint32_t obj_usage, uint32_t operation_mode,
 				     uint32_t algorithm)

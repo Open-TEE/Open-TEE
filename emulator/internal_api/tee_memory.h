@@ -31,9 +31,9 @@ void *TEE_Realloc(void *buffer, uint32_t newSize);
 
 void TEE_Free(void *buffer);
 
-void TEE_MemMove(void *dest, void *src, uint32_t size);
+void TEE_MemMove(void *dest, const void *src, uint32_t size);
 
-int32_t TEE_MemCompare(void *buffer1, void *buffer2, uint32_t size);
+int32_t TEE_MemCompare(const void *buffer1, const void *buffer2, uint32_t size);
 
 void TEE_MemFill(void *buffer, uint32_t x, uint32_t size);
 
