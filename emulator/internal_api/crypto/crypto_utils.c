@@ -539,7 +539,8 @@ bool valid_key_size_for_algorithm(uint32_t algorithm, uint32_t key)
 	case TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA256:
 	case TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA384:
 	case TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA512:
-		if (key >= 256 && key <= 2048)
+		/* mbedtls 3.x requires minimum 1024-bit RSA keys */
+		if (key >= 1024 && key <= 2048)
 			return true;
 		return false;
 

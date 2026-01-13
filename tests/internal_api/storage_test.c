@@ -55,7 +55,7 @@ static uint32_t gen_rsa_key_pair_and_save_read()
 	TEE_Result ret;
 	TEE_ObjectHandle handler = (TEE_ObjectHandle)NULL;
 	TEE_ObjectHandle handler2 = (TEE_ObjectHandle)NULL;
-	size_t key_size = 512;
+	size_t key_size = 1024; /* mbedtls 3.x requires minimum 1024-bit RSA keys */
 	char objID[] = "56c5d1b260704de30fe7af67e5b9327613abebe6172a2b4e949d84b8e561e2fb";
 	size_t objID_len = 64;
 	uint32_t flags =

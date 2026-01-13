@@ -1398,13 +1398,13 @@ static uint32_t RSA_sig_and_ver()
 {
 	TEE_Result ret;
 	TEE_ObjectHandle rsa_keypair = (TEE_ObjectHandle)NULL;
-	size_t key_size = 512;
+	size_t key_size = 1024; /* mbedtls 3.x requires minimum 1024-bit RSA keys */
 	uint32_t rsa_alg = TEE_ALG_RSASSA_PKCS1_V1_5_SHA1;
 	char *dig_msg = "TEST";
 	uint32_t fn_ret = 1; /* Initialized error return */
 
 	size_t dig_len = 20;
-	size_t sig_len = 64;
+	size_t sig_len = 128; /* Adjusted for 1024-bit key */
 
 	void *dig = NULL;
 	void *sig = NULL;
@@ -1605,8 +1605,8 @@ err:
 static uint32_t RSA_keypair_enc_dec()
 {
 	// run the tests for all the algorithms
-	if (RSA_generate_keypair_enc_dec(512, TEE_ALG_RSAES_PKCS1_V1_5, 10, 64, 64) ||
-	    RSA_generate_keypair_enc_dec(512, TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA1, 10, 64, 64) ||
+	if (RSA_generate_keypair_enc_dec(1024, TEE_ALG_RSAES_PKCS1_V1_5, 10, 128, 128) ||
+	    RSA_generate_keypair_enc_dec(1024, TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA1, 10, 128, 128) ||
 	    RSA_generate_keypair_enc_dec(2048, TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA224, 10, 256,
 					 256) ||
 	    RSA_generate_keypair_enc_dec(2048, TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA256, 10, 256,
@@ -1626,12 +1626,12 @@ static uint32_t set_key_and_rm_and_do_crypto()
 	TEE_ObjectHandle rsa_keypair = (TEE_ObjectHandle)NULL;
 	TEE_OperationHandle sign_op = (TEE_OperationHandle)NULL,
 			    verify_op = (TEE_OperationHandle)NULL;
-	size_t key_size = 512;
+	size_t key_size = 1024; /* mbedtls 3.x requires minimum 1024-bit RSA keys */
 	uint32_t rsa_alg = TEE_ALG_RSASSA_PKCS1_V1_5_SHA256;
 	char *dig_seed = "TEST";
-	size_t dig_len = 32, sig_len = 64;
-	char dig[32] = {0}, sig[64] = {0};
-	uint32_t fn_ret = 1; /* Initialized error return */
+	size_t dig_len = 32, sig_len = 128; /* Adjusted for 1024-bit key */
+	char dig[32] = {0}, sig[128] = {0}; /* Adjusted for 1024-bit key */
+	uint32_t fn_ret = 1;		    /* Initialized error return */
 
 	TEE_MemMove(dig, dig_seed, 5);
 
@@ -1713,12 +1713,14 @@ static uint32_t read_key_and_do_crypto()
 	char objID[] = "56c5d1b260704de30fe99f67e5b9327613abebe6172a2b4e949d84b8e561e2fb";
 	uint32_t objID_len = 45;
 	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META;
-	uint32_t rsa_alg = TEE_ALG_RSAES_PKCS1_V1_5, key_size = 512;
+	uint32_t rsa_alg = TEE_ALG_RSAES_PKCS1_V1_5,
+		 key_size = 1024; /* mbedtls 3.x requires minimum 1024-bit RSA keys */
 	char *plain_msg = "TEST";
-	size_t plain_len = 10, cipher_len = 64, dec_plain_len = 64, per_cipher_len = 64,
-	       per_dec_plain_len = 64;
-	char plain[10] = {0}, cipher[64] = {0}, dec_plain[64] = {0}, per_cipher[64] = {0},
-	     per_dec_plain[64] = {0};
+	/* Adjusted buffer sizes for 1024-bit key */
+	size_t plain_len = 10, cipher_len = 128, dec_plain_len = 128, per_cipher_len = 128,
+	       per_dec_plain_len = 128;
+	char plain[10] = {0}, cipher[128] = {0}, dec_plain[128] = {0}, per_cipher[128] = {0},
+	     per_dec_plain[128] = {0};
 	uint32_t fn_ret = 1; /* Initialized error return */
 
 	TEE_MemMove(plain, plain_msg, 5);

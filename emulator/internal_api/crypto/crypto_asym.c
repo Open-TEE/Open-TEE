@@ -144,8 +144,8 @@ static TEE_Result do_rsa_pkcs_signature(TEE_OperationHandle operation, void *dig
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
-	// OpenTEE internal sanity check.
-	rv_mbedtls = mbedtls_rsa_check_pubkey(operation->ctx.rsa.ctx);
+	// OpenTEE internal sanity check - signing requires private key
+	rv_mbedtls = mbedtls_rsa_check_privkey(operation->ctx.rsa.ctx);
 	if (rv_mbedtls != 0) {
 		print_mbedtls_to_syslog(rv_mbedtls);
 		OT_LOG_ERR("ERROR: internal crypto error (RSA signature; RSA key corrupted)");
@@ -189,8 +189,8 @@ static TEE_Result do_rsa_pkcs_verify(TEE_OperationHandle operation, void *digest
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
-	// OpenTEE internal sanity check.
-	rv_mbedtls = mbedtls_rsa_check_privkey(operation->ctx.rsa.ctx);
+	// OpenTEE internal sanity check - verification uses public key
+	rv_mbedtls = mbedtls_rsa_check_pubkey(operation->ctx.rsa.ctx);
 	if (rv_mbedtls != 0) {
 		print_mbedtls_to_syslog(rv_mbedtls);
 		OT_LOG_ERR("ERROR: internal crypto error (RSA verify; RSA key corrupted)");
