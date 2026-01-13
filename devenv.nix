@@ -1,7 +1,12 @@
 # SPDX-FileCopyrightText: 2024 Technology Innovation Institute (TII)
 #
 # SPDX-License-Identifier: Apache-2.0
-{ pkgs, config, ... }:
+{
+  pkgs,
+  config,
+  openTeeDeps,
+  ...
+}:
 
 {
   # https://devenv.sh/basics/
@@ -15,35 +20,22 @@
   };
 
   # https://devenv.sh/packages/
-  packages = with pkgs; [
-    # Build tools
-    autoreconfHook
-    autoconf
-    automake
-    libtool
-    pkg-config
-    gnumake
-    gcc
-
-    # Core dependencies
-    coreutils
-    curl
-    fuse
-    gnugrep
-    gnused
-    gzip
-    libelf
-    libuuid
-    mbedtls
-    openssl
-    zlib
-
-    # Development tools
-    git
-    gdb
-    ripgrep
-    reuse
-  ];
+  packages = [
+    # Additional development tools (not needed for building the package itself)
+    pkgs.gnumake
+    pkgs.gcc
+    pkgs.coreutils
+    pkgs.curl
+    pkgs.gnugrep
+    pkgs.gnused
+    pkgs.gzip
+    pkgs.git
+    pkgs.gdb
+    pkgs.ripgrep
+    pkgs.reuse
+  ]
+  ++ openTeeDeps.nativeBuildInputs # use shared dependencies from the package
+  ++ openTeeDeps.buildInputs;
 
   # https://devenv.sh/scripts/
   scripts = {

@@ -101,9 +101,8 @@ For a streamlined development workflow with automatic process management, use [d
 ### Quick Start
 
       # Clone the repository
-      $ mkdir opentee && cd opentee
-      $ ~/bin/repo init -u https://github.com/Open-TEE/manifest.git
-      $ ~/bin/repo sync -j10
+      $ git clone https://github.com/Open-TEE/Open-TEE.git
+      $ cd Open-TEE
 
       # Enter devenv shell and build
       $ devenv shell

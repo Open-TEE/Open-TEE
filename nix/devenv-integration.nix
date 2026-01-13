@@ -10,11 +10,22 @@
 
   perSystem =
     { config, lib, ... }:
+    let
+      # Extract dependencies from the open-tee package to share with devenv
+      openTeeDeps = {
+        nativeBuildInputs = config.packages.open-tee.nativeBuildInputs or [ ];
+        buildInputs = config.packages.open-tee.buildInputs or [ ];
+      };
+    in
     {
       # Configure devenv as the default (and only) development shell
       devenv.shells.default = {
-        # Import the main devenv configuration
-        imports = [ ../devenv.nix ];
+        # Import the main devenv configuration, passing shared dependencies
+        imports = [
+          ../devenv.nix
+          # Pass the dependencies as a module
+          { _module.args.openTeeDeps = openTeeDeps; }
+        ];
 
         # Set name for the shell
         name = "Open-TEE";
