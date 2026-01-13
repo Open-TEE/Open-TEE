@@ -15,7 +15,7 @@
       ...
     }:
     {
-      treefmt.config = {
+      treefmt = {
         package = pkgs.treefmt;
         inherit (config.flake-root) projectRootFile;
 

@@ -1,6 +1,8 @@
 # Object files
 *.o
 *.ko
+*.lo
+*.la
 
 # Libraries
 *.lib
@@ -17,7 +19,56 @@
 *.out
 *.app
 
+# Autotools generated files (should be generated, not tracked)
+/aclocal.m4
+/autom4te.cache/
+/configure
+/install-sh
+/missing
+/Makefile.in
+/compile
+/config.guess
+/config.sub
+/depcomp
+/ltmain.sh
+/m4/libtool.m4
+/m4/ltoptions.m4
+/m4/ltsugar.m4
+/m4/ltversion.m4
+/m4/lt~obsolete.m4
+
+# Autotools in subdirectories
+**/aclocal.m4
+**/autom4te.cache/
+**/configure
+**/install-sh
+**/missing
+**/Makefile.in
+**/compile
+**/config.guess
+**/config.sub
+**/depcomp
+**/ltmain.sh
+**/m4/
+
+# Autotools build artifacts
+.deps/
+.libs/
+*.log
+*.status
+*.cache
+stamp-h1
+libtool
+Makefile
+
+# Build directory (out-of-tree build)
+/build/
+
 #nix and direnv
 .direnv/
 .pre-commit-config.yaml
 result
+
+# devenv state (but track devenv.lock for reproducibility)
+.devenv/
+.devenv.flake.nix

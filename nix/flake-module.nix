@@ -4,7 +4,7 @@
 {
   imports = [
     ./checks.nix
-    ./devshell.nix
+    ./devenv-integration.nix
     ./nixpkgs.nix
     ./treefmt.nix
   ];
