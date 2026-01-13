@@ -110,7 +110,9 @@ static TEE_Result do_ecdsa_verify(TEE_OperationHandle operation, void *digest, s
 
 	rv_mbedtls = mbedtls_ecdsa_read_signature(operation->ctx.ecc.ctx, digest, digestLen,
 						  signature, signatureLen);
-	if (rv_mbedtls == MBEDTLS_ERR_ECP_BAD_INPUT_DATA) {
+	if (rv_mbedtls == MBEDTLS_ERR_ECP_BAD_INPUT_DATA ||
+	    rv_mbedtls == MBEDTLS_ERR_ECP_VERIFY_FAILED ||
+	    rv_mbedtls == MBEDTLS_ERR_ECP_SIG_LEN_MISMATCH) {
 		return TEE_ERROR_SIGNATURE_INVALID;
 	}
 
