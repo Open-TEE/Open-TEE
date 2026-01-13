@@ -35,7 +35,7 @@ static TEE_Result get_counter_value(uint64_t *mem_data)
 	TEE_ObjectHandle counter;
 	TEE_Result ret;
 	uint64_t previous_value = 0, next_value = 0;
-	uint32_t bytes_read;
+	size_t bytes_read;
 
 	/* Open the object here if it exists */
 	ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE, &object_id, sizeof(object_id),

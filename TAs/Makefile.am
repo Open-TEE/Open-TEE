@@ -30,6 +30,7 @@ include ta_panic_crash/Makemodule.am
 include usr_study_ta/Makemodule.am
 include pkcs11_ta/Makemodule.am
 include example_conversion/Makemodule.am
+include ta_services/Makemodule.am
 
 # Clean .la files from TA destination directory. The .la files contain
 # portable encoding of static and shared library names and dependencies.

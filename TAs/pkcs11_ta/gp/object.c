@@ -36,11 +36,12 @@
 static char CPY_SET_OBJ_ID[] = "set_object_cpy_id";
 
 struct pTemplate {
-	void *buffer;		  /* Pointing to first attribute */
-	CK_ULONG attr_count;	  /* Attributes count in pTemplate */
-	size_t buffer_size;	  /* Buffer size in bytes */
-	uint8_t generated_by_who; /* Who is generated template. TEE or recv from usr */
-	uint8_t template_for;	  /* set/get/create template */
+	void *buffer;		      /* Pointing to first attribute */
+	CK_ULONG attr_count;	      /* Attributes count in pTemplate */
+	size_t buffer_size;	      /* Buffer size in bytes */
+	uint8_t generated_by_who;     /* Who is generated template. TEE or recv from usr */
+	uint8_t template_for;	      /* set/get/create template */
+	TEE_ObjectHandle orig_object; /* Original object for SET_TEMPLATE mode */
 };
 
 static CK_RV get_next_free_object_id(CK_OBJECT_HANDLE *next_id)
@@ -305,9 +306,15 @@ static CK_RV write_key_pkcs11_ctl_attrs(TEE_ObjectHandle object, struct pTemplat
 	CK_ATTRIBUTE write_attr, template_attr;
 	CK_ATTRIBUTE_TYPE pkcs11_always_attrs[2] = {CKA_ALWAYS_SENSITIVE, CKA_NEVER_EXTRACTABLE};
 	CK_ATTRIBUTE_TYPE template_always_attr[2] = {CKA_SENSITIVE, CKA_EXTRACTABLE};
+	TEE_ObjectHandle src_object; /* Object to read existing attrs from */
 	CK_BBOOL ck_bool;
 	CK_RV ck_rv;
 	uint8_t i;
+
+	/* For SET_TEMPLATE, read existing attrs from original object, not the new one */
+	src_object = (ptemplate->template_for == SET_TEMPLATE && ptemplate->orig_object != NULL)
+			 ? ptemplate->orig_object
+			 : object;
 
 	/* Sign bool value to pValue, which will be used for attr writing */
 	write_attr.pValue = &ck_bool;
@@ -331,7 +338,7 @@ static CK_RV write_key_pkcs11_ctl_attrs(TEE_ObjectHandle object, struct pTemplat
 	write_attr.type = CKA_LOCAL;
 	if (ptemplate->template_for == SET_TEMPLATE) {
 
-		ck_rv = get_attr_from_object(object, CKA_LOCAL, &write_attr);
+		ck_rv = get_attr_from_object(src_object, CKA_LOCAL, &write_attr);
 		if (ck_rv != CKR_OK)
 			return ck_rv; /* CKA_LOCAL should be in key object! */
 
@@ -353,8 +360,10 @@ static CK_RV write_key_pkcs11_ctl_attrs(TEE_ObjectHandle object, struct pTemplat
 		write_attr.type = pkcs11_always_attrs[i];
 		if (ptemplate->template_for == SET_TEMPLATE) {
 
-			/* Key object has been created -> get attribute value from object */
-			ck_rv = get_attr_from_object(object, pkcs11_always_attrs[i], &write_attr);
+			/* Key object has been created -> get attribute value from original object
+			 */
+			ck_rv =
+			    get_attr_from_object(src_object, pkcs11_always_attrs[i], &write_attr);
 			if (ck_rv != CKR_OK)
 				return ck_rv; /* Should be in key object! */
 
@@ -1122,7 +1131,7 @@ TEE_Result object_get_attr_value(struct application *app, uint32_t paramTypes, T
 		/* Dirty if comparision, but there is no better way */
 
 		/* Object can reveal queried attribute */
-		ck_rv = can_attr_revealed(object, &obj_attr);
+		ck_rv = can_attr_revealed(object, &template_attr);
 		if (ck_rv == CKR_OK) {
 
 			/* Does object contain queried attribute */
@@ -1488,6 +1497,9 @@ TEE_Result object_set_attr_value(struct application *app, uint32_t paramTypes, T
 	    get_object(session, params[1].value.a, &set_object, TEE_DATA_FLAG_ACCESS_WRITE_META);
 	if (ck_rv != CKR_OK)
 		goto err_1;
+
+	/* Store original object for write_key_pkcs11_ctl_attrs to read existing attrs */
+	ptemplate.orig_object = set_object;
 
 	/* Object header of targer object. Object header is containing attr count */
 	ck_rv = get_object_header(set_object, CKR_OBJECT_HANDLE_INVALID, &set_obj_header);
