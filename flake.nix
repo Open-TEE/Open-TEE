@@ -7,13 +7,20 @@
   nixConfig = {
     extra-substituters = [
       "https://cache.nixos.org"
+      "https://devenv.cachix.org"
     ];
     extra-trusted-public-keys = [
       "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
     ];
   };
 
   inputs = {
+    devenv-root = {
+      url = "file+file:///dev/null";
+      flake = false;
+    };
+
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     # For preserving compatibility with non-Flake users
@@ -45,6 +52,23 @@
         flake-compat.follows = "flake-compat";
       };
     };
+
+    # devenv for enhanced development workflows
+    devenv = {
+      url = "github:cachix/devenv";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        git-hooks.follows = "git-hooks-nix";
+        flake-compat.follows = "flake-compat";
+        flake-parts.follows = "flake-parts";
+      };
+    };
+
+    # Container builder for devenv
+    nix2container = {
+      url = "github:nlewo/nix2container";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -66,6 +90,7 @@
         imports = [
           ./nix/flake-module.nix
           ./packages/flake-module.nix
+          inputs.devenv.flakeModule
         ];
       };
 }

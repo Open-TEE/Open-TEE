@@ -42,6 +42,10 @@ A minimalistic guide is tested on Ubuntu 20.04 (Focal Fossa). If you run into an
 
 NOTE: [We have also a docker envronment](#docker)!
 
+**NEW**: For an enhanced development experience with automatic process management, see [Using devenv](#using-devenv) below.
+
+### Traditional Build
+
       # prerequisite packages
       $ sudo apt-get install -y build-essential git pkg-config uuid-dev libelf-dev wget curl autoconf automake libtool libfuse-dev
 
@@ -76,6 +80,51 @@ NOTE: [We have also a docker envronment](#docker)!
       # Run opentee and connection test program
       # /opt/OpenTee/bin/opentee
       # /opt/OpenTee/bin/conn_test
+
+Using devenv
+------
+
+For a streamlined development workflow with automatic process management, use [devenv](https://devenv.sh/):
+
+### Prerequisites
+
+1. Install Nix:
+   ```bash
+   curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+   ```
+
+2. Install devenv:
+   ```bash
+   nix profile install nixpkgs#devenv
+   ```
+
+### Quick Start
+
+      # Clone the repository
+      $ mkdir opentee && cd opentee
+      $ ~/bin/repo init -u https://github.com/Open-TEE/manifest.git
+      $ ~/bin/repo sync -j10
+
+      # Enter devenv shell and build
+      $ devenv shell
+      $ opentee-build
+
+      # Start the Open-TEE daemon with process supervision
+      $ devenv up
+
+      # In another terminal, run tests
+      $ test-conn
+      $ test-services
+
+**Benefits of devenv:**
+- ✅ Automatic process management (start/stop/restart)
+- ✅ TUI for monitoring logs and processes
+- ✅ No sudo required, no system-wide installation
+- ✅ Auto-generated configuration
+- ✅ Built-in test scripts (`test-conn`, `test-services`, etc.)
+- ✅ Reproducible development environment
+
+See [docs/DEVENV.md](docs/DEVENV.md) for complete documentation.
 
 Docker
 ------
