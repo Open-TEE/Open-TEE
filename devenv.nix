@@ -98,12 +98,12 @@
     '';
 
     test-services.exec = ''
-      if [ ! -f "$OPENTEE_BUILD_DIR/tests/services_test" ]; then
-        echo "Error: services_test not found. Run 'opentee-build' first."
+      if [ ! -f "$OPENTEE_BUILD_DIR/CAs/svc_test" ]; then
+        echo "Error: svc_test not found. Run 'opentee-build' first."
         exit 1
       fi
       export LD_LIBRARY_PATH="$OPENTEE_BUILD_DIR/libtee/.libs:$LD_LIBRARY_PATH"
-      "$OPENTEE_BUILD_DIR/tests/.libs/services_test"
+      "$OPENTEE_BUILD_DIR/CAs/.libs/svc_test"
     '';
 
     test-sha1.exec = ''
@@ -116,12 +116,12 @@
     '';
 
     test-pkcs11.exec = ''
-      if [ ! -f "$OPENTEE_BUILD_DIR/CAs/pkcs11_test" ]; then
+      if [ ! -f "$OPENTEE_BUILD_DIR/tests/pkcs11_test" ]; then
         echo "Error: pkcs11_test not found. Run 'opentee-build' first."
         exit 1
       fi
-      export LD_LIBRARY_PATH="$OPENTEE_BUILD_DIR/libtee/.libs:$LD_LIBRARY_PATH"
-      "$OPENTEE_BUILD_DIR/CAs/.libs/pkcs11_test"
+      export LD_LIBRARY_PATH="$OPENTEE_BUILD_DIR/libtee/.libs:$OPENTEE_BUILD_DIR/libtee_pkcs11/.libs:$LD_LIBRARY_PATH"
+      "$OPENTEE_BUILD_DIR/tests/.libs/pkcs11_test"
     '';
 
     # Status and debugging

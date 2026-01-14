@@ -1,15 +1,15 @@
-# conn_test_app executable
+# services_test executable
 
-bin_PROGRAMS += services_test
+bin_PROGRAMS += svc_test
 
-conn_test_SOURCES = \
+svc_test_SOURCES = \
 	services_test/services_test.c
 
-conn_test_CFLAGS = ${AM_CFLAGS} \
+svc_test_CFLAGS = ${AM_CFLAGS} \
 	-iquote $(top_srcdir)/../libtee/include
 
-conn_test_LDFLAGS = ${AM_LDFLAGS} \
+svc_test_LDFLAGS = ${AM_LDFLAGS} \
 	-rdynamic
 
-conn_test_LDADD = \
+svc_test_LDADD = \
 	../libtee/libtee.la

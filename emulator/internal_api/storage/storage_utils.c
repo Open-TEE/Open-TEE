@@ -170,12 +170,13 @@ int valid_object_type_and_max_size(uint32_t obj_type, uint32_t obj_size)
 		return 1;
 
 	case TEE_TYPE_RSA_PUBLIC_KEY:
-		if (obj_size >= 256 && obj_size <= 2048)
+		if (obj_size >= 1024 && obj_size <= 2048)
 			return 0;
 		return 1;
 
 	case TEE_TYPE_RSA_KEYPAIR:
-		if (obj_size >= 256 && obj_size <= 2048)
+		/* mbedtls 3.x requires minimum 1024-bit RSA keys for generation */
+		if (obj_size >= 1024 && obj_size <= 2048)
 			return 0;
 		return 1;
 

@@ -121,7 +121,7 @@ static bool get_uuid(char *uuid)
 	for (i = 0; i < sizeof(TEE_UUID); ++i)
 		sprintf(uuid + i * 2, "%02x", *((unsigned char *)&current_TA_uuid + i));
 
-	uuid[TEE_UUID_LEN_HEX] = '\0';
+	uuid[sizeof(TEE_UUID) * 2] = '\0';
 
 	return true;
 }
@@ -499,7 +499,7 @@ bool ext_alloc_for_enumerator(uint32_t *ID)
 		return false;
 
 	/* MAlloc for handle and fill */
-	new_enumerator = calloc(sizeof(struct storage_enumerator), 1);
+	new_enumerator = calloc(1, sizeof(struct storage_enumerator));
 	if (new_enumerator == NULL) {
 		OT_LOG(LOG_ERR, "Cannot malloc for enumerator: Out of memory\n");
 		return false;

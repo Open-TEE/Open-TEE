@@ -27,7 +27,9 @@
  * initialization
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include <errno.h>
 #include <string.h>

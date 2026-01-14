@@ -27,7 +27,7 @@
 #include "tee_logging.h"
 
 // Value not used in GP specs
-static uint32_t not_valid_ecc_key_size = 4345623455;
+static uint32_t not_valid_ecc_key_size = 0xFFFFFFFF;
 
 static int key_usage_allow_operation(uint32_t obj_usage, uint32_t operation_mode,
 				     uint32_t algorithm)
@@ -539,7 +539,8 @@ bool valid_key_size_for_algorithm(uint32_t algorithm, uint32_t key)
 	case TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA256:
 	case TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA384:
 	case TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA512:
-		if (key >= 256 && key <= 2048)
+		/* mbedtls 3.x requires minimum 1024-bit RSA keys */
+		if (key >= 1024 && key <= 2048)
 			return true;
 		return false;
 
