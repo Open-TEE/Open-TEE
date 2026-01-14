@@ -11,18 +11,16 @@
     }:
     {
       packages = {
-        # Main Open-TEE package
+        # Main Open-TEE package (CMake build)
         open-tee = pkgs.stdenv.mkDerivation {
           pname = "open-tee";
-          version = "0.0.0";
+          version = "0.0.1";
 
           src = lib.cleanSource ../.;
 
           nativeBuildInputs = with pkgs; [
-            autoreconfHook
-            autoconf
-            automake
-            libtool
+            cmake
+            ninja
             pkg-config
           ];
 
@@ -35,14 +33,33 @@
             zlib
           ];
 
-          # Run autogen.sh during the configure phase
-          preConfigure = ''
-            ./autogen.sh
-          '';
-
-          configureFlags = [
-            "--prefix=${placeholder "out"}"
+          # Use CMake preset for release build
+          cmakeFlags = [
+            "-DCMAKE_BUILD_TYPE=Release"
+            "-DOPENTEE_BUILD_TESTS=ON"
+            "-DOPENTEE_BUILD_EXAMPLES=ON"
+            "-DCMAKE_COLOR_DIAGNOSTICS=ON"
           ];
+
+          # Install TAs to the correct location
+          postInstall = ''
+            # Ensure TA directory exists
+            mkdir -p $out/lib/TAs
+            # Move TAs from lib to lib/TAs if they were installed to lib
+            for ta in $out/lib/lib*.so; do
+              if [ -f "$ta" ]; then
+                # Check if it's a TA (has TA_PLUGIN symbol or is in TAs list)
+                name=$(basename "$ta")
+                case "$name" in
+                  libpkcs11_ta.so|libexample_ta.so|libexample_digest.so|libsign_ecdsa_256.so|\
+                  libta_conn_test.so|libta2ta_conn_test.so|libta_panic_crash.so|libta_services.so|\
+                  libuser_study.so|libCryptoTest.so|libStorageTest.so|libta2taTest.so)
+                    mv "$ta" $out/lib/TAs/ 2>/dev/null || true
+                    ;;
+                esac
+              fi
+            done
+          '';
 
           enableParallelBuilding = true;
 

@@ -13,7 +13,7 @@ This repository contains the overall configuration for the Open-TEE project and 
 - [Setup](#setup-guide)
     - [Prerequisites](#prerequisites)
     - [Obtaining the Source](#obtaining-the-source)
-    - [Building using Autotools](#building-using-autotools)
+    - [Building with CMake](#building-with-cmake)
     - [Configuration](#configuration)
     - [Running and Debugging](#running-and-debugging)
 - [Options](#options)
@@ -47,39 +47,40 @@ NOTE: [We have also a docker envronment](#docker)!
 ### Traditional Build
 
       # prerequisite packages
-      $ sudo apt-get install -y build-essential git pkg-config uuid-dev libelf-dev wget curl autoconf automake libtool libfuse-dev
+      $ sudo apt-get install -y build-essential git pkg-config uuid-dev libelf-dev wget curl cmake ninja-build libfuse-dev libssl-dev
 
-      # Google repo (skip if you already have it)
-      $ mkdir -p ~/bin
-      $ curl http://commondatastorage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-      $ chmod +x ~/bin/repo
-
-      # mbedtls 3.1.0: fetch, compile and install
-      # (Note: Tested with 3.1.0, but 3.x.x version should be sufficient)
-      # (Note: Currently Apt package contains 2.x.x version)
+      # mbedtls 3.x.x: fetch, compile and install if not packaged for your distro
+      # (Note: Tested with 3.6.5, but 3.x.y version should be sufficient)
       # (NOTE: If you already have installed mbedtls, update with your own risk and cautions!!)
-      $ wget https://github.com/ARMmbed/mbedtls/archive/refs/tags/v3.1.0.tar.gz
-      $ tar -xf v3.1.0.tar.gz && cd mbedtls-3.1.0
+      $ wget https://github.com/ARMmbed/mbedtls/archive/refs/tags/v3.x.y.tar.gz
+      $ tar -xf v3.x.y.tar.gz && cd mbedtls-3.1.0
       $ cmake -DUSE_SHARED_MBEDTLS_LIBRARY=On .
-      $ make -j && make install
-
-      # Clone opentee
-      $ mkdir opentee && cd opentee
-      $ ~/bin/repo init -u https://github.com/Open-TEE/manifest.git
-      $ ~/bin/repo sync -j10
-
-      # Build opentee and install (cd into opentee source folder)
-      # Note: Install location is "/opt/OpenTee"
-      $ mkdir build && cd build
-      $ ../autogen.sh
       $ make -j && sudo make install
 
+      # Clone opentee
+      $ git clone https://github.com/Open-TEE/Open-TEE.git
+      $ cd Open-TEE
+
+      # Build opentee with CMake
+      # Note: Install location is "/opt/OpenTee"
+      $ cmake -B build-cmake -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=/opt/OpenTee
+      $ cmake --build build-cmake
+      $ sudo cmake --install build-cmake
+
       # Generate opentee conf
-      $ sudo echo -e "[PATHS]\nta_dir_path = /opt/OpenTee/lib/TAs\ncore_lib_path = /opt/OpenTee/lib\nsubprocess_manager = libManagerApi.so\nsubprocess_launcher = libLauncherApi.so" > /etc/opentee.conf
+      $ sudo bash -c 'cat > /etc/opentee.conf << EOF
+      [PATHS]
+      ta_dir_path = /opt/OpenTee/lib/TAs
+      core_lib_path = /opt/OpenTee/lib
+      subprocess_manager = libManagerApi.so
+      subprocess_launcher = libLauncherApi.so
+      EOF'
 
       # Run opentee and connection test program
-      # /opt/OpenTee/bin/opentee
-      # /opt/OpenTee/bin/conn_test
+      $ /opt/OpenTee/bin/opentee-engine
+      $ /opt/OpenTee/bin/conn_test_app
 
 Using devenv
 ------
@@ -159,14 +160,11 @@ Docker environment tested on Ubuntu 20.04 (Focal Fossa) and Community docker eng
        and your CA can connect it from outside docker container
 
 
+
 Setup
 ------
 
-This guide describes how to obtain and build Open-TEE from source on Ubuntu 14.04 LTS (Trusty Tahr). We currently support building Open-TEE using [Autotools](https://www.gnu.org/software/automake/manual/html_node/Autotools-Introduction.html).
-
-If you simply wish to build Open-TEE using the suggested configuration, you can also follow the tutorial at:
-
-http://open-tee.github.io/documentation/
+This guide describes how to obtain and build Open-TEE from source on Ubuntu 20.04+ or other modern Linux distributions. Open-TEE uses CMake as its build system.
 
 If you wish to build Open-TEE for Android, consult the Android specific build documentation at:
 
@@ -174,90 +172,69 @@ http://open-tee.github.io/android
 
 ### Prerequisites
 
-Open-TEE uses the Android `repo` tool to manage the Git repositories that contain the source code. What follows are step-by-step instructions for setting up the build environment for Open-TEE.
-Full documentation for `repo` is available at https://source.android.com/source/using-repo.html
+You'll need to install `git`, `cmake`, `pkg-config` and the necessary build dependencies:
 
-You'll also need to install `git`, `curl`, `pkg-config` and the necessary build dependencies:
+    $ sudo apt-get install git cmake ninja-build pkg-config build-essential uuid-dev libssl-dev libelf-dev libfuse-dev
 
-    $ sudo apt-get install git curl pkg-config build-essential uuid-dev libssl-dev libglu1-mesa-dev libelfg0-dev mesa-common-dev libfuse-dev
+Additionally, you need mbedTLS 3.x (the Ubuntu apt package may be older):
+
+    $ wget https://github.com/ARMmbed/mbedtls/archive/refs/tags/v3.x.y.tar.gz
+    $ tar -xf v3.x.y.tar.gz && cd mbedtls-3.x.y
+    $ cmake -DUSE_SHARED_MBEDTLS_LIBRARY=On .
+    $ make -j && sudo make install
+    $ sudo ldconfig
 
 Introduce yourself to `git` if you haven't done so already:
 
     $ git config --global user.name "Firstname Lastname"
     $ git config --global user.email "name@example.com"
 
-#### Installing Repo
-
-Fetch the `repo` repository management tool:
-
-    $ mkdir -p ~/bin
-    $ curl http://commondatastorage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-    $ chmod +x ~/bin/repo
-
-
-#### Installing Autotools
-
-The Autotools build has been tested with [Autoconfig](https://www.gnu.org/software/autoconf/autoconf.html) 2.69 and above. To perform an Autotools build you need to install `autoconf`, `automake` and `libtool`:
-
-    $ sudo apt-get install autoconf automake libtool
-
 ### Obtaining the Source
 
-Create a directory where the repositories are to be cloned:
+Clone the repository:
 
-    $ mkdir Open-TEE
-    $ cd Open-TEE
-
-Have `repo` fetch the manifest for the Open-TEE project:
-
-    $ ~/bin/repo init -u https://github.com/Open-TEE/manifest.git
-
-Those wishing to contribute to Open-TEE need signup to the [GerritHub](http://gerrithub.io/) Code Review tool (requires a GitHub account) and initialize `repo` using the the developer configuration:
-
-    $ ~/bin/repo init -u https://github.com/Open-TEE/manifest.git -m developer.xml
-
-To submit changes to GerritHub you'll also need to add the following to your `~/.ssh/config`:
-
->
-> host review.gerrithub.io
->       port 29418
->       user <github-username-here>
->
-
-Have `repo` fetch the repositories defined in the manifests:
-
-    $ ~/bin/repo sync -j10
-
-Once cloned, you can work on the repositories in a normal git fashion. Developers wishing to contribute can push changes ro Gerrit for review using the following command:
-
-    $ git push origin HEAD:refs/for/master
+    $ git clone https://github.com/Open-TEE/Open-TEE.git
+    $ cd Open-TEE
 
 
-### Building using Autotools
+### Building with CMake
 
-We recommend using a parallel build tree (a.k.a. `VPATH` build):
+Configure and build using CMake:
 
-    $ mkdir build
+    $ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+    $ cmake --build build
 
-The provided `autogen.sh` script will generate and run the `configure` script.
+To install Open-TEE system-wide:
 
-    $ cd build
-    $ ../autogen.sh
+    $ sudo cmake --install build --prefix /opt/OpenTee
 
-To build and install Open-TEE run:
+By default Open-TEE will be installed under `/opt/OpenTee`. The directory will contain the following subdirectories:
 
-    $ make
-    $ sudo make install
+* `/opt/OpenTee/bin`       - executables
 
-By default Open-TEE will be installed under `/opt/Open-TEE`. The directory will contain the following subdirectories:
+* `/opt/OpenTee/include`   - public header files
 
-* `/opt/Open-TEE/bin`       - executables
+* `/opt/OpenTee/lib`       - shared library objects (_libdir_)
 
-* `/opt/Open-TEE/include`   - public header files
+* `/opt/OpenTee/lib/TAs`   - trusted application objects (_tadir_)
 
-* `/opt/Open-TEE/lib`       - shared library objects (_libdir_)
+#### CMake Build Options
 
-* ``/opt/Open-TEE/lib/TAs`` - trusted application objects (_tadir_)
+The following CMake options are available:
+
+* `-DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo` - Build type (default: Release)
+* `-DBUILD_TESTS=ON|OFF` - Build test applications (default: ON)
+* `-DBUILD_EXAMPLES=ON|OFF` - Build example applications (default: ON)
+* `-DCMAKE_INSTALL_PREFIX=/path` - Installation prefix (default: /usr/local)
+
+#### IDE Integration
+
+CMake automatically generates `compile_commands.json` for IDE/LSP integration:
+
+    $ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+    $ ln -sf build/compile_commands.json .
+
+This enables features like code completion, go-to-definition, and diagnostics in editors that support LSP (VS Code, Emacs, Vim, etc.).
 
 ### Configuration
 
@@ -277,7 +254,7 @@ Add the sample configuration given below to the configuration file:
 
 where _PATHNAME_ is replaced with the absolute path to the parent directory of the Open-TEE directory you created earlier. The pathname must **not** include special variables such as `~` or `$HOME`.
 
-For an autotools build you can use
+For a standard CMake install you can use:
 
 >
 > [PATHS]
@@ -289,11 +266,9 @@ For an autotools build you can use
 
 ### Running and Debugging
 
-You are now ready to launch the `opentee-engine`.
+You are now ready to launch the `opentee-engine`:
 
-For an autotools build:
-
-    $ /opt/Open-TEE/bin/opentee-engine
+    $ /opt/OpenTee/bin/opentee-engine
 
 Verify that Open-TEE is running with `ps`:
 
@@ -302,7 +277,7 @@ Verify that Open-TEE is running with `ps`:
 You should see output similar to the example below:
 
 >
-> gcc-debug$ ps waux |grep tee
+> $ ps waux |grep tee
 > brian     5738  0.0  0.0  97176   852 ?        Sl   10:40   0:00 tee_manager
 > brian     5739  0.0  0.0  25216  1144 ?        S    10:40   0:00 tee_launcher
 >
@@ -315,7 +290,7 @@ The `set follow-fork-mode child` command passed to `gdb` on the command line cau
 
 In second terminal run the client application:
 
-    $ /opt/Open-TEE/bin/conn_test_app
+    $ /opt/OpenTee/bin/conn_test_app
 
 You should now expect to see output similar to the following:
 
@@ -328,7 +303,7 @@ You should now expect to see output similar to the following:
 Back in `gdb` you can now step through and debug the trusted application the `conn_test_app` is connected to. If you continue execution you should see output from the `conn_test_app` similar to the following:
 
 >
-> gcc-debug$ ./conn_test_app
+> $ ./conn_test_app
 > START: conn test app
 > Initializing context: initialized
 > Openning session: opened
@@ -338,6 +313,7 @@ Back in `gdb` you can now step through and debug the trusted application the `co
 > Finalizing ctx: Finalized
 > END: conn test app
 >
+
 
 Options
 ------
@@ -406,5 +382,3 @@ Bug reports and other issues:
 
 License
 ------
-
-Open-TEE is licensed under the Apache License 2.0 (see LICENSE).
