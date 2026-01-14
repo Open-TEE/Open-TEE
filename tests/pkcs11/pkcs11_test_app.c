@@ -1224,8 +1224,8 @@ static void set_obj_attr(CK_SESSION_HANDLE session)
 		return;
 	}
 
-	if ((CK_LONG)confirm_attrs[1].ulValueLen == -1 || ck_bbool_never_extr != CK_FALSE) {
-		PRI_FAIL("aes key is HAS been extractable");
+	if ((CK_LONG)confirm_attrs[1].ulValueLen == -1 || ck_bbool_never_extr != CK_TRUE) {
+		PRI_FAIL("aes key has been extractable at some point");
 		return;
 	}
 
@@ -1303,8 +1303,8 @@ static void set_obj_attr_seccond(CK_SESSION_HANDLE session)
 		return;
 	}
 
-	if ((CK_LONG)confirm_attrs[1].ulValueLen == -1 || ck_bbool_never_extr != CK_FALSE) {
-		PRI_FAIL("aes key is HAS been extractable");
+	if ((CK_LONG)confirm_attrs[1].ulValueLen == -1 || ck_bbool_never_extr != CK_TRUE) {
+		PRI_FAIL("aes key has been extractable at some point");
 		return;
 	}
 

@@ -617,7 +617,7 @@ CK_RV hal_create_object(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pTemplate, 
 		return CKR_GENERAL_ERROR;
 
 	/* Extract return values from operation and return */
-	*phObject = operation.params[1].value.a;
+	*phObject = (CK_OBJECT_HANDLE)operation.params[1].value.a;
 	return operation.params[1].value.b;
 }
 
@@ -819,6 +819,7 @@ CK_RV hal_get_or_set_object_attr(uint32_t command_id, CK_SESSION_HANDLE hSession
 	TEEC_Operation operation = {0};
 	TEEC_SharedMemory shm = {0};
 	CK_RV ck_rv;
+	TEEC_Result teec_ret;
 
 	/* Serialize template into buffer (function allocating a buffer!) */
 	ck_rv = serialize_template_into_shm(&shm, pTemplate, ulCount);
@@ -830,7 +831,8 @@ CK_RV hal_get_or_set_object_attr(uint32_t command_id, CK_SESSION_HANDLE hSession
 		shm.flags = TEEC_MEM_INPUT;
 	else
 		shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
-	if (TEEC_RegisterSharedMemory(g_tee_context, &shm) != CKR_OK) {
+	teec_ret = TEEC_RegisterSharedMemory(g_tee_context, &shm);
+	if (teec_ret != TEEC_SUCCESS) {
 		free(shm.buffer);
 		return CKR_GENERAL_ERROR;
 	}
@@ -845,7 +847,8 @@ CK_RV hal_get_or_set_object_attr(uint32_t command_id, CK_SESSION_HANDLE hSession
 						TEEC_VALUE_INPUT, TEEC_VALUE_INOUT);
 
 	/* Hand over execution to TEE */
-	if (TEE_SUCCESS != TEEC_InvokeCommand(g_control_session, command_id, &operation, NULL)) {
+	teec_ret = TEEC_InvokeCommand(g_control_session, command_id, &operation, NULL);
+	if (TEE_SUCCESS != teec_ret) {
 		operation.params[3].value.a = CKR_GENERAL_ERROR;
 		goto err;
 	}
@@ -910,13 +913,20 @@ CK_RV hal_find_objects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR phObject
 	TEEC_SharedMemory out_shm = {0};
 	TEEC_Operation operation = {0};
 	TEEC_Result teec_ret;
+	uint32_t *temp_buffer;
+	CK_ULONG i, object_count;
+
+	/* TA returns 32-bit object IDs. Allocate temporary buffer. */
+	temp_buffer = calloc(ulMaxObjectCount, sizeof(uint32_t));
+	if (temp_buffer == NULL)
+		return CKR_HOST_MEMORY;
 
 	/* Register shared memory. It is used for trasfering template into TEE environment */
-	out_shm.buffer = phObject;
-	out_shm.size = ulMaxObjectCount * sizeof(CK_OBJECT_HANDLE_PTR);
+	out_shm.buffer = temp_buffer;
+	out_shm.size = ulMaxObjectCount * sizeof(uint32_t);
 	out_shm.flags = TEEC_MEM_OUTPUT;
 	if (TEEC_RegisterSharedMemory(g_tee_context, &out_shm) != TEE_SUCCESS) {
-		free(out_shm.buffer);
+		free(temp_buffer);
 		return CKR_GENERAL_ERROR;
 	}
 
@@ -935,11 +945,20 @@ CK_RV hal_find_objects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR phObject
 	TEEC_ReleaseSharedMemory(&out_shm);
 
 	/* Something went wrong and problem is origin from frame work */
-	if (teec_ret != TEEC_SUCCESS)
+	if (teec_ret != TEEC_SUCCESS) {
+		free(temp_buffer);
 		return CKR_GENERAL_ERROR;
+	}
+
+	/* Convert 32-bit object IDs to CK_OBJECT_HANDLE */
+	object_count = operation.params[2].value.a;
+	for (i = 0; i < object_count; i++)
+		phObject[i] = temp_buffer[i];
+
+	free(temp_buffer);
 
 	/* Return value from TEE environment */
-	*pulObjectCount = operation.params[2].value.a;
+	*pulObjectCount = object_count;
 	return operation.params[3].value.a;
 }
 
