@@ -15,13 +15,13 @@
     OPENTEE_SOCKET_FILE_PATH = "${config.env.DEVENV_STATE}/open_tee_sock";
     OPENTEE_STORAGE_PATH = "${config.env.DEVENV_STATE}/TEE_secure_storage";
 
-    # Build output directory
+    # CMake build output directory (matches CMakePresets.json 'dev' preset)
     OPENTEE_BUILD_DIR = "${config.env.DEVENV_ROOT}/build";
   };
 
   # https://devenv.sh/packages/
   packages = [
-    # Additional development tools (not needed for building the package itself)
+    # Development tools
     pkgs.gnumake
     pkgs.gcc
     pkgs.coreutils
@@ -33,44 +33,56 @@
     pkgs.gdb
     pkgs.ripgrep
     pkgs.reuse
+    # CMake build tools
+    pkgs.cmake
+    pkgs.ninja
   ]
   ++ openTeeDeps.nativeBuildInputs # use shared dependencies from the package
   ++ openTeeDeps.buildInputs;
 
   # https://devenv.sh/scripts/
   scripts = {
-    # Build scripts
+    # Build scripts using CMake workflow presets (CMake 3.25+)
     opentee-build.exec = ''
-      # Create build directory
-      mkdir -p "$OPENTEE_BUILD_DIR"
-      cd "$OPENTEE_BUILD_DIR"
+      cd "$DEVENV_ROOT"
 
-      # Run autogen.sh from build directory if configure doesn't exist
-      if [ ! -f "$OPENTEE_BUILD_DIR/configure" ]; then
-        echo "Running autogen.sh from build directory..."
-        ../autogen.sh
+      # Use CMake workflow preset for configure + build
+      echo "Building Open-TEE with CMake workflow preset..."
+      cmake --workflow --preset dev --fresh 2>/dev/null || \
+        cmake --workflow --preset dev
+
+      # Create symlink for compile_commands.json in project root
+      if [ -f "$OPENTEE_BUILD_DIR/compile_commands.json" ] && [ ! -L "$DEVENV_ROOT/compile_commands.json" ]; then
+        ln -sf "$OPENTEE_BUILD_DIR/compile_commands.json" "$DEVENV_ROOT/compile_commands.json"
+        echo "✓ Created compile_commands.json symlink for IDE support"
       fi
 
-      # Run configure if Makefile doesn't exist
-      if [ ! -f "$OPENTEE_BUILD_DIR/Makefile" ]; then
-        echo "Running configure..."
-        ./configure
-      fi
-
-      echo "Building Open-TEE..."
-      make -j$(nproc)
+      echo ""
       echo "✓ Build complete!"
       echo ""
-      echo "Engine binary: $OPENTEE_BUILD_DIR/emulator/opentee-engine"
-      echo "Test binaries: $OPENTEE_BUILD_DIR/CAs/"
-      echo "Libraries: $OPENTEE_BUILD_DIR/emulator/.libs/"
-      echo "TAs: $OPENTEE_BUILD_DIR/TAs/.libs/"
+      echo "Engine binary: $OPENTEE_BUILD_DIR/bin/opentee-engine"
+      echo "Test binaries: $OPENTEE_BUILD_DIR/bin/"
+      echo "Libraries: $OPENTEE_BUILD_DIR/lib/"
+      echo "TAs: $OPENTEE_BUILD_DIR/TAs/"
+      echo "compile_commands.json: $DEVENV_ROOT/compile_commands.json"
+    '';
+
+    # Quick rebuild (skip configure if already done)
+    opentee-rebuild.exec = ''
+      cd "$DEVENV_ROOT"
+      if [ -f "$OPENTEE_BUILD_DIR/CMakeCache.txt" ]; then
+        echo "Rebuilding Open-TEE..."
+        cmake --build --preset dev
+      else
+        echo "No existing build found, running full build..."
+        opentee-build
+      fi
     '';
 
     opentee-clean.exec = ''
+      cd "$DEVENV_ROOT"
       if [ -d "$OPENTEE_BUILD_DIR" ]; then
-        cd "$OPENTEE_BUILD_DIR"
-        make clean
+        cmake --build --preset dev --target clean
         echo "✓ Build cleaned"
       else
         echo "No build directory found"
@@ -81,47 +93,56 @@
       if [ -d "$OPENTEE_BUILD_DIR" ]; then
         echo "Removing build directory: $OPENTEE_BUILD_DIR"
         rm -rf "$OPENTEE_BUILD_DIR"
+        # Also remove the symlink
+        rm -f "$DEVENV_ROOT/compile_commands.json"
         echo "✓ Build directory removed"
       else
         echo "No build directory found"
       fi
     '';
 
-    # Test application runners
+    opentee-reconfigure.exec = ''
+      echo "Reconfiguring CMake build..."
+      rm -rf "$OPENTEE_BUILD_DIR"
+      rm -f "$DEVENV_ROOT/compile_commands.json"
+      opentee-build
+    '';
+
+    # Test application runners (CMake paths)
     test-conn.exec = ''
-      if [ ! -f "$OPENTEE_BUILD_DIR/CAs/conn_test" ]; then
+      if [ ! -f "$OPENTEE_BUILD_DIR/bin/conn_test" ]; then
         echo "Error: conn_test not found. Run 'opentee-build' first."
         exit 1
       fi
-      export LD_LIBRARY_PATH="$OPENTEE_BUILD_DIR/libtee/.libs:$LD_LIBRARY_PATH"
-      "$OPENTEE_BUILD_DIR/CAs/.libs/conn_test"
+      export LD_LIBRARY_PATH="$OPENTEE_BUILD_DIR/lib:$LD_LIBRARY_PATH"
+      "$OPENTEE_BUILD_DIR/bin/conn_test"
     '';
 
     test-services.exec = ''
-      if [ ! -f "$OPENTEE_BUILD_DIR/CAs/svc_test" ]; then
+      if [ ! -f "$OPENTEE_BUILD_DIR/bin/svc_test" ]; then
         echo "Error: svc_test not found. Run 'opentee-build' first."
         exit 1
       fi
-      export LD_LIBRARY_PATH="$OPENTEE_BUILD_DIR/libtee/.libs:$LD_LIBRARY_PATH"
-      "$OPENTEE_BUILD_DIR/CAs/.libs/svc_test"
+      export LD_LIBRARY_PATH="$OPENTEE_BUILD_DIR/lib:$LD_LIBRARY_PATH"
+      "$OPENTEE_BUILD_DIR/bin/svc_test"
     '';
 
     test-sha1.exec = ''
-      if [ ! -f "$OPENTEE_BUILD_DIR/CAs/example_sha1" ]; then
+      if [ ! -f "$OPENTEE_BUILD_DIR/bin/example_sha1" ]; then
         echo "Error: example_sha1 not found. Run 'opentee-build' first."
         exit 1
       fi
-      export LD_LIBRARY_PATH="$OPENTEE_BUILD_DIR/libtee/.libs:$LD_LIBRARY_PATH"
-      "$OPENTEE_BUILD_DIR/CAs/.libs/example_sha1"
+      export LD_LIBRARY_PATH="$OPENTEE_BUILD_DIR/lib:$LD_LIBRARY_PATH"
+      "$OPENTEE_BUILD_DIR/bin/example_sha1"
     '';
 
     test-pkcs11.exec = ''
-      if [ ! -f "$OPENTEE_BUILD_DIR/tests/pkcs11_test" ]; then
+      if [ ! -f "$OPENTEE_BUILD_DIR/bin/pkcs11_test" ]; then
         echo "Error: pkcs11_test not found. Run 'opentee-build' first."
         exit 1
       fi
-      export LD_LIBRARY_PATH="$OPENTEE_BUILD_DIR/libtee/.libs:$OPENTEE_BUILD_DIR/libtee_pkcs11/.libs:$LD_LIBRARY_PATH"
-      "$OPENTEE_BUILD_DIR/tests/.libs/pkcs11_test"
+      export LD_LIBRARY_PATH="$OPENTEE_BUILD_DIR/lib:$LD_LIBRARY_PATH"
+      "$OPENTEE_BUILD_DIR/bin/pkcs11_test"
     '';
 
     # Status and debugging
@@ -149,9 +170,21 @@
       if [ -d "$OPENTEE_BUILD_DIR" ]; then
         echo "Build directory: $OPENTEE_BUILD_DIR"
         echo "  ✓ Exists"
+        if [ -f "$OPENTEE_BUILD_DIR/bin/opentee-engine" ]; then
+          echo "  ✓ opentee-engine built"
+        else
+          echo "  ✗ opentee-engine not built"
+        fi
       else
         echo "Build directory: $OPENTEE_BUILD_DIR"
         echo "  ✗ Not created (run 'opentee-build')"
+      fi
+      echo ""
+      echo "IDE Support:"
+      if [ -L "$DEVENV_ROOT/compile_commands.json" ]; then
+        echo "  ✓ compile_commands.json symlink exists"
+      else
+        echo "  ✗ compile_commands.json not found (run 'opentee-build')"
       fi
     '';
 
@@ -172,31 +205,34 @@
         # Ensure storage directory exists
         mkdir -p "$OPENTEE_STORAGE_PATH"
 
-        # Check if build exists
-        if [ ! -f "$OPENTEE_BUILD_DIR/emulator/opentee-engine" ]; then
+        # Check if CMake build exists
+        if [ ! -f "$OPENTEE_BUILD_DIR/bin/opentee-engine" ]; then
             echo "Error: opentee-engine not found!"
             echo "Please run 'opentee-build' first to build the project."
             exit 1
         fi
 
-        # Generate opentee.conf in the state directory
+        # Generate opentee.conf in the state directory (CMake paths)
         OPENTEE_CONF="$DEVENV_STATE/opentee.conf"
         cat > "$OPENTEE_CONF" << EOF
         [PATHS]
-        ta_dir_path = $OPENTEE_BUILD_DIR/TAs/.libs
-        core_lib_path = $OPENTEE_BUILD_DIR/emulator/.libs
-        opentee_bin = $OPENTEE_BUILD_DIR/emulator/opentee-engine
+        ta_dir_path = $OPENTEE_BUILD_DIR/TAs
+        core_lib_path = $OPENTEE_BUILD_DIR/lib
+        opentee_bin = $OPENTEE_BUILD_DIR/bin/opentee-engine
         subprocess_manager = libManagerApi.so
         subprocess_launcher = libLauncherApi.so
         EOF
 
-        echo "Starting Open-TEE engine..."
+        echo "Starting Open-TEE engine (CMake build)..."
         echo "Config: $OPENTEE_CONF"
         echo "Socket: $OPENTEE_SOCKET_FILE_PATH"
         echo "Storage: $OPENTEE_STORAGE_PATH"
 
+        # Set library path for CMake build
+        export LD_LIBRARY_PATH="$OPENTEE_BUILD_DIR/lib:$LD_LIBRARY_PATH"
+
         # Run opentee-engine in foreground mode with custom config
-        exec "$OPENTEE_BUILD_DIR/emulator/opentee-engine" \
+        exec "$OPENTEE_BUILD_DIR/bin/opentee-engine" \
             --config "$OPENTEE_CONF" \
             --pid-dir "$DEVENV_STATE" \
             --foreground
@@ -225,11 +261,11 @@
     # Automatically build on enterShell if needed
     "opentee:build-check" = {
       exec = ''
-        if [ ! -f "$OPENTEE_BUILD_DIR/emulator/opentee-engine" ]; then
+        if [ ! -f "$OPENTEE_BUILD_DIR/bin/opentee-engine" ]; then
           echo "⚠ Open-TEE not built yet."
           echo "Run 'opentee-build' to build the project before starting services."
         else
-          echo "✓ Open-TEE is built and ready"
+          echo "✓ Open-TEE is built and ready (CMake)"
         fi
       '';
       before = [ "devenv:enterShell" ];
@@ -242,8 +278,8 @@
 
   enterShell = ''
     echo ""
-    echo "🔐 Open-TEE Development Environment"
-    echo "======================================"
+    echo "🔐 Open-TEE Development Environment (CMake 3.25+)"
+    echo "================================================="
     echo ""
     echo "📍 Project: Open-TEE"
     echo "📂 Root: $DEVENV_ROOT"
@@ -252,9 +288,11 @@
     echo "Available Commands:"
     echo "-------------------"
     echo "  Build:"
-    echo "    opentee-build        - Build the entire project"
+    echo "    opentee-build        - Build using CMake workflow preset"
+    echo "    opentee-rebuild      - Quick rebuild (skip configure)"
     echo "    opentee-clean        - Clean build artifacts"
     echo "    opentee-distclean    - Remove build directory"
+    echo "    opentee-reconfigure  - Reconfigure CMake and rebuild"
     echo ""
     echo "  Service Management:"
     echo "    devenv up            - Start Open-TEE daemon (in foreground with TUI)"
@@ -272,6 +310,11 @@
     echo "    Socket: $OPENTEE_SOCKET_FILE_PATH"
     echo "    Storage: $OPENTEE_STORAGE_PATH"
     echo "    Build: $OPENTEE_BUILD_DIR"
+    echo ""
+    echo "  CMake Presets (advanced):"
+    echo "    cmake --preset dev              - Configure dev build"
+    echo "    cmake --build --preset dev      - Build dev preset"
+    echo "    cmake --workflow --preset dev   - Full workflow (configure+build+test)"
     echo ""
 
     # Create storage directory if it doesn't exist

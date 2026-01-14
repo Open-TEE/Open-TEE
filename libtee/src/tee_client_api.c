@@ -412,7 +412,7 @@ static void copy_tee_operation_to_internal(TEEC_Operation *operation,
 				continue;
 			}
 
-			memcpy(internal_imp->reg_address, mem_source->buffer + offset,
+			memcpy(internal_imp->reg_address, (char *)mem_source->buffer + offset,
 			       internal_op->params[i].param.memref.size);
 		}
 
@@ -500,7 +500,7 @@ static void copy_internal_to_tee_operation(TEEC_Operation *operation,
 				continue;
 			}
 
-			memcpy(mem_source->buffer + offset, internal_imp->reg_address,
+			memcpy((char *)mem_source->buffer + offset, internal_imp->reg_address,
 			       operation->params[i].memref.size);
 		}
 	}

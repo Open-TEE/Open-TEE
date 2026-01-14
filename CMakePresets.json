@@ -1,0 +1,124 @@
+{
+    "version": 9,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 25,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_COLOR_DIAGNOSTICS": "ON"
+            }
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug",
+            "description": "Debug build with all features enabled",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "OPENTEE_BUILD_TESTS": "ON",
+                "OPENTEE_BUILD_EXAMPLES": "ON",
+                "OPENTEE_ENABLE_LOGGING": "ON"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "Release",
+            "description": "Optimized release build",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "OPENTEE_BUILD_TESTS": "OFF",
+                "OPENTEE_BUILD_EXAMPLES": "OFF",
+                "OPENTEE_ENABLE_LOGGING": "OFF"
+            }
+        },
+        {
+            "name": "relwithdebinfo",
+            "displayName": "Release with Debug Info",
+            "description": "Release build with debug symbols",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "OPENTEE_BUILD_TESTS": "ON",
+                "OPENTEE_BUILD_EXAMPLES": "ON",
+                "OPENTEE_ENABLE_LOGGING": "ON"
+            }
+        },
+        {
+            "name": "dev",
+            "displayName": "Development",
+            "description": "Development build (same as debug, in build/ directory)",
+            "inherits": "base",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "OPENTEE_BUILD_TESTS": "ON",
+                "OPENTEE_BUILD_EXAMPLES": "ON",
+                "OPENTEE_ENABLE_LOGGING": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "debug",
+            "configurePreset": "debug"
+        },
+        {
+            "name": "release",
+            "configurePreset": "release"
+        },
+        {
+            "name": "relwithdebinfo",
+            "configurePreset": "relwithdebinfo"
+        },
+        {
+            "name": "dev",
+            "configurePreset": "dev"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "debug",
+            "configurePreset": "debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "dev",
+            "configurePreset": "dev",
+            "output": {
+                "outputOnFailure": true
+            }
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "dev",
+            "displayName": "Development Workflow",
+            "description": "Configure, build, and test in one step",
+            "steps": [
+                {"type": "configure", "name": "dev"},
+                {"type": "build", "name": "dev"},
+                {"type": "test", "name": "dev"}
+            ]
+        },
+        {
+            "name": "release",
+            "displayName": "Release Workflow",
+            "description": "Configure and build release",
+            "steps": [
+                {"type": "configure", "name": "release"},
+                {"type": "build", "name": "release"}
+            ]
+        }
+    ]
+}

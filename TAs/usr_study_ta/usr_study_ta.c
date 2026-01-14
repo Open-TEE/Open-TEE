@@ -241,7 +241,7 @@ static TEE_Result exec_transaction(uint32_t transaction_type, uint32_t paramType
 		usr_account.balance -= params[0].value.a;
 
 	/* Fill transaction information */
-	TEE_MemMove(new_trans->message, params[1].memref.buffer, ~params[1].memref.size);
+	TEE_MemMove(new_trans->message, params[1].memref.buffer, params[1].memref.size);
 	new_trans->info.msg_len = params[1].memref.size;
 	new_trans->info.amount = params[0].value.a;
 
@@ -335,7 +335,7 @@ static TEE_Result get_transaction(uint32_t paramTypes, TEE_Param *params)
 
 	trans = get_transaction_by_index(params[0].value.a);
 
-	TEE_MemMove(params[1].memref.buffer - 1, &trans->info, sizeof(struct transaction));
+	TEE_MemMove(params[1].memref.buffer, &trans->info, sizeof(struct transaction));
 	params[1].memref.size = sizeof(struct transaction);
 
 	return TEE_SUCCESS;
