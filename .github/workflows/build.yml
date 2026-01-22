@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 Mika Tammi
+#
+# Author: Mika Tammi <mikatammi@gmail.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+name: "Build Open-TEE"
+on:
+  pull_request:
+  push:
+permissions:
+  pull-requests: read
+jobs:
+  # Ubuntu 24.04 build
+  ubuntu-24-04:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install build dependencies
+        run: sudo apt-get install -y cmake ninja-build pkg-config build-essential uuid-dev libssl-dev libelf-dev libfuse-dev
+      - name: Download mBedTLS
+        run: wget https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-3.6.5/mbedtls-3.6.5.tar.bz2
+      - name: Check digest of mBedTLS
+        run: echo "4a11f1777bb95bf4ad96721cac945a26e04bf19f57d905f241fe77ebeddf46d8  mbedtls-3.6.5.tar.bz2" | sha256sum --check
+      - name: Unpack mBedTLS
+        run: tar xvf mbedtls-3.6.5.tar.bz2
+      - name: Build and install mBedTLS
+        run: cd mbedtls-3.6.5 && cmake -DUSE_SHARED_MBEDTLS_LIBRARY=On -B build-mbedtls && cmake --build build-mbedtls && sudo cmake --install build-mbedtls
+      - name: Configure Open-TEE
+        run: cmake -B build-opentee -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/OpenTee
+      - name: Build Open-TEE
+        run: cmake --build build-opentee
+      - name: Install Open-TEE
+        run: cmake --install build-opentee
+  # Nix build
+  nix-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: cachix/install-nix-action@v31
+      - name: Build Open-TEE
+        run: nix build -L
+  # Nix formatting checks
+  nix-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: cachix/install-nix-action@v31
+      - name: Run treefmt in CI-mode
+        run: nix fmt -- --ci

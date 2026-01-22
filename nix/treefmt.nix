@@ -43,6 +43,13 @@
               "chrome/hostapp/include/base64/*"
             ];
           };
+
+          # Format and lint YAML files
+          yamlfmt.enable = true;
+          yamllint = {
+            enable = true;
+            settings.line-length = false;
+          };
         };
 
         settings.formatter = {
