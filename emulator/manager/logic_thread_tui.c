@@ -503,6 +503,7 @@ void tui_display_screen(struct manager_msg *man_msg)
 
 		/* Pass message to TA */
 		man_msg->proc = tui_state.TA_session_lock;
+		add_msg_out_queue_and_notify(man_msg);
 
 		/* State Change: DISPLAY -> SESSION */
 		tui_state.state = TUI_SESSION;
