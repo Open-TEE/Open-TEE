@@ -19,7 +19,7 @@
 
 #include "tee_internal_api.h"
 #include "opentee_internal_api.h"
-#include "ta_extern_resources.h"
+#include "ta_ctl_resources.h"
 
 void add_msg_done_queue_and_notify(struct ta_task *out_task);
 
