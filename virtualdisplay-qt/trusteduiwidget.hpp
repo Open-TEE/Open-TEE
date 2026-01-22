@@ -4,6 +4,12 @@
 #include <QWidget>
 #include <QSharedPointer>
 
+#include <QFormLayout>
+#include <QVector>
+#include <QLabel>
+#include <QLineEdit>
+
+#include "tuiprotocol.hpp"
 #include "tuiservice.hpp"
 #include "comprotocolsocket.hpp"
 
@@ -23,15 +29,25 @@ public:
 public slots:
     void changeColor();
 
+    // TODO: HACK
+    void displayScreen(TUIProtocol::DisplayScreenRequest req);
+    void respond();
+
 signals:
     void statusMessage(const QString &msg);
 
 private:
+    void cleanupScreen();
+
     void sendDisplayInitMsg();
 
     QSharedPointer <TUIState> state_;
     ComProtocolSocket socket_;
     TUIService service_;
+
+    // TODO: HACK
+    QFormLayout layout_;
+    QVector < QLineEdit* > layout_widgets_;
 };
 
 #endif // TRUSTEDUIWIDGET_HPP

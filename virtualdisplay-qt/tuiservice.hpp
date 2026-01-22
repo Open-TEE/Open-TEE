@@ -20,6 +20,7 @@
 #include <QObject>
 #include <QSharedPointer>
 
+#include "tuiprotocol.hpp"
 #include "comprotocolmessage.hpp"
 
 class TUIState;
@@ -41,6 +42,9 @@ public:
 signals:
     void sendMessage(const ComProtocolMessage& msg);
 
+    // TODO: HACK
+    void displayScreen(TUIProtocol::DisplayScreenRequest req);
+
 public slots:
     void messageReceived(const ComProtocolMessage& msg);
 
@@ -49,9 +53,33 @@ private:
     void get_screen_info(QByteArray &response, const QByteArray &msg);
     void init_session(QByteArray &response);
     void close_session(QByteArray &response);
-    void display_screen(QByteArray &response, const QByteArray &msg);
+    void display_screen(const QByteArray &msg);
 
     QSharedPointer <TUIState> state_;
 };
+
+// TODO: HACK
+class ByteArrayStream {
+public:
+	ByteArrayStream(QByteArray *ba):
+		bytearray_(ba) {}
+
+	ByteArrayStream& write (const char* s, size_t n)
+	{
+		bytearray_->append(s, n);
+
+		return *this;
+	}
+private:
+	QByteArray *bytearray_;
+};
+
+template <typename MSGTYPE>
+void msgpack_pack(QByteArray &msg, MSGTYPE &msgpack_struct)
+{
+	ByteArrayStream out(&msg);
+	msgpack::pack(out, msgpack_struct);
+}
+
 
 #endif // TUISERVICE_HPP

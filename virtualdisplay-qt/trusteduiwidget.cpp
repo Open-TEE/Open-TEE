@@ -3,6 +3,7 @@
 #include "comprotocolmessage.hpp"
 
 #include <iostream>
+#include <QPushButton>
 
 TrustedUIWidget::TrustedUIWidget(QWidget *parent) :
 	QWidget(parent),
@@ -19,6 +20,14 @@ TrustedUIWidget::TrustedUIWidget(QWidget *parent) :
 		SIGNAL(sendMessage(const ComProtocolMessage &)),
 		&socket_,
 		SLOT(sendMessage(const ComProtocolMessage &)));
+
+	// TODO: HACK
+	connect(&service_,
+		SIGNAL(displayScreen(TUIProtocol::DisplayScreenRequest)),
+		this,
+		SLOT(displayScreen(TUIProtocol::DisplayScreenRequest)));
+
+	setLayout(&layout_);
 }
 
 TrustedUIWidget::~TrustedUIWidget()
@@ -60,34 +69,6 @@ void TrustedUIWidget::stop()
 
 void TrustedUIWidget::sendDisplayInitMsg()
 {
-/*
-struct com_msg_tui_display_init {
-	struct com_msg_hdr msg_hdr;
-	uint32_t timeout;
-	uint32_t grayscaleBitsDepth;
-	uint32_t redBitsDepth;
-	uint32_t greenBitsDepth;
-	uint32_t blueBitsDepth;
-	uint32_t widthInch;
-	uint32_t heightInch;
-	uint32_t maxEntryFields;
-	uint32_t entryFieldLabelWidth;
-	uint32_t entryFieldLabelHeight;
-	uint32_t maxEntryFieldLength;
-	uint8_t labelColorRed;
-	uint8_t labelColorGreen;
-	uint8_t labelColorBlue;
-	uint32_t labelWidth;
-	uint32_t labelHeight;
-	struct {
-		uint32_t textLength;
-		uint32_t buttonWidth;
-		uint32_t buttonHeight;
-		uint32_t buttonTextCustom;
-		uint32_t buttonImageCustom;
-	} buttonInfo[6];
-} __attribute__((aligned));
-*/
 	QString btnText("TESTI");
 	QByteArray textArray(btnText.toUtf8());
 
@@ -132,4 +113,83 @@ struct com_msg_tui_display_init {
 
 	ComProtocolMessage com_msg(raw_msg);
 	socket_.sendMessage(com_msg);
+}
+
+void TrustedUIWidget::displayScreen(TUIProtocol::DisplayScreenRequest req)
+{
+	cleanupScreen();
+
+	layout_.addRow("", new QLabel(req.screenConfiguration().screenLabel().text().c_str()));
+
+	for (auto ef : req.entryFields()) {
+		QLineEdit* new_line_edit = new QLineEdit();
+
+		switch (ef.mode()) {
+			case TEE_TUI_HIDDEN_MODE:
+				new_line_edit->setEchoMode(QLineEdit::Password);
+				break;
+			case TEE_TUI_TEMPORARY_CLEAR_MODE:
+				new_line_edit->setEchoMode(QLineEdit::PasswordEchoOnEdit);
+				break;
+			case TEE_TUI_CLEAR_MODE:
+			default:
+				new_line_edit->setEchoMode(QLineEdit::Normal);
+				break;
+		}
+
+		layout_.addRow(ef.label().c_str(), new_line_edit);
+		layout_widgets_.push_back(new_line_edit);
+	}
+
+	QPushButton *btn = new QPushButton("OK");
+
+	connect(btn,
+		SIGNAL(clicked()),
+		this,
+		SLOT(respond()));
+
+	layout_.addRow("", btn);
+}
+
+void TrustedUIWidget::cleanupScreen()
+{
+	QLayoutItem *child;
+	while (layout_.count() != 0) {
+	        child = layout_.takeAt(0);
+		delete child->widget();
+		delete child;
+	}
+	/*
+	for (auto entry : layout_widgets_) {
+		layout_.removeWidget(entry);
+	}
+	*/
+
+	layout_widgets_.clear();
+}
+
+void TrustedUIWidget::respond()
+{
+	// Serialize response
+	TUIProtocol::DisplayScreenResponse resp;
+
+	resp.ret() = 1;
+
+	for (auto entry : layout_widgets_) {
+		resp.entryFieldInput().push_back(entry->text().toStdString());
+	}
+
+	cleanupScreen();
+
+	QByteArray response;
+	msgpack_pack(response, resp);
+
+	//Q_ASSERT(req.entryFields().size() == resp.entryFieldInput().size());
+
+	ComProtocolMessage respo(COM_MSG_NAME_TUI_DISPLAY_SCREEN,
+			         COM_TYPE_RESPONSE,
+			         0,
+			         response);
+
+	socket_.sendMessage(respo);
 }

@@ -77,7 +77,10 @@ void TUIService::messageReceived(const ComProtocolMessage& msg)
 		}
 		case COM_MSG_NAME_TUI_DISPLAY_SCREEN: {
 			qDebug() << "display_screen";
-			display_screen(response, msg.getPayload());
+			// TODO: HACK
+			display_screen(msg.getPayload());
+			return;
+
 			break;
 		}
 		default: {
@@ -106,28 +109,6 @@ void msgpack_unpack(const QByteArray &msg, MSGTYPE &msgpack_struct)
 	msgpack::object o = result.get();
 
 	o.convert(msgpack_struct);
-}
-
-class ByteArrayStream {
-public:
-	ByteArrayStream(QByteArray *ba):
-		bytearray_(ba) {}
-
-	ByteArrayStream& write (const char* s, size_t n)
-	{
-		bytearray_->append(s, n);
-
-		return *this;
-	}
-private:
-	QByteArray *bytearray_;
-};
-
-template <typename MSGTYPE>
-void msgpack_pack(QByteArray &msg, MSGTYPE &msgpack_struct)
-{
-	ByteArrayStream out(&msg);
-	msgpack::pack(out, msgpack_struct);
 }
 
 void TUIService::check_text_format(QByteArray &response, const QByteArray &msg)
@@ -171,22 +152,11 @@ void TUIService::close_session(QByteArray &response)
 	msgpack_pack(response, resp);
 }
 
-void TUIService::display_screen(QByteArray &response, const QByteArray &msg)
+void TUIService::display_screen(const QByteArray &msg)
 {
 	// Deserialize parameters
 	TUIProtocol::DisplayScreenRequest req;
 	msgpack_unpack(msg, req);
 
-	// Serialize response
-	TUIProtocol::DisplayScreenResponse resp;
-
-	resp.ret() = 1;
-
-	for (auto ef : req.entryFields()) {
-		resp.entryFieldInput().push_back("foo");
-	}
-
-	msgpack_pack(response, resp);
-
-	Q_ASSERT(req.entryFields().size() == resp.entryFieldInput().size());
+	emit displayScreen(req);
 }
