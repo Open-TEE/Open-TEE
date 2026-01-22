@@ -481,8 +481,12 @@ static TEE_Result wait_and_handle_tui_display_screen(bool closeTUISession,
 	cmp_ctx_t cmp;
 	TEE_Result ret = TEE_ERROR_GENERIC;
 
+	OT_LOG(LOG_ERR, "Waiting");
+
 	if (!wait_for_response(&msg, &msg_array))
 		goto err;
+
+	OT_LOG(LOG_ERR, "Waiting 2");
 
 	/* Deserialize MessagePack structure */
 	cmp_init(&cmp, &msg_array, buffer_reader, buffer_writer);

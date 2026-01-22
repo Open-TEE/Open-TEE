@@ -465,6 +465,7 @@ void tui_display_screen(struct manager_msg *man_msg)
 
 	if (msg->msg_hdr.msg_type == COM_TYPE_QUERY) {
 		/* Pass query from TA to Display */
+		OT_LOG(LOG_ERR, "TUIDisplayScreen: TA -> Display");
 
 		if (tui_state.state == TUI_DISPLAY) {
 			/* Send TEE_ERROR_BUSY error response when already displaying stuff */
@@ -495,6 +496,7 @@ void tui_display_screen(struct manager_msg *man_msg)
 
 	} else if (msg->msg_hdr.msg_type == COM_TYPE_RESPONSE) {
 		/* Pass response from Display to TA */
+		OT_LOG(LOG_ERR, "TUIDisplayScreen: Display -> TA");
 
 		if (tui_state.state != TUI_DISPLAY) {
 			OT_LOG(LOG_ERR, "Display Screen response received in invalid state");
