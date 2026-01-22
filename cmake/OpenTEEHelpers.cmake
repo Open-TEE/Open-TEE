@@ -62,8 +62,6 @@ function(opentee_add_ta)
 
     # Remove version suffix from shared library (libfoo.so instead of libfoo.so.0.0.0)
     set_target_properties(${TA_NAME} PROPERTIES
-        VERSION ""
-        SOVERSION ""
         PREFIX "lib"
         LIBRARY_OUTPUT_DIRECTORY "${_ta_output_dir}"
     )
