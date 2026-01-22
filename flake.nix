@@ -63,12 +63,6 @@
         flake-parts.follows = "flake-parts";
       };
     };
-
-    # Container builder for devenv
-    nix2container = {
-      url = "github:nlewo/nix2container";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs =

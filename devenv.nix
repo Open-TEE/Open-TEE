@@ -3,12 +3,16 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   pkgs,
+  lib,
   config,
   openTeeDeps,
   ...
 }:
 
 {
+  # Disable automatic container generation (avoids nix2container dependency)
+  containers = lib.mkForce { };
+
   # https://devenv.sh/basics/
   env = {
     # Open-TEE socket and storage paths using devenv state directory
