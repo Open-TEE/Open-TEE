@@ -75,7 +75,7 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t c
 		TEE_MemFill(entryfields, 0, sizeof(entryfields));
 
 		screenConf.screenOrientation = orientation;
-		screenConf.label.text = "Label Text";
+		screenConf.label.text = "Please login to ACME Bank";
 		screenConf.label.textColor[0] = 255;
 		screenConf.label.textColor[1] = 128;
 		screenConf.label.textColor[2] = 0;
@@ -98,13 +98,15 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t c
 		entryfields[2].buffer = pincode_buffer;
 		entryfields[2].bufferLength = sizeof(pincode_buffer);
 
-		if (TEE_TUICheckTextFormat("hahaateksti", &width, &height, &lastindex) != TEE_SUCCESS ||
-		    TEE_TUIGetScreenInfo(orientation, 4, &screenInfo) == TEE_SUCCESS ||
-		                                             /* TODO: ^  */
-		    TEE_TUIInitSession() != TEE_SUCCESS ||
-		    TEE_TUIDisplayScreen(&screenConf, false, entryfields, 3, &button) != TEE_SUCCESS ||
-		    TEE_TUICloseSession() != TEE_SUCCESS)
-			return 0x420;
+		TEE_TUICheckTextFormat("hahaateksti", &width, &height, &lastindex);
+		OT_LOG(LOG_ERR, "1");
+		//TEE_TUIGetScreenInfo(orientation, 4, &screenInfo);
+		TEE_TUIInitSession();
+		OT_LOG(LOG_ERR, "2");
+		TEE_TUIDisplayScreen(&screenConf, false, entryfields, 3, &button);
+		OT_LOG(LOG_ERR, "3");
+		TEE_TUICloseSession();
+		OT_LOG(LOG_ERR, "4");
 
 		OT_LOG(LOG_ERR, "%s", screenInfo.buttonInfo[0].buttonText);
 		OT_LOG(LOG_ERR, "USER: %s", username_buffer);
