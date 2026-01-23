@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "com_protocol.h"
@@ -26,11 +27,9 @@
 #include "logic_thread_tui.h"
 #include "trusted_ui_state.h"
 #include "extern_resources.h"
-#include "socket_help.h"
 #include "tee_list.h"
 #include "tee_logging.h"
 #include "tui_timeout.h"
-#include "h_table.h"
 
 /* Struct for TUI process */
 struct __proc tui_proc;
@@ -95,9 +94,6 @@ void accept_tui_display_fd(struct epoll_event *event)
 	OT_LOG(LOG_ERR, "DISCONNECTED -> CONNECTED");
 	tui_state.state = TUI_CONNECTED;
 
-	/* Initialize hash table for requests */
-	h_table_create(&(tui_state.requests), 5);
-
 	if (pthread_mutex_unlock(&tui_state_mutex))
 		OT_LOG(LOG_ERR, "Failed to unlock the mutex");
 
@@ -114,8 +110,6 @@ err:
 
 void tui_reset()
 {
-	proc_t ta;
-
 	/* Unregister epoll and close socket */
 	epoll_unreg(tui_state.proc->sockfd);
 	close(tui_state.proc->sockfd);
@@ -128,19 +122,15 @@ void tui_reset()
 
 	/* Send error message to all TAs waiting for reply,
 	 * so TAs won't get stuck waiting for replies */
-	h_table_init_stepper(tui_state.requests);
-	for (ta = h_table_step(tui_state.requests);
-	     ta != NULL;
-	     ta = h_table_step(tui_state.requests)) {
-		tui_send_error_msg(TEE_ERROR_GENERIC, ta);
-	}
+	for (size_t i = 0; i < tui_state.requests_count; ++i) {
+		tui_send_error_msg(TEE_ERROR_GENERIC, tui_state.requests[i].request);
+	};
 
 	/* Cancel possible timeout */
 	tui_timeout_cancel();
 
-	/* Empty request table */
-	h_table_free(tui_state.requests);
-	tui_state.requests = NULL;
+	/* Empty request array */
+	tui_state.requests_count = 0;
 
 	/* Free cached screen info */
 	free(tui_state.screen_info_data);
@@ -182,7 +172,7 @@ void handle_tui_display_data(struct epoll_event *event)
 	msg->proc = tui_state.proc;
 
 	/* Receive message */
-	ret = com_recv_msg(event->data.fd, &msg->msg, &msg->msg_len);
+	ret = com_recv_msg(event->data.fd, &msg->msg, &msg->msg_len, NULL, NULL);
 	if (ret != 0) {
 		OT_LOG(LOG_ERR, "Error receiving data from TUI Socket");
 		goto err;
@@ -190,10 +180,7 @@ void handle_tui_display_data(struct epoll_event *event)
 
 	OT_LOG(LOG_ERR, "Read %d", msg->msg_len);
 
-	if (add_man_msg_todo_queue_and_notify(msg)) {
-		OT_LOG(LOG_ERR, "Failed to add to inbound queue")
-		goto err;
-	}
+	add_man_msg_inbound_queue_and_notify(msg);
 
 	if (pthread_mutex_unlock(&tui_state_mutex))
 		OT_LOG(LOG_ERR, "Failed to unlock the mutex");

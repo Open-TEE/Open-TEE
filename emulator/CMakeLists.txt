@@ -47,11 +47,14 @@ add_library(OpenTEE::CommonApi ALIAS CommonApi)
 add_library(ManagerApi SHARED
     manager/ext_storage_stream_api_posix.c
     manager/io_thread.c
+    manager/io_thread_tui.c
     manager/logic_thread.c
+    manager/logic_thread_tui.c
     manager/mainloop.c
     manager/opentee_manager_storage_api.c
     manager/shm_mem.c
     manager/ta_dir_watch.c
+    manager/tui_timeout.c
 )
 
 target_include_directories(ManagerApi

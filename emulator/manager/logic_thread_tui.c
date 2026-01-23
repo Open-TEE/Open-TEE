@@ -1,5 +1,6 @@
 /*****************************************************************************
 ** Copyright (C) 2015 Intel Corporation.                                    **
+** Copyright (C) 2026 Mika Tammi                                            **
 **                                                                          **
 ** Licensed under the Apache License, Version 2.0 (the "License");          **
 ** you may not use this file except in compliance with the License.         **
@@ -25,10 +26,8 @@
 
 #include "com_protocol.h"
 #include "extern_resources.h"
-#include "h_table.h"
 #include "io_thread.h"
 #include "shm_mem.h"
-#include "socket_help.h"
 #include "ta_exit_states.h"
 #include "ta_dir_watch.h"
 #include "tee_list.h"
@@ -117,6 +116,55 @@ static bool tui_validate_display_init_msg(void *msg, size_t msg_len)
 
 	return true;
 }
+
+static bool tui_state_requests_add(struct trusted_ui_state *dst,
+				   uint64_t id,
+				   proc_t request) {
+	if (dst == NULL) {
+		return false;
+	}
+	if (!(dst->requests_count < TRUSTED_UI_STATE_MAX_REQUEST_COUNT)) {
+		return false;
+	}
+
+	++dst->requests_count;
+	dst->requests[dst->requests_count].id = id;
+	dst->requests[dst->requests_count].request = request;
+
+	return true;
+}
+
+static proc_t tui_state_requests_get(struct trusted_ui_state *dst, uint64_t id) {
+	if (dst == NULL) {
+		return NULL;
+	}
+	for (size_t i = 0; i < dst->requests_count; ++i) {
+		if (dst->requests[i].id == id) {
+			return dst->requests[i].request;
+		}
+	}
+	return NULL;
+}
+
+static void tui_state_requests_remove(struct trusted_ui_state *dst, uint64_t id) {
+	if (dst == NULL) {
+		return;
+	}
+	for (size_t i = 0; i < dst->requests_count; ++i) {
+		if (dst->requests[i].id == id) {
+			if (i < dst->requests_count - 1) {
+				memmove(&(dst->requests[i]),
+					&(dst->requests[i + 1]),
+					dst->requests_count - (i + 1));
+			}
+			--dst->requests_count;
+
+			return;
+		}
+	}
+}
+
+void tui_reset();
 
 void tui_display_init(struct manager_msg *man_msg)
 {
@@ -207,10 +255,7 @@ void tui_check_text_format(struct manager_msg *man_msg)
 
 	if (msg->msg_hdr.msg_type == COM_TYPE_QUERY) {
 		/* Add to pending requests table */
-		h_table_insert(tui_state.requests,
-			       (unsigned char *)(&tui_state.request_id_counter),
-			       sizeof(tui_state.request_id_counter),
-			       man_msg->proc);
+		tui_state_requests_add(&tui_state, tui_state.request_id_counter, man_msg->proc);
 
 		/* Add request id into message session_id field */
 		msg->msg_hdr.sess_id = tui_state.request_id_counter;
@@ -228,9 +273,7 @@ void tui_check_text_format(struct manager_msg *man_msg)
 
 	} else if (msg->msg_hdr.msg_type == COM_TYPE_RESPONSE) {
 		/* Pass message to TA which originally requested */
-		man_msg->proc = h_table_get(tui_state.requests,
-					    (unsigned char *)(&msg->msg_hdr.sess_id),
-					    sizeof(tui_state.request_id_counter));
+		man_msg->proc = tui_state_requests_get(&tui_state, msg->msg_hdr.sess_id);
 
 		if (man_msg->proc == NULL) {
 			OT_LOG(LOG_ERR, "Invalid request id in response");
@@ -238,9 +281,7 @@ void tui_check_text_format(struct manager_msg *man_msg)
 		}
 
 		/* Remove from pending requests table */
-		h_table_remove(tui_state.requests,
-			       (unsigned char *)(&msg->msg_hdr.sess_id),
-			       sizeof(tui_state.request_id_counter));
+		tui_state_requests_remove(&tui_state, msg->msg_hdr.sess_id);
 
 		add_msg_out_queue_and_notify(man_msg);
 		OT_LOG(LOG_ERR, "TUICheckTextFormat: Display -> TA");
@@ -540,12 +581,12 @@ void tui_display_ta_msg(struct manager_msg *man_msg)
 	if (msg_type == COM_TYPE_RESPONSE) {
 		OT_LOG(LOG_ERR, "Response message, routing to TA");
 
-		man_msg->proc = h_table_get(tui_state.requests, (unsigned char *)"aa", 2);
-		h_table_remove(tui_state.requests, (unsigned char *)"aa", 2);
+		// man_msg->proc = h_table_get(tui_state.requests, (unsigned char *)"aa", 2);
+		// h_table_remove(tui_state.requests, (unsigned char *)"aa", 2);
 		add_msg_out_queue_and_notify(man_msg);
 
 	} else if (tui_state.state == TUI_CONNECTED) {
-		h_table_insert(tui_state.requests, (unsigned char *)"aa", 2, man_msg->proc);
+		// h_table_insert(tui_state.requests, (unsigned char *)"aa", 2, man_msg->proc);
 		man_msg->proc = tui_state.proc;
 
 		OT_LOG(LOG_ERR, "Routing message to TUI Display");

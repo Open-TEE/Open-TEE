@@ -1,5 +1,6 @@
 /*****************************************************************************
 ** Copyright (C) 2015 Intel Corporation.                                    **
+** Copyright (C) 2026 Mika Tammi                                            **
 **                                                                          **
 ** Licensed under the Apache License, Version 2.0 (the "License");          **
 ** you may not use this file except in compliance with the License.         **
@@ -36,12 +37,22 @@ enum trusted_ui_connection_state {
         TUI_DISPLAY
 };
 
+struct trusted_ui_state_request {
+        uint64_t id;
+	proc_t request;
+};
+
+#define TRUSTED_UI_STATE_MAX_REQUEST_COUNT 8
+
 struct trusted_ui_state {
 	proc_t proc;
 	enum trusted_ui_connection_state state;
 
-        /* Table to hold TUI requests from TAs */
-        HASHTABLE requests;
+	/* Array to hold pending Trusted UI requests from TAs, so it is
+	 * possible to return response to correct TA that originally made the
+	 * function call. */
+        struct trusted_ui_state_request requests[TRUSTED_UI_STATE_MAX_REQUEST_COUNT];
+	size_t requests_count;
 
         uint64_t request_id_counter;
 

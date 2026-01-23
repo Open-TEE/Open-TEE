@@ -82,6 +82,7 @@ static int init_sock(const char *sock_path, int *pub_sockfd)
 {
 	struct sockaddr_un sock_addr;
 
+	/* TODO: Move below */
 	/* Try to get socket path from environment variable, otherwise fallback to hardcoded one. */
 	char *known_socket_path = getenv("OPENTEE_SOCKET_FILE_PATH");
 	if (known_socket_path == NULL)
