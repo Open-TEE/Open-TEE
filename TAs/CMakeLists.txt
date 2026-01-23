@@ -50,6 +50,19 @@ if(OPENTEE_BUILD_EXAMPLES)
 endif()
 
 # ============================================================================
+# TA: trusted_ui_example_ta (Trusted User Interface Example)
+# ============================================================================
+
+if(OPENTEE_BUILD_EXAMPLES)
+    opentee_add_ta(
+        NAME trusted_ui_example_ta
+        SOURCES
+            trusted_ui_example_ta/open_tee_conf.c
+            trusted_ui_example_ta/trusted_ui_example_ta.c
+    )
+endif()
+
+# ============================================================================
 # TA: ta_conn_test (Connection Test TA)
 # Note: This TA includes internal API tests (crypto, storage, ta2ta)
 # ============================================================================
