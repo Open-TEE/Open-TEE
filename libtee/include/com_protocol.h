@@ -52,6 +52,7 @@
 #define WELL_KNOWN_PUBLIC_SOCK_PATH "/data/local/tmp/open_tee_sock"
 #else
 #define WELL_KNOWN_PUBLIC_SOCK_PATH "/tmp/open_tee_sock"
+#define WELL_KNOWN_TUI_SOCK_PATH "/tmp/open_tee_tui_display"
 #endif
 
 /* clang-format off */
