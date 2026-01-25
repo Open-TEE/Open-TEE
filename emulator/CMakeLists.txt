@@ -120,6 +120,9 @@ add_library(InternalApi SHARED
     internal_api/storage/storage_utils.c
     internal_api/storage/tee_storage_api.c
     internal_api/storage/transient_object_api.c
+
+    # Trusted User Interface
+    internal_api/tee_tui_api.c
 )
 
 target_include_directories(InternalApi
