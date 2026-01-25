@@ -1,5 +1,5 @@
 /*****************************************************************************
-** Copyright (C) 2014 Mika Tammi                                            **
+** Copyright (C) 2014-2026 Mika Tammi                                       **
 **                                                                          **
 ** Licensed under the Apache License, Version 2.0 (the "License");          **
 ** you may not use this file except in compliance with the License.         **
@@ -24,11 +24,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <openssl/bn.h>
-#include <openssl/rand.h>
-#include <openssl/rsa.h>
+#include <mbedtls/aes.h>
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/error.h>
+#include <mbedtls/rsa.h>
 
 #define RSA_KEY_BITS 4096
+#define RSA_EXPONENT (0x010001)
 #define AES_KEY_SIZE (256 / 8)
 #define AES_IV_SIZE (256 / 8)
 
@@ -55,71 +58,43 @@ struct trusted_input {
 	char *pincode;
 };
 
-static int seed_random_generator()
-{
-	const ssize_t byte_read_count = RSA_KEY_BITS / 8;
-	if (RAND_load_file("/dev/urandom", byte_read_count) != byte_read_count)
-		return -1;
-
-	return 0;
-}
-
-static int decrypt_aes_key(RSA *rsa,
+static int decrypt_aes_key(mbedtls_rsa_context *rsa_ctx,
+			   mbedtls_ctr_drbg_context *ctr_drbg_ctx,
 			   const char *encrypted_key_buf,
 			   char *aes_key,
 			   char *aes_iv)
 {
-	unsigned char decrypted_buf[AES_KEY_SIZE + AES_IV_SIZE];
+	int ret = -1;
+	size_t output_len = 0;
+	const size_t modulus_len = mbedtls_rsa_get_len(rsa_ctx);
+	unsigned char *decrypted_buf = malloc(modulus_len);
+	if (decrypted_buf == NULL)
+		return ret;
 
-	if (RSA_private_decrypt(AES_KEY_SIZE + AES_IV_SIZE,
-				(const unsigned char *)encrypted_key_buf,
-				decrypted_buf,
-				rsa,
-				RSA_PKCS1_OAEP_PADDING) == -1)
-		return -1;
-
-	memcpy(aes_key, decrypted_buf, AES_KEY_SIZE);
-	memcpy(aes_iv, decrypted_buf + AES_KEY_SIZE, AES_IV_SIZE);
-
-	return 0;
-}
-
-static RSA *generate_rsa_key()
-{
-	RSA *rsa = NULL;
-	BIGNUM *exponent = NULL;
-
-	/* Seed OpenSSL random generator */
-	if (seed_random_generator() != 0) {
-		printf("Error seeding random generator\n");
+	ret = mbedtls_rsa_pkcs1_decrypt(rsa_ctx,
+					mbedtls_ctr_drbg_random,
+                              	      	ctr_drbg_ctx,
+                              	      	&output_len,
+                              	      	(const unsigned char *) encrypted_key_buf,
+                              	      	decrypted_buf,
+                              	      	modulus_len);
+	if (ret != 0)
+		goto err;
+	/* Check the RSA encrypted blob actually contained correct amount of
+	   data when decrypted. */
+	if (output_len != AES_KEY_SIZE + AES_IV_SIZE) {
+		ret = -420;
 		goto err;
 	}
 
-	rsa = RSA_new();
-	exponent = BN_new();
-
-	if (rsa == NULL ||
-	    exponent == NULL ||
-
-	    /* Set 65537 as exponent */
-	    BN_hex2bn(&exponent, "010001") == 0 ||
-
-	    /* Generate RSA private/public key pair */
-	    RSA_generate_key_ex(rsa, RSA_KEY_BITS, exponent, NULL) == 0)
-		goto err;
-
-	BN_free(exponent);
-	exponent = NULL;
-
-	return rsa;
+	memcpy(aes_key, decrypted_buf, AES_KEY_SIZE);
+	memcpy(aes_iv, decrypted_buf + AES_KEY_SIZE, AES_IV_SIZE);
 err:
-	RSA_free(rsa);
-	rsa = NULL;
+	memset(decrypted_buf, 0, modulus_len);
+	free(decrypted_buf);
+	decrypted_buf = NULL;
 
-	BN_free(exponent);
-	exponent = NULL;
-
-	return NULL;
+	return ret;
 }
 
 static int invoke_ta_tui_cmd(struct ta_output *output,
@@ -280,65 +255,99 @@ static int deserialize_data(struct trusted_input *dest, char *buf, size_t buf_le
 	return 0;
 }
 
-static int extract_modulus_from_rsa(struct rsa_key_modulus *n, RSA *rsa)
+static int extract_modulus_from_rsa(struct rsa_key_modulus *n, mbedtls_rsa_context *rsa_ctx)
 {
-	ssize_t modulus_len = BN_num_bytes(rsa->n);
+	int ret = -1;
+	if (n == NULL)
+		return ret;
+
+	size_t modulus_len = mbedtls_rsa_get_len(rsa_ctx);
 
 	n->modulus = malloc(modulus_len);
 	if (n->modulus == NULL)
-		return -1;
-
-	if (BN_bn2bin(rsa->n, (unsigned char *)n->modulus) != modulus_len) {
-		free(n->modulus);
-		n->modulus = NULL;
-		return -2;
-	}
-
+		return ret;
 	n->modulus_len = modulus_len;
 
-	return 0;
+	ret = mbedtls_rsa_export_raw(rsa_ctx,
+				     n->modulus,
+				     n->modulus_len,
+				     NULL,
+				     0,
+				     NULL,
+				     0,
+				     NULL,
+				     0,
+				     NULL,
+				     0);
+	if (ret != 0) {
+		free(n->modulus);
+		n->modulus = NULL;
+		n->modulus_len = 0;
+	}
+
+	return ret;
 }
 
 static int decrypt_data_from_ta(struct trusted_input *user_input)
 {
 	int ret = -1;
-	RSA *rsa;
+	mbedtls_entropy_context entropy_ctx;
+	mbedtls_ctr_drbg_context ctr_drbg_ctx;
+	mbedtls_rsa_context rsa_ctx;
 	struct ta_output encrypted_data = { 0 };
 	struct rsa_key_modulus pubkey = { 0 };
 	char aes_key[AES_KEY_SIZE];
 	char aes_iv[AES_IV_SIZE];
 	char *serialized_user_data = NULL;
 	size_t serialized_user_data_len = 0;
+	const char *personalization_string = "Open-TEE Trusted User Interface Example Client App";
 
-	/* Generate RSA key pair */
+	mbedtls_entropy_init(&entropy_ctx);
+	mbedtls_ctr_drbg_init(&ctr_drbg_ctx);
+	ret = mbedtls_ctr_drbg_seed(&ctr_drbg_ctx,
+				    mbedtls_entropy_func,
+				    &entropy_ctx,
+				    (const unsigned char *) personalization_string,
+				    sizeof(personalization_string));
+	if (ret != 0)
+		goto err_1;
+
+	/* Generate RSA private/public key pair */
 	/* NOTE: In real life situation the key would be generated on the
 	 *       server of the bank and only public key would be submitted
 	 *       to this application. Decryption would then happen on the
 	 *       server of the bank. */
-	rsa = generate_rsa_key();
-	if (rsa == NULL)
-		goto err;
+	mbedtls_rsa_init(&rsa_ctx);
+	mbedtls_rsa_set_padding(&rsa_ctx, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_NONE);
+	ret = mbedtls_rsa_gen_key(&rsa_ctx,
+				  mbedtls_ctr_drbg_random,
+			    	  &ctr_drbg_ctx,
+			    	  RSA_KEY_BITS,
+			    	  RSA_EXPONENT);
+	if (ret != 0)
+		goto err_2;
 
 	/* Extract RSA public key modulus from OpenSSL RSA struct */
-	if (extract_modulus_from_rsa(&pubkey, rsa) != 0)
-		goto err;
+	if (extract_modulus_from_rsa(&pubkey, &rsa_ctx) != 0)
+		goto err_2;
 
 	/* Allocate buffers for data returned from TA */
-	encrypted_data.rsa_encrypted_aes_key_len = RSA_size(rsa);
+	encrypted_data.rsa_encrypted_aes_key_len = mbedtls_rsa_get_len(&rsa_ctx);
 	encrypted_data.rsa_encrypted_aes_key =
 		malloc(encrypted_data.rsa_encrypted_aes_key_len);
 	if (encrypted_data.rsa_encrypted_aes_key == NULL)
-		goto err;
+		goto err_3;
 
 	encrypted_data.aes_encrypted_user_data_len = 1024;
 	encrypted_data.aes_encrypted_user_data =
 		malloc(encrypted_data.aes_encrypted_user_data_len);
 	if (encrypted_data.aes_encrypted_user_data == NULL)
-		goto err;
+		goto err_4;
 
 	/* Invoke Trusted Application for Trusted User Interface input */
-	if (invoke_ta(&encrypted_data, &pubkey) != 0)
-		goto err;
+	ret = invoke_ta(&encrypted_data, &pubkey);
+	if (ret!= 0)
+		goto err_5;
 
 	/* Decrypt AES key with RSA private key */
 	//decrypt_aes_key(rsa, encrypted_data.rsa_encrypted_aes_key, aes_key, aes_iv);
@@ -350,15 +359,19 @@ static int decrypt_data_from_ta(struct trusted_input *user_input)
 	ret = deserialize_data(user_input,
 			       encrypted_data.aes_encrypted_user_data,
 			       encrypted_data.rsa_encrypted_aes_key_len);
-	if (ret != 0)
-		goto err;
-
-	ret = 0;
-err:
-	free(serialized_user_data);
+err_6:
+	// free(serialized_user_data);
+err_5:
 	free(encrypted_data.aes_encrypted_user_data);
+err_4:
 	free(encrypted_data.rsa_encrypted_aes_key);
+err_3:
 	free(pubkey.modulus);
+err_2:
+	mbedtls_rsa_free(&rsa_ctx);
+err_1:
+	mbedtls_ctr_drbg_free(&ctr_drbg_ctx);
+        mbedtls_entropy_free(&entropy_ctx);
 
 	return ret;
 }

@@ -109,7 +109,7 @@ if(OPENTEE_BUILD_EXAMPLES)
         INCLUDE_DIRS
             ${CMAKE_CURRENT_SOURCE_DIR}/trusted_ui_example_ca
         LINK_LIBRARIES
-            OpenSSL::Crypto
+            MbedTLS::mbedcrypto
     )
 endif()
 
