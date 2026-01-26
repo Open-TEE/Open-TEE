@@ -160,12 +160,14 @@ add_library(OpenTEE::InternalApi ALIAS InternalApi)
 # ============================================================================
 
 add_library(LauncherApi SHARED
-    launcher/dynamic_loader.c
     launcher/launcher_mainloop.c
     launcher/ta_internal_thread.c
+    launcher/ta_internal_thread_tui.c
+    launcher/dynamic_loader.c
     launcher/ta_io_thread.c
     launcher/ta_process.c
     launcher/ta_signal_handler.c
+    ../cmp/cmp.c
 )
 
 target_include_directories(LauncherApi
@@ -173,9 +175,9 @@ target_include_directories(LauncherApi
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/launcher>
     PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../cmp
         ${CMAKE_CURRENT_SOURCE_DIR}/common
         ${CMAKE_CURRENT_SOURCE_DIR}/internal_api
-        ${CMAKE_CURRENT_SOURCE_DIR}/manager
 )
 
 target_link_libraries(LauncherApi
