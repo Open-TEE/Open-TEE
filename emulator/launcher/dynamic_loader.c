@@ -40,11 +40,11 @@ static void fill_internal_api_callbacks(struct internal_api_callbacks *calls)
 	calls->fn_ptr_unmask_cancellation = unmask_cancellation;
 
 	/* Trusted User Interface API */
-	calls->fn_ptr_tui_check_text_format = tui_check_text_format;
-	calls->fn_ptr_tui_get_screen_info = tui_get_screen_info;
-	calls->fn_ptr_tui_init_session = tui_init_session;
-	calls->fn_ptr_tui_close_session = tui_close_session;
-	calls->fn_ptr_tui_display_screen = tui_display_screen;
+	calls->fn_ptr_tui_check_text_format = ta_tui_check_text_format;
+	calls->fn_ptr_tui_get_screen_info = ta_tui_get_screen_info;
+	calls->fn_ptr_tui_init_session = ta_tui_init_session;
+	calls->fn_ptr_tui_close_session = ta_tui_close_session;
+	calls->fn_ptr_tui_display_screen = ta_tui_display_screen;
 }
 
 TEE_Result load_ta(const char *path, struct ta_interface **callbacks)

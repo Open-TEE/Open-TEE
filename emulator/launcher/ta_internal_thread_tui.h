@@ -17,21 +17,21 @@
 #include "tee_internal_api.h"
 #include "tee_tui_data_types.h"
 
-TEE_Result tui_check_text_format(char *text,
-				 uint32_t *width,
-				 uint32_t *height,
-				 uint32_t *lastIndex);
+TEE_Result ta_tui_check_text_format(char *text,
+				    uint32_t *width,
+				    uint32_t *height,
+				    uint32_t *lastIndex);
 
-TEE_Result tui_get_screen_info(TEE_TUIScreenOrientation screenOrientation,
-			       uint32_t nbEntryFields,
-			       TEE_TUIScreenInfo *screenInfo);
+TEE_Result ta_tui_get_screen_info(TEE_TUIScreenOrientation screenOrientation,
+				  uint32_t nbEntryFields,
+				  TEE_TUIScreenInfo *screenInfo);
 
-TEE_Result tui_init_session();
+TEE_Result ta_tui_init_session();
 
-TEE_Result tui_close_session();
+TEE_Result ta_tui_close_session();
 
-TEE_Result tui_display_screen(TEE_TUIScreenConfiguration *screenConfiguration,
-			      bool closeTUISession,
-			      TEE_TUIEntryField *entryFields,
-			      uint32_t entryFieldCount,
-			      TEE_TUIButtonType *selectedButton);
+TEE_Result ta_tui_display_screen(TEE_TUIScreenConfiguration *screenConfiguration,
+				 bool closeTUISession,
+				 TEE_TUIEntryField *entryFields,
+				 uint32_t entryFieldCount,
+				 TEE_TUIButtonType *selectedButton);

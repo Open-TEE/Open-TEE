@@ -157,10 +157,10 @@ err:
 	return ret;
 }
 
-TEE_Result tui_check_text_format(char *text,
-				 uint32_t *width,
-				 uint32_t *height,
-				 uint32_t *lastIndex)
+TEE_Result ta_tui_check_text_format(char *text,
+				    uint32_t *width,
+				    uint32_t *height,
+				    uint32_t *lastIndex)
 {
 	struct ta_task *new_ta_task = NULL;
 	cmp_ctx_t cmp;
@@ -294,9 +294,9 @@ err:
 	return ret;
 }
 
-TEE_Result tui_get_screen_info(TEE_TUIScreenOrientation screenOrientation,
-			       uint32_t nbEntryFields,
-			       TEE_TUIScreenInfo *screenInfo)
+TEE_Result ta_tui_get_screen_info(TEE_TUIScreenOrientation screenOrientation,
+				  uint32_t nbEntryFields,
+				  TEE_TUIScreenInfo *screenInfo)
 {
 	struct ta_task *new_ta_task = NULL;
 	cmp_ctx_t cmp;
@@ -364,7 +364,7 @@ err:
 	return ret;
 }
 
-TEE_Result tui_init_session()
+TEE_Result ta_tui_init_session()
 {
 	struct ta_task *new_ta_task = NULL;
 	struct array msg = {0, 0, NULL};
@@ -415,7 +415,7 @@ err:
 	return ret;
 }
 
-TEE_Result tui_close_session()
+TEE_Result ta_tui_close_session()
 {
 	struct ta_task *new_ta_task = NULL;
 	struct array msg = {0, 0, NULL};
@@ -502,7 +502,7 @@ static TEE_Result wait_and_handle_tui_display_screen(bool closeTUISession,
 	}
 
 	if (closeTUISession)
-		tui_close_session();
+		ta_tui_close_session();
 
 err:
 	free(msg);
@@ -669,11 +669,11 @@ static bool serialize_entryfields(cmp_ctx_t *cmp,
 	return true;
 }
 
-TEE_Result tui_display_screen(TEE_TUIScreenConfiguration *screenConfiguration,
-			      bool closeTUISession,
-			      TEE_TUIEntryField *entryFields,
-			      uint32_t entryFieldCount,
-			      TEE_TUIButtonType *selectedButton)
+TEE_Result ta_tui_display_screen(TEE_TUIScreenConfiguration *screenConfiguration,
+				 bool closeTUISession,
+				 TEE_TUIEntryField *entryFields,
+				 uint32_t entryFieldCount,
+				 TEE_TUIButtonType *selectedButton)
 {
 	struct ta_task *new_ta_task = NULL;
 	cmp_ctx_t cmp;
