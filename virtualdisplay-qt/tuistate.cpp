@@ -66,7 +66,7 @@ std::tuple <uint32_t, uint32_t, uint32_t, uint32_t> TUIState::checkTextFormat(co
 
 TUIProtocol::GetScreenInfoResponse TUIState::getScreenInfo(TUIProtocol::GetScreenInfoRequest req)
 {
-	uint32_t ret = req.nbEntryFields() > settings_.maxEntryFields ? TEE_ERROR_NOT_SUPPORTED : TEE_SUCCESS;
+	uint32_t ret = req.nbEntryFields > settings_.maxEntryFields ? TEE_ERROR_NOT_SUPPORTED : TEE_SUCCESS;
 
 	std::array <TUIProtocol::ButtonInfo, 6> buttonInfos;
 	std::transform (settings_.buttonInfos.begin(),

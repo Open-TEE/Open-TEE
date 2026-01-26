@@ -24,6 +24,8 @@ extern "C" {
 #include "com_protocol.h"
 }
 
+#include <QDebug>
+
 const QString socket_file = "/tmp/open_tee_tui_display";
 
 ComProtocolSocket::ComProtocolSocket(QObject *parent) :
@@ -68,9 +70,10 @@ void ComProtocolSocket::stop()
 bool ComProtocolSocket::sendMessage(const ComProtocolMessage& msg)
 {
 	// Generate transport info header
-	com_transport_info info = { .start = COM_MSG_START,
-		                    .data_len = static_cast <uint32_t> (msg.getRawData().size()),
-				    .checksum = calculateChecksum(msg.getRawData()) };
+	com_transport_info info { calculateChecksum(msg.getRawData()),
+				  COM_MSG_START,
+				  static_cast <uint32_t> (msg.getRawData().size())
+				};
 
 	// Concatenate data into one continuous buffer
 	QByteArray msg_bytes(reinterpret_cast <char *> (&info), sizeof(info));

@@ -38,7 +38,7 @@ void TrustedUIWidget::changeColor()
 {
 	// Set widget background color blue
 	QPalette pal(palette());
-	pal.setColor(QPalette::Background,
+	pal.setColor(QPalette::Base,
 		     QColor(rand() % 255,
 			    rand() % 255,
 			    rand() % 255));
@@ -76,7 +76,9 @@ void TrustedUIWidget::sendDisplayInitMsg()
 		com_msg_hdr {
 			0,
 			COM_MSG_NAME_TUI_DISPLAY_INIT,
-			COM_TYPE_QUERY
+			COM_TYPE_QUERY,
+			{0, 0, 0, 0},
+			0
 		},
 		5000, // timeout
 		8, // grayscaleBitsDepth
@@ -119,12 +121,12 @@ void TrustedUIWidget::displayScreen(TUIProtocol::DisplayScreenRequest req)
 {
 	cleanupScreen();
 
-	layout_.addRow("", new QLabel(req.screenConfiguration().screenLabel().text().c_str()));
+	layout_.addRow("", new QLabel(req.screenConfiguration.screenLabel.text.c_str()));
 
-	for (auto ef : req.entryFields()) {
+	for (auto ef : req.entryFields) {
 		QLineEdit* new_line_edit = new QLineEdit();
 
-		switch (ef.mode()) {
+		switch (ef.mode) {
 			case TEE_TUI_HIDDEN_MODE:
 				new_line_edit->setEchoMode(QLineEdit::Password);
 				break;
@@ -137,7 +139,7 @@ void TrustedUIWidget::displayScreen(TUIProtocol::DisplayScreenRequest req)
 				break;
 		}
 
-		layout_.addRow(ef.label().c_str(), new_line_edit);
+		layout_.addRow(ef.label.c_str(), new_line_edit);
 		layout_widgets_.push_back(new_line_edit);
 	}
 
@@ -173,10 +175,10 @@ void TrustedUIWidget::respond()
 	// Serialize response
 	TUIProtocol::DisplayScreenResponse resp;
 
-	resp.ret() = 1;
+	resp.ret = 1;
 
 	for (auto entry : layout_widgets_) {
-		resp.entryFieldInput().push_back(entry->text().toStdString());
+		resp.entryFieldInput.push_back(entry->text().toStdString());
 	}
 
 	cleanupScreen();

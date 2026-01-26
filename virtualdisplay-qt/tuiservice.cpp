@@ -119,8 +119,8 @@ void TUIService::check_text_format(QByteArray &response, const QByteArray &msg)
 
 	// Call TUI State for CheckTextFormat
 	TUIProtocol::CheckTextFormatResponse resp;
-	std::tie(resp.ret(), resp.width(), resp.height(), resp.lastIndex()) =
-		state_->checkTextFormat(QString::fromStdString(req.text()));
+	std::tie(resp.ret, resp.width, resp.height, resp.lastIndex) =
+		state_->checkTextFormat(QString::fromStdString(req.text));
 
 	// Serialize response
 	msgpack_pack(response, resp);
@@ -134,7 +134,7 @@ void TUIService::get_screen_info(QByteArray &response, const QByteArray &msg)
 
 	// Serialize response
 	TUIProtocol::GetScreenInfoResponse resp;
-	resp.ret() = 1;
+	resp.ret = 1;
 	msgpack_pack(response, resp);
 }
 

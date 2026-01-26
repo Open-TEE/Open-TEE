@@ -30,7 +30,7 @@ ComProtocolMessage::ComProtocolMessage(const uint8_t msg_name,
                                        const uint8_t msg_type,
                                        const uint64_t sess_id,
                                        const QByteArray &payload) :
-    ComProtocolMessage(com_msg_hdr { sess_id, msg_name, msg_type }, payload)
+    ComProtocolMessage(com_msg_hdr { sess_id, msg_name, msg_type, {0, 0, 0, 0}, 0 }, payload)
 {
 }
 

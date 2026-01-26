@@ -24,313 +24,278 @@
 
 namespace TUIProtocol
 {
-	using msgpack::define;
-	using msgpack::type::tuple;
-
-	struct CheckTextFormatRequest : define < std::string > {
+	struct CheckTextFormatRequest {
 		CheckTextFormatRequest() {}
-		CheckTextFormatRequest(const std::string& text) :
-			define_type(text) {}
-		std::string& text() { return *this; }
+		CheckTextFormatRequest(const std::string& t) : text(t) {}
+		std::string text;
+		MSGPACK_DEFINE(text);
 	};
 
-	struct CheckTextFormatResponse :
-		define < tuple < uint32_t,
-				 uint32_t,
-				 uint32_t,
-				 uint32_t > > {
+	struct CheckTextFormatResponse {
 		CheckTextFormatResponse() {}
-		CheckTextFormatResponse(uint32_t ret,
-					uint32_t width,
-					uint32_t height,
-					uint32_t lastIndex) :
-			define_type(msgpack_type(ret, width, height, lastIndex)) {}
-		uint32_t& ret() { return msgpack::type::get<0>(*this); }
-		uint32_t& width() { return msgpack::type::get<1>(*this); }
-		uint32_t& height() { return msgpack::type::get<2>(*this); }
-		uint32_t& lastIndex() { return msgpack::type::get<3>(*this); }
-
+		CheckTextFormatResponse(uint32_t r,
+					uint32_t w,
+					uint32_t h,
+					uint32_t l) : ret(r), width(w), height(h), lastIndex(l) {}
+		uint32_t ret;
+		uint32_t width;
+		uint32_t height;
+		uint32_t lastIndex;
+		MSGPACK_DEFINE(ret, width, height, lastIndex);
 	};
 
-	struct GetScreenInfoRequest :
-		define < tuple < uint32_t,
-				 uint32_t > > {
+	struct GetScreenInfoRequest {
 		GetScreenInfoRequest() {}
-		GetScreenInfoRequest(uint32_t screenOrientation,
-				     uint32_t nbEntryFields) :
-			define_type(msgpack_type(screenOrientation,
-						 nbEntryFields)) {}
-		uint32_t &screenOrientation() { return msgpack::type::get<0>(*this); }
-		uint32_t &nbEntryFields() { return msgpack::type::get<1>(*this); }
+		GetScreenInfoRequest(uint32_t s,
+				     uint32_t nb) : screenOrientation(s), nbEntryFields(nb) {}
+		uint32_t screenOrientation;
+		uint32_t nbEntryFields;
+		MSGPACK_DEFINE(screenOrientation, nbEntryFields);
 	};
 
-	struct ButtonInfo :
-		define < tuple < std::string,
-				 uint32_t,
-				 uint32_t,
-				 bool,
-				 bool > > {
+	struct ButtonInfo {
 		ButtonInfo() {}
-		ButtonInfo(const std::string &text,
-			   uint32_t buttonWidth,
-			   uint32_t buttonHeight,
-			   bool buttonTextCustom,
-			   bool buttonImageCustom) :
-			define_type(msgpack_type(text,
-						 buttonWidth,
-						 buttonHeight,
-						 buttonTextCustom,
-						 buttonImageCustom)) {}
-		std::string &text() { return msgpack::type::get<0>(*this); }
-		uint32_t &buttonWidth() { return msgpack::type::get<1>(*this); }
-		uint32_t &buttonHeight() { return msgpack::type::get<2>(*this); }
-		bool &buttonTextCustom() { return msgpack::type::get<3>(*this); }
-		bool &buttonImageCustom() { return msgpack::type::get<4>(*this); }
+		ButtonInfo(const std::string &t,
+			   uint32_t bWidth,
+			   uint32_t bHeight,
+			   bool bTextCustom,
+			   bool bImageCustom) :
+			text(t),
+			buttonWidth(bWidth),
+			buttonHeight(bHeight),
+			buttonTextCustom(bTextCustom),
+			buttonImageCustom(bImageCustom)
+		{}
+		std::string text;
+		uint32_t buttonWidth;
+		uint32_t buttonHeight;
+		bool buttonTextCustom;
+		bool buttonImageCustom;
+		MSGPACK_DEFINE(text,
+			       buttonWidth,
+			       buttonHeight,
+			       buttonTextCustom,
+			       buttonImageCustom);
 	};
 
-	struct GetScreenInfoResponse :
-		define < tuple < uint32_t,
-		                 uint32_t,
-				 uint32_t,
-				 uint32_t,
-				 uint32_t,
-				 uint32_t,
-				 uint32_t,
-				 uint32_t,
-				 uint32_t,
-				 uint32_t,
-				 uint32_t,
-				 uint8_t,
-				 uint8_t,
-				 uint8_t,
-				 uint32_t,
-				 uint32_t,
-				 std::array <TUIProtocol::ButtonInfo, 6> > > {
+	struct GetScreenInfoResponse {
 		GetScreenInfoResponse() {}
-		GetScreenInfoResponse(uint32_t ret,
-				      uint32_t grayscaleBitsDepth,
-				      uint32_t redBitsDepth,
-				      uint32_t greenBitsDepth,
-				      uint32_t blueBitsDepth,
-				      uint32_t widthInch,
-				      uint32_t heightInch,
-				      uint32_t maxEntryFields,
-				      uint32_t entryFieldLabelWidth,
-				      uint32_t entryFieldLabelHeight,
-				      uint32_t maxEntryFieldLength,
-				      uint8_t labelColorRed,
-				      uint8_t labelColorGreen,
-				      uint8_t labelColorBlue,
-				      uint32_t labelWidth,
-				      uint32_t labelHeight,
-				      const std::array <TUIProtocol::ButtonInfo, 6> &buttonInfos) :
-			define_type(msgpack_type(ret,
-						 grayscaleBitsDepth,
-						 redBitsDepth,
-						 greenBitsDepth,
-						 blueBitsDepth,
-						 widthInch,
-						 heightInch,
-						 maxEntryFields,
-						 entryFieldLabelWidth,
-						 entryFieldLabelHeight,
-						 maxEntryFieldLength,
-						 labelColorRed,
-						 labelColorGreen,
-						 labelColorBlue,
-						 labelWidth,
-						 labelHeight,
-						 buttonInfos)) {}
-		uint32_t &ret() { return msgpack::type::get<0>(*this); }
-		uint32_t &grayscaleBitsDepth() { return msgpack::type::get<1>(*this); }
-		uint32_t &redBitsDepth() { return msgpack::type::get<2>(*this); }
-		uint32_t &greenBitsDepth() { return msgpack::type::get<3>(*this); }
-		uint32_t &blueBitsDepth() { return msgpack::type::get<4>(*this); }
-		uint32_t &widthInch() { return msgpack::type::get<5>(*this); }
-		uint32_t &heightInch() { return msgpack::type::get<6>(*this); }
-		uint32_t &maxEntryFields() { return msgpack::type::get<7>(*this); }
-		uint32_t &entryFieldLabelWidth() { return msgpack::type::get<8>(*this); }
-		uint32_t &entryFieldLabelHeight() { return msgpack::type::get<9>(*this); }
-		uint32_t &maxEntryFieldLength() { return msgpack::type::get<10>(*this); }
-		uint8_t &labelColorRed() { return msgpack::type::get<11>(*this); }
-		uint8_t &labelColorGreen() { return msgpack::type::get<12>(*this); }
-		uint8_t &labelColorBlue() { return msgpack::type::get<13>(*this); }
-		uint32_t &labelWidth() { return msgpack::type::get<14>(*this); }
-		uint32_t &labelHeight() { return msgpack::type::get<15>(*this); }
-		std::array <ButtonInfo, 6> &buttonInfos() { return msgpack::type::get<16>(*this); }
+		GetScreenInfoResponse(uint32_t r,
+				      uint32_t grayBD,
+				      uint32_t redBD,
+				      uint32_t greenBD,
+				      uint32_t blueBD,
+				      uint32_t wI,
+				      uint32_t hI,
+				      uint32_t mEF,
+				      uint32_t eFLW,
+				      uint32_t eFLH,
+				      uint32_t mEFL,
+				      uint8_t lCR,
+				      uint8_t lCG,
+				      uint8_t lCB,
+				      uint32_t lW,
+				      uint32_t lH,
+				      const std::array <TUIProtocol::ButtonInfo, 6> &bIs) :
+					ret(r),
+					grayscaleBitsDepth(grayBD),
+					redBitsDepth(redBD),
+					greenBitsDepth(greenBD),
+					blueBitsDepth(blueBD),
+					widthInch(wI),
+					heightInch(hI),
+					maxEntryFields(mEF),
+					entryFieldLabelWidth(eFLW),
+					entryFieldLabelHeight(eFLH),
+					maxEntryFieldLength(mEFL),
+					labelColorRed(lCR),
+					labelColorGreen(lCG),
+					labelColorBlue(lCB),
+					labelWidth(lW),
+					labelHeight(lH),
+					buttonInfos(bIs) {}
+		uint32_t ret;
+		uint32_t grayscaleBitsDepth;
+		uint32_t redBitsDepth;
+		uint32_t greenBitsDepth;
+		uint32_t blueBitsDepth;
+		uint32_t widthInch;
+		uint32_t heightInch;
+		uint32_t maxEntryFields;
+		uint32_t entryFieldLabelWidth;
+		uint32_t entryFieldLabelHeight;
+		uint32_t maxEntryFieldLength;
+		uint8_t labelColorRed;
+		uint8_t labelColorGreen;
+		uint8_t labelColorBlue;
+		uint32_t labelWidth;
+		uint32_t labelHeight;
+		std::array <ButtonInfo, 6> buttonInfos;
+		MSGPACK_DEFINE(ret,
+			       grayscaleBitsDepth,
+			       redBitsDepth,
+			       greenBitsDepth,
+			       blueBitsDepth,
+			       widthInch,
+			       heightInch,
+			       maxEntryFields,
+			       entryFieldLabelWidth,
+			       entryFieldLabelHeight,
+			       maxEntryFieldLength,
+			       labelColorRed,
+			       labelColorGreen,
+			       labelColorBlue,
+			       labelWidth,
+			       labelHeight,
+			       buttonInfos);
 	};
 
-	struct InitSessionResponse :
-		define < tuple < uint32_t > > {
+	struct InitSessionResponse {
 		InitSessionResponse() {}
-		InitSessionResponse(uint32_t ret):
-			define_type(msgpack_type(ret)) {}
-		uint32_t& ret() { return msgpack::type::get<0>(*this); }
+		InitSessionResponse(uint32_t r): ret(r) {}
+		uint32_t ret;
+		MSGPACK_DEFINE(ret);
 	};
 
-	struct CloseSessionResponse :
-		define < tuple < uint32_t > > {
+	struct CloseSessionResponse {
 		CloseSessionResponse() {}
-		CloseSessionResponse(uint32_t ret):
-			define_type(msgpack_type(ret)) {}
-		uint32_t& ret() { return msgpack::type::get<0>(*this); }
+		CloseSessionResponse(uint32_t r): ret(r) {}
+		uint32_t ret;
+		MSGPACK_DEFINE(ret);
 	};
 
-	struct Image :
-		define < tuple < uint32_t,
-				 std::string,
-				 uint32_t,
-				 uint32_t > > {
+	struct Image {
 		Image() {}
-		Image(uint32_t source,
-		      const std::string &imageData,
-		      uint32_t width,
-		      uint32_t height):
-			define_type(msgpack_type(source,
-						 imageData,
-						 width,
-						 height)) {}
-		uint32_t &source() { return msgpack::type::get<0>(*this); }
-		std::string &imageData() { return msgpack::type::get<1>(*this); }
-		uint32_t &width() { return msgpack::type::get<2>(*this); }
-		uint32_t &height() { return msgpack::type::get<3>(*this); }
+		Image(uint32_t s,
+		      const std::string &iD,
+		      uint32_t w,
+		      uint32_t h):
+			source(s), imageData(iD), width(w), height(h) {}
+		uint32_t source;
+		std::string imageData;
+		uint32_t width;
+		uint32_t height;
+		MSGPACK_DEFINE(source, imageData, width, height);
 	};
 
-	struct ScreenLabel :
-		define < tuple < std::string,
-				 uint32_t,
-				 uint32_t,
-				 uint8_t,
-				 uint8_t,
-				 uint8_t,
-				 Image,
-				 uint32_t,
-				 uint32_t > > {
+	struct ScreenLabel {
 		ScreenLabel() {}
-		ScreenLabel(const std::string &text,
-			    uint32_t textXOffset,
-			    uint32_t textYOffset,
-			    uint8_t textColorRed,
-			    uint8_t textColorGreen,
-			    uint8_t textColorBlue,
-			    const Image &image,
-			    uint32_t imageXOffset,
-			    uint32_t imageYOffset) :
-			define_type(msgpack_type(text,
-						 textXOffset,
-						 textYOffset,
-						 textColorRed,
-						 textColorBlue,
-						 textColorGreen,
-						 image,
-						 imageXOffset,
-						 imageYOffset)) {}
-		std::string &text() { return msgpack::type::get<0>(*this); }
-		uint32_t &textXOffset() { return msgpack::type::get<1>(*this); }
-		uint32_t &textYOffset() { return msgpack::type::get<2>(*this); }
-		uint8_t &textColorRed() { return msgpack::type::get<3>(*this); }
-		uint8_t &textColorGreen() { return msgpack::type::get<4>(*this); }
-		uint8_t &textColorBlue() { return msgpack::type::get<5>(*this); }
-		Image &image() { return msgpack::type::get<6>(*this); }
-		uint32_t &imageXOffset() { return msgpack::type::get<7>(*this); }
-		uint32_t &imageYOffset() { return msgpack::type::get<8>(*this); }
+		ScreenLabel(const std::string &t,
+			    uint32_t tXO,
+			    uint32_t tYO,
+			    uint8_t tCR,
+			    uint8_t tCG,
+			    uint8_t tCB,
+			    const Image &i,
+			    uint32_t iXO,
+			    uint32_t iYO) :
+			text(t),
+			textXOffset(tXO),
+			textYOffset(tYO),
+			textColorRed(tCR),
+			textColorGreen(tCG),
+			textColorBlue(tCB),
+			image(i),
+			imageXOffset(iXO),
+			imageYOffset(iYO) {}
+		std::string text;
+		uint32_t textXOffset;
+		uint32_t textYOffset;
+		uint8_t textColorRed;
+		uint8_t textColorGreen;
+		uint8_t textColorBlue;
+		Image image;
+		uint32_t imageXOffset;
+		uint32_t imageYOffset;
+		MSGPACK_DEFINE(text,
+			       textXOffset,
+			       textYOffset,
+			       textColorRed,
+			       textColorGreen,
+			       textColorBlue,
+			       image,
+			       imageXOffset,
+			       imageYOffset);
 	};
 
-	struct Button :
-		define < tuple < bool, std::string, Image > > {
+	struct Button {
 		Button() {}
-		Button(bool defaults,
-		       const std::string &text,
-		       const Image &image) :
-			define_type(msgpack_type(defaults,
-						 text,
-						 image)) {}
-		bool &defaults() { return msgpack::type::get<0>(*this);  }
-		std::string &text() { return msgpack::type::get<1>(*this); }
-		Image &image() { return msgpack::type::get<2>(*this); }
+		Button(bool d,
+		       const std::string &t,
+		       const Image &i) : defaults(d), text(t), image(i) {}
+		bool defaults;
+		std::string text;
+		Image image;
+		MSGPACK_DEFINE(defaults, text, image);
 	};
 
-	struct ScreenConfiguration :
-		define < tuple < uint32_t,
-				 ScreenLabel,
-				 std::array <Button, 6>,
-				 std::array <bool, 6> > > {
+	struct ScreenConfiguration {
 		ScreenConfiguration() {}
-		ScreenConfiguration(uint32_t screenOrientation,
-				    const ScreenLabel &screenLabel,
-				    const std::array <Button, 6> &buttons,
-				    const std::array <bool, 6> &requestedButtons) :
-			define_type(msgpack_type(screenOrientation,
-						 screenLabel,
-						 buttons,
-						 requestedButtons)) {}
-		uint32_t &screenOrientation() { return msgpack::type::get<0>(*this); }
-		ScreenLabel &screenLabel() { return msgpack::type::get<1>(*this); }
-		std::array <Button, 6> &buttons() { return msgpack::type::get<2>(*this); }
-		std::array <bool, 6> &requestedButtons() { return msgpack::type::get<3>(*this); }
+		ScreenConfiguration(uint32_t sO,
+				    const ScreenLabel &sL,
+				    const std::array <Button, 6> &b,
+				    const std::array <bool, 6> &rB) :
+			screenOrientation(sO),
+			screenLabel(sL),
+			buttons(b),
+			requestedButtons(rB) {}
+		uint32_t screenOrientation;
+		ScreenLabel screenLabel;
+		std::array <Button, 6> buttons;
+		std::array <bool, 6> requestedButtons;
+		MSGPACK_DEFINE(screenOrientation, screenLabel, buttons, requestedButtons);
 	};
 
-	struct EntryField :
-		define < tuple < std::string,
-		                 uint32_t,
-				 uint32_t,
-				 uint32_t,
-				 uint32_t,
-				 uint32_t > > {
+	struct EntryField {
 		EntryField() {}
-		EntryField(const std::string &label,
-			   uint32_t mode,
-			   uint32_t type,
-			   uint32_t minExpectedLength,
-			   uint32_t maxExpectedLength,
-			   uint32_t bufferLength):
-			define_type(msgpack_type(label,
-						 mode,
-						 type,
-						 minExpectedLength,
-						 maxExpectedLength,
-						 bufferLength)) {}
-		std::string &label() { return msgpack::type::get<0>(*this); }
-		uint32_t &mode() { return msgpack::type::get<1>(*this); }
-		uint32_t &type() { return msgpack::type::get<2>(*this); }
-		uint32_t &minExpectedLength() { return msgpack::type::get<3>(*this); }
-		uint32_t &maxExpectedLength() { return msgpack::type::get<4>(*this); }
-		uint32_t &bufferLength() { return msgpack::type::get<5>(*this); }
+		EntryField(const std::string &l,
+			   uint32_t m,
+			   uint32_t t,
+			   uint32_t minEL,
+			   uint32_t maxEL,
+			   uint32_t bL):
+			label(l),
+			mode(m),
+			type(t),
+			minExpectedLength(minEL),
+			maxExpectedLength(maxEL),
+			bufferLength(bL) {}
+		std::string label;
+		uint32_t mode;
+		uint32_t type;
+		uint32_t minExpectedLength;
+		uint32_t maxExpectedLength;
+		uint32_t bufferLength;
+		MSGPACK_DEFINE(label,
+			       mode,
+			       type,
+			       minExpectedLength,
+			       maxExpectedLength,
+			       bufferLength);
 	};
 
-	struct DisplayScreenRequest :
-		define < tuple < ScreenConfiguration,
-				 bool,
-				 std::vector <EntryField> > > {
+	struct DisplayScreenRequest {
 		DisplayScreenRequest() {}
-		DisplayScreenRequest(const ScreenConfiguration &screenConfiguration,
-				     bool closeTUISession,
-				     const std::vector <EntryField> &entryFields) :
-			define_type(msgpack_type(screenConfiguration,
-						 closeTUISession,
-						 entryFields)) {}
-		ScreenConfiguration &screenConfiguration() { return msgpack::type::get<0>(*this); }
-		bool &closeTUISession() { return msgpack::type::get<1>(*this); }
-		std::vector <EntryField> &entryFields() { return msgpack::type::get<2>(*this); }
+		DisplayScreenRequest(const ScreenConfiguration &sC,
+				     bool cTUIS,
+				     const std::vector <EntryField> &eF) :
+			screenConfiguration(sC), closeTUISession(cTUIS), entryFields(eF) {}
+		ScreenConfiguration screenConfiguration;
+		bool closeTUISession;
+		std::vector <EntryField> entryFields;
+		MSGPACK_DEFINE(screenConfiguration, closeTUISession, entryFields);
 	};
 
-	struct DisplayScreenResponse :
-		define < tuple < uint32_t,
-				 std::vector < std::string >,
-				 uint32_t > > {
+	struct DisplayScreenResponse {
 		DisplayScreenResponse() {}
-		DisplayScreenResponse(uint32_t ret,
-				      std::vector < std::string > entryFieldInput,
-				      uint32_t selectedButton) :
-			define_type(msgpack_type(ret,
-						 entryFieldInput,
-						 selectedButton)) {}
-		uint32_t &ret() { return msgpack::type::get<0>(*this); }
-		std::vector <std::string> &entryFieldInput()
-		{
-			return msgpack::type::get<1>(*this);
-		}
-		uint32_t &selectedButton() { return msgpack::type::get<2>(*this); }
+		DisplayScreenResponse(uint32_t r,
+				      std::vector < std::string > eFI,
+				      uint32_t sB) :
+			ret(r), entryFieldInput(eFI), selectedButton(sB) {}
+		uint32_t ret;
+		std::vector <std::string> entryFieldInput;
+		uint32_t selectedButton;
+		MSGPACK_DEFINE(ret, entryFieldInput, selectedButton);
 	};
 }
 
