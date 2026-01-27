@@ -1,27 +1,28 @@
-/*****************************************************************************/
-/* D2K: A Doom Source Port for the 21st Century                              */
-/*                                                                           */
-/* Copyright (C) 2014: See COPYRIGHT file                                    */
-/*                                                                           */
-/* This file is part of D2K.                                                 */
-/*                                                                           */
-/* D2K is free software: you can redistribute it and/or modify it under the  */
-/* terms of the GNU General Public License as published by the Free Software */
-/* Foundation, either version 2 of the License, or (at your option) any      */
-/* later version.                                                            */
-/*                                                                           */
-/* D2K is distributed in the hope that it will be useful, but WITHOUT ANY    */
-/* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS */
-/* FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more    */
-/* details.                                                                  */
-/*                                                                           */
-/* You should have received a copy of the GNU General Public License along   */
-/* with D2K.  If not, see <http://www.gnu.org/licenses/>.                    */
-/*                                                                           */
-/*****************************************************************************/
+/*
+The MIT License (MIT)
+
+Copyright (c) 2020 Charles Gunyon
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
 
 #include <inttypes.h>
-#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -71,23 +72,23 @@ void M_BufferInitWithCapacity(buf_t *buf, size_t capacity) {
   M_BufferEnsureTotalCapacity(buf, capacity);
 }
 
-size_t M_BufferGetCapacity(buf_t *buf) {
+size_t M_BufferGetCapacity(const buf_t *buf) {
   return buf->capacity;
 }
 
-size_t M_BufferGetSize(buf_t *buf) {
+size_t M_BufferGetSize(const buf_t *buf) {
   return buf->size;
 }
 
-size_t M_BufferGetCursor(buf_t *buf) {
+size_t M_BufferGetCursor(const buf_t *buf) {
   return buf->cursor;
 }
 
-char* M_BufferGetData(buf_t *buf) {
+char* M_BufferGetData(const buf_t *buf) {
   return buf->data;
 }
 
-char* M_BufferGetDataAtCursor(buf_t *buf) {
+char* M_BufferGetDataAtCursor(const buf_t *buf) {
   return buf->data + buf->cursor;
 }
 
@@ -122,11 +123,11 @@ void M_BufferEnsureTotalCapacity(buf_t *buf, size_t capacity) {
   }
 }
 
-void M_BufferCopy(buf_t *dst, buf_t *src) {
+void M_BufferCopy(buf_t *dst, const buf_t *src) {
   M_BufferSetData(dst, M_BufferGetData(src), M_BufferGetSize(src));
 }
 
-void M_BufferCursorCopy(buf_t *dst, buf_t *src) {
+void M_BufferCursorCopy(buf_t *dst, const buf_t *src) {
   M_BufferWrite(
     dst,
     M_BufferGetDataAtCursor(src),
@@ -157,8 +158,8 @@ void M_BufferSetString(buf_t *buf, const char *data, size_t length) {
 }
 
 bool M_BufferSetFile(buf_t *buf, const char *filename) {
-  FILE *fp = NULL;
-  size_t length = 0;
+  FILE *fp;
+  size_t length;
   bool out = false;
 
   if ((fp = fopen(filename, "rb")) == NULL)
@@ -209,7 +210,7 @@ bool M_BufferSeekForward(buf_t *buf, size_t count) {
   return true;
 }
 
-uint8_t M_BufferPeek(buf_t *buf) {
+uint8_t M_BufferPeek(const buf_t *buf) {
   return *(buf->data + buf->cursor);
 }
 
@@ -301,6 +302,7 @@ void M_BufferWriteULongs(buf_t *buf, const uint64_t *ulongs, size_t count) {
   M_BufferWriteChars(buf, (char *)ulongs, count * sizeof(uint64_t));
 }
 
+#ifndef CMP_NO_FLOAT
 void M_BufferWriteFloat(buf_t *buf, float f) {
   M_BufferWriteFloats(buf, &f, 1);
 }
@@ -318,6 +320,7 @@ void M_BufferWriteDoubles(buf_t *buf, const double *doubles, size_t count) {
   M_BufferEnsureCapacity(buf, count * sizeof(double));
   M_BufferWriteChars(buf, (char *)doubles, count * sizeof(doubles));
 }
+#endif
 
 void M_BufferWriteString(buf_t *buf, const char *string, size_t length) {
   M_BufferEnsureCapacity(buf, length + 1);
@@ -336,14 +339,14 @@ void M_BufferWriteZeros(buf_t *buf, size_t count) {
   check_cursor(buf);
 }
 
-bool M_BufferEqualsString(buf_t *buf, const char *s) {
+bool M_BufferEqualsString(const buf_t *buf, const char *s) {
   if (strncmp(buf->data + buf->cursor, s, buf->size - buf->cursor) == 0)
     return true;
 
   return false;
 }
 
-bool M_BufferEqualsData(buf_t *buf, const void *d, size_t size) {
+bool M_BufferEqualsData(const buf_t *buf, const void *d, size_t size) {
   if (buf->cursor + size > buf->size)
     return false;
 
@@ -439,6 +442,7 @@ bool M_BufferReadULongs(buf_t *buf, uint64_t *l, size_t count) {
   return M_BufferRead(buf, l, count * sizeof(uint64_t));
 }
 
+#ifndef CMP_NO_FLOAT
 bool M_BufferReadFloat(buf_t *buf, float *f) {
   return M_BufferReadFloats(buf, f, 1);
 }
@@ -454,12 +458,13 @@ bool M_BufferReadDouble(buf_t *buf, double *d) {
 bool M_BufferReadDoubles(buf_t *buf, double *d, size_t count) {
   return M_BufferRead(buf, d, count * sizeof(double));
 }
+#endif
 
 bool M_BufferReadString(buf_t *buf, char *s, size_t length) {
   return M_BufferRead(buf, s, length);
 }
 
-bool M_BufferReadStringDup(buf_t *buf, char **s) {
+bool M_BufferReadStringDup(const buf_t *buf, char **s) {
   char *d = buf->data + buf->cursor;
   size_t length = strlen(d);
 
@@ -470,7 +475,7 @@ bool M_BufferReadStringDup(buf_t *buf, char **s) {
   return true;
 }
 
-bool M_BufferCopyString(buf_t *dst, buf_t *src) {
+bool M_BufferCopyString(buf_t *dst, const buf_t *src) {
   char *s = src->data + src->cursor;
   size_t length = strlen(s);
 
@@ -510,7 +515,7 @@ void M_BufferTruncate(buf_t *buf, size_t new_size) {
     buf->cursor = buf->size - 1;
 }
 
-void M_BufferZero(buf_t *buf) {
+void M_BufferZero(const buf_t *buf) {
   memset(buf->data, 0, buf->capacity);
 }
 
@@ -526,7 +531,7 @@ void M_BufferFree(buf_t *buf) {
   buf->data = NULL;
 }
 
-void M_BufferPrint(buf_t *buf) {
+void M_BufferPrint(const buf_t *buf) {
   printf("Buffer capacity, size and cursor: [%zu, %zu, %zu].\n",
     buf->capacity,
     buf->size,
@@ -543,7 +548,7 @@ void M_BufferPrint(buf_t *buf) {
   printf("\n");
 }
 
-void M_BufferPrintAll(buf_t *buf) {
+void M_BufferPrintAll(const buf_t *buf) {
   printf("Buffer capacity, size and cursor: [%zu, %zu, %zu].\n",
     buf->capacity,
     buf->size,

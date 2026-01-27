@@ -26,6 +26,29 @@
 *.swp
 *.swo
 
+# Coverage files
+*.gcda
+*.gcno
+coverage/
+
+# Profiling files
+*.prof
+
 # Testing executable
 test/test-cmp
+cmptest
+cmptest2
+cmpaddrtest
+cmpmemtest
+cmpnofloattest
+cmpprof
+cmpubtest
 
+# Example executables
+examples/example1
+examples/example2
+example1
+example2
+
+# Test data
+cmp_data.dat

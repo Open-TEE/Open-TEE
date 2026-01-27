@@ -22,37 +22,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include <inttypes.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "utils.h"
-
-void error_and_exit(const char *msg) {
-  fprintf(stderr, "%s\n", msg);
-  exit(EXIT_FAILURE);
-}
-
-void errorf_and_exit(const char *msg, ...) {
-  va_list args;
-
-  va_start(args, msg);
-  vfprintf(stderr, msg, args);
-  va_end(args);
-
-  exit(EXIT_FAILURE);
-}
-
-char* _strdup(const char *s) {
-  char *out = calloc(strlen(s) + 1, sizeof(char));
-
-  strcpy(out, s);
-
-  return out;
-}
+void test_msgpack(void **state);
+void test_fixedint(void **state);
+void test_numbers(void **state);
+void test_conversions(void **state);
+void test_nil(void **state);
+void test_boolean(void **state);
+void test_bin(void **state);
+void test_string(void **state);
+void test_array(void **state);
+void test_map(void **state);
+void test_ext(void **state);
+void test_obj(void **state);
+#ifndef CMP_NO_FLOAT
+void test_float_flip(void **state);
+#endif
+void test_skipping(void **state);
+void test_skip_bytes(void **state);
+void test_deprecated_limited_skipping(void **state);
+void test_errors(void **state);
+void test_version(void **state);
 
 /* vi: set et ts=2 sw=2: */
-

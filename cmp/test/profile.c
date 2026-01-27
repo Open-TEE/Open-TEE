@@ -22,37 +22,34 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include <inttypes.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-#include "utils.h"
+#include "tests.h"
 
-void error_and_exit(const char *msg) {
-  fprintf(stderr, "%s\n", msg);
-  exit(EXIT_FAILURE);
-}
+int main(void) {
+  test_msgpack(NULL);
+  test_fixedint(NULL);
+  test_numbers(NULL);
+  test_nil(NULL);
+  test_boolean(NULL);
+  test_bin(NULL);
+  test_string(NULL);
+  test_array(NULL);
+  test_map(NULL);
+  test_ext(NULL);
+  test_obj(NULL);
 
-void errorf_and_exit(const char *msg, ...) {
-  va_list args;
+#ifndef CMP_NO_FLOAT
+  test_float_flip(NULL);
+#endif
 
-  va_start(args, msg);
-  vfprintf(stderr, msg, args);
-  va_end(args);
+  test_skipping(NULL);
+  test_deprecated_limited_skipping(NULL);
+  test_errors(NULL);
+  test_version(NULL);
+  test_conversions(NULL);
 
-  exit(EXIT_FAILURE);
-}
-
-char* _strdup(const char *s) {
-  char *out = calloc(strlen(s) + 1, sizeof(char));
-
-  strcpy(out, s);
-
-  return out;
+  return EXIT_SUCCESS;
 }
 
 /* vi: set et ts=2 sw=2: */
-
