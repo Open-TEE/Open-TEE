@@ -321,9 +321,9 @@ static int decrypt_data_from_ta(struct trusted_input *user_input)
 	mbedtls_rsa_set_padding(&rsa_ctx, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_NONE);
 	ret = mbedtls_rsa_gen_key(&rsa_ctx,
 				  mbedtls_ctr_drbg_random,
-			    	  &ctr_drbg_ctx,
-			    	  RSA_KEY_BITS,
-			    	  RSA_EXPONENT);
+				  &ctr_drbg_ctx,
+				  RSA_KEY_BITS,
+				  RSA_EXPONENT);
 	if (ret != 0)
 		goto err_2;
 
