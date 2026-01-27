@@ -178,7 +178,8 @@ TEE_Result ta_tui_check_text_format(char *text,
 	/* Serialize CheckTextFormat Request into Messagepack format */
 	cmp_init(&cmp, &msg, buffer_reader, NULL, buffer_writer);
 
-	if (!cmp_write_str(&cmp, text, strlen(text))) {
+	if (!cmp_write_array(&cmp, 1) ||
+	    !cmp_write_str(&cmp, text, strlen(text))) {
 		OT_LOG(LOG_ERR, "Serialization error");
 		goto err;
 	}
