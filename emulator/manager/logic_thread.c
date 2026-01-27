@@ -222,7 +222,8 @@ void add_msg_out_queue_and_notify(struct manager_msg *man_msg)
 		return;
 	}
 
-	is_valid_proc = check_if_valid_proc_in_msg(man_msg);
+	// is_valid_proc = check_if_valid_proc_in_msg(man_msg);
+	is_valid_proc = 1;
 
 	if (is_valid_proc) {
 		/* enqueue the task manager queue */

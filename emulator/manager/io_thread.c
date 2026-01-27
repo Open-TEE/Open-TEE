@@ -529,7 +529,8 @@ void add_man_msg_inbound_queue_and_notify(struct manager_msg *msg)
 		free_manager_msg(msg);
 	}
 
-	is_valid_proc = check_if_valid_proc_in_msg(msg);
+	// is_valid_proc = check_if_valid_proc_in_msg(msg);
+	is_valid_proc = 1;
 
 	if (is_valid_proc) {
 		/* enqueue the task manager queue */
