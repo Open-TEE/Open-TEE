@@ -127,9 +127,9 @@ static bool tui_state_requests_add(struct trusted_ui_state *dst,
 		return false;
 	}
 
-	++dst->requests_count;
 	dst->requests[dst->requests_count].id = id;
 	dst->requests[dst->requests_count].request = request;
+	++dst->requests_count;
 
 	return true;
 }
