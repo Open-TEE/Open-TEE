@@ -137,7 +137,7 @@ static TEE_Result wait_and_handle_tui_check_text_format(uint32_t *width,
 		goto err;
 
 	/* Deserialize MessagePack structure */
-	cmp_init(&cmp, &msg_array, buffer_reader, buffer_writer);
+	cmp_init(&cmp, &msg_array, buffer_reader, NULL, buffer_writer);
 
 	if (!cmp_read_array(&cmp, &array_size) ||
 	    array_size != 4 ||
@@ -176,7 +176,7 @@ TEE_Result ta_tui_check_text_format(char *text,
 		goto err;
 
 	/* Serialize CheckTextFormat Request into Messagepack format */
-	cmp_init(&cmp, &msg, buffer_reader, buffer_writer);
+	cmp_init(&cmp, &msg, buffer_reader, NULL, buffer_writer);
 
 	if (!cmp_write_str(&cmp, text, strlen(text))) {
 		OT_LOG(LOG_ERR, "Serialization error");
@@ -264,7 +264,7 @@ static TEE_Result wait_and_handle_tui_get_screen_info(TEE_TUIScreenInfo *screenI
 	memset(screenInfo, 0, sizeof(TEE_TUIScreenInfo));
 
 	/* Deserialize MessagePack structure */
-	cmp_init(&cmp, &msg_array, buffer_reader, buffer_writer);
+	cmp_init(&cmp, &msg_array, buffer_reader, NULL, buffer_writer);
 
 	/* Deserialization */
 	if (!cmp_read_array(&cmp, &array_size) ||
@@ -311,7 +311,7 @@ TEE_Result ta_tui_get_screen_info(TEE_TUIScreenOrientation screenOrientation,
 		goto err;
 
 	/* Serialize GetScreenInfo Request into Messagepack format */
-	cmp_init(&cmp, &msg, buffer_reader, buffer_writer);
+	cmp_init(&cmp, &msg, buffer_reader, NULL, buffer_writer);
 
 	/* Serialization */
 	if (!cmp_write_array(&cmp, 2) ||
@@ -350,7 +350,7 @@ static TEE_Result wait_and_handle_tui_init_session()
 		goto err;
 
 	/* Deserialize MessagePack structure */
-	cmp_init(&cmp, &msg_array, buffer_reader, buffer_writer);
+	cmp_init(&cmp, &msg_array, buffer_reader, NULL, buffer_writer);
 
 	/* Deserialization */
 	if (!cmp_read_array(&cmp, &array_size) ||
@@ -401,7 +401,7 @@ static TEE_Result wait_and_handle_tui_close_session()
 		goto err;
 
 	/* Deserialize MessagePack structure */
-	cmp_init(&cmp, &msg_array, buffer_reader, buffer_writer);
+	cmp_init(&cmp, &msg_array, buffer_reader, NULL, buffer_writer);
 
 	/* Deserialization */
 	if (!cmp_read_array(&cmp, &array_size) ||
@@ -489,7 +489,7 @@ static TEE_Result wait_and_handle_tui_display_screen(bool closeTUISession,
 	OT_LOG(LOG_ERR, "Waiting 2");
 
 	/* Deserialize MessagePack structure */
-	cmp_init(&cmp, &msg_array, buffer_reader, buffer_writer);
+	cmp_init(&cmp, &msg_array, buffer_reader, NULL, buffer_writer);
 
 	/* Deserialization */
 	if (!cmp_read_array(&cmp, &array_size) ||
@@ -705,7 +705,7 @@ TEE_Result ta_tui_display_screen(TEE_TUIScreenConfiguration *screenConfiguration
 		goto err;
 
 	/* Serialize GetScreenInfo Request into Messagepack format */
-	cmp_init(&cmp, &msg, buffer_reader, buffer_writer);
+	cmp_init(&cmp, &msg, buffer_reader, NULL, buffer_writer);
 
 	/* Serialization */
 	if (!cmp_write_array(&cmp, 3) ||
