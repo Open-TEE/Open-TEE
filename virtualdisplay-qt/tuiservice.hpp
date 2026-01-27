@@ -13,7 +13,6 @@
 ** See the License for the specific language governing permissions and      **
 ** limitations under the License.                                           **
 *****************************************************************************/
-
 #ifndef TUISERVICE_HPP
 #define TUISERVICE_HPP
 
@@ -75,11 +74,21 @@ private:
 };
 
 template <typename MSGTYPE>
+void msgpack_unpack(const QByteArray &msg, MSGTYPE &msgpack_struct)
+{
+	qDebug() << msg;
+	msgpack::object_handle oh = msgpack::unpack(msg.data(), msg.size());
+	msgpack::object o = oh.get();
+
+	o.convert(msgpack_struct);
+}
+
+template <typename MSGTYPE>
 void msgpack_pack(QByteArray &msg, MSGTYPE &msgpack_struct)
 {
 	ByteArrayStream out(&msg);
 	msgpack::pack(out, msgpack_struct);
+	qDebug() << msg;
 }
-
 
 #endif // TUISERVICE_HPP

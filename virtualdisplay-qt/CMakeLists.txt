@@ -59,6 +59,23 @@ target_link_libraries(test_comprotocolmessage
 )
 
 # ============================================================================
+# Executable: test_tuiprotocol
+# ============================================================================
+
+qt_add_executable(test_tuiprotocol
+    tests/test_tuiprotocol.cpp
+    tuiprotocol.cpp
+)
+
+# Link dependencies
+target_link_libraries(test_tuiprotocol
+    PRIVATE
+        msgpack-cxx
+        tee
+        Qt6::Test
+)
+
+# ============================================================================
 # Installation
 # ============================================================================
 
@@ -68,6 +85,11 @@ install(TARGETS virtualdisplay-qt
 )
 
 install(TARGETS test_comprotocolmessage
+    EXPORT OpenTEETargets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(TARGETS test_tuiprotocol
     EXPORT OpenTEETargets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

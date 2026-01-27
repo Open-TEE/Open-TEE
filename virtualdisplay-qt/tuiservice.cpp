@@ -101,16 +101,6 @@ void TUIService::messageReceived(const ComProtocolMessage& msg)
 	emit sendMessage(response_msg);
 }
 
-template <typename MSGTYPE>
-void msgpack_unpack(const QByteArray &msg, MSGTYPE &msgpack_struct)
-{
-	msgpack::unpacked result;
-	msgpack::unpack(result, msg.data(), msg.size());
-	msgpack::object o = result.get();
-
-	o.convert(msgpack_struct);
-}
-
 void TUIService::check_text_format(QByteArray &response, const QByteArray &msg)
 {
 	// Deserialize parameters
