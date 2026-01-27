@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(msgpack-cxx REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Test)
 
 qt_standard_project_setup()
 
@@ -30,12 +30,6 @@ qt_add_executable(virtualdisplay-qt
     tuistate.cpp
 )
 
-# Public include directory (for consumers of this library)
-target_include_directories(virtualdisplay-qt
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/msgpack-c/include
-)
-
 # Link dependencies
 target_link_libraries(virtualdisplay-qt
     PRIVATE
@@ -49,10 +43,31 @@ target_link_libraries(virtualdisplay-qt
 )
 
 # ============================================================================
+# Executable: test_comprotocolmessage
+# ============================================================================
+
+qt_add_executable(test_comprotocolmessage
+    tests/test_comprotocolmessage.cpp
+    comprotocolmessage.cpp
+)
+
+# Link dependencies
+target_link_libraries(test_comprotocolmessage
+    PRIVATE
+        tee
+        Qt6::Test
+)
+
+# ============================================================================
 # Installation
 # ============================================================================
 
 install(TARGETS virtualdisplay-qt
+    EXPORT OpenTEETargets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(TARGETS test_comprotocolmessage
     EXPORT OpenTEETargets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
