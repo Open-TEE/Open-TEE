@@ -1,5 +1,6 @@
 /*****************************************************************************
 ** Copyright (C) 2015 Intel Corporation.                                    **
+** Copyright (C) 2026 Mika Tammi                                            **
 **                                                                          **
 ** Licensed under the Apache License, Version 2.0 (the "License");          **
 ** you may not use this file except in compliance with the License.         **
@@ -179,14 +180,14 @@ int tui_timeout_cancel()
 	}
 
 fin:
-	OT_LOG(LOG_ERR, "5");
+	OT_LOG(LOG_ERR, "4");
 	/* Unlock TUI Timeout mutex */
 	if (pthread_mutex_unlock(&tui_timeout_mutex)) {
 		OT_LOG(LOG_ERR, "Failed to unlock the mutex");
 		return -4;
 	}
 
-	OT_LOG(LOG_ERR, "6");
+	OT_LOG(LOG_ERR, "5");
 
 	return 0;
 }
