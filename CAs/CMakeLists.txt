@@ -98,6 +98,22 @@ if(OPENTEE_BUILD_EXAMPLES)
 endif()
 
 # ============================================================================
+# CA: trusted_ui_example_ca (Trusted User Interface Example)
+# ============================================================================
+
+if(OPENTEE_BUILD_EXAMPLES)
+    opentee_add_ca(
+        NAME trusted_ui_example_ca
+        SOURCES
+            trusted_ui_example_ca/trusted_ui_example_ca.c
+        INCLUDE_DIRS
+            ${CMAKE_CURRENT_SOURCE_DIR}/trusted_ui_example_ca
+        LINK_LIBRARIES
+            MbedTLS::mbedcrypto
+    )
+endif()
+
+# ============================================================================
 # CA: omnishare-fuse (OmniShare FUSE Filesystem)
 # ============================================================================
 

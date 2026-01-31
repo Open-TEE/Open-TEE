@@ -52,6 +52,7 @@
 #define WELL_KNOWN_PUBLIC_SOCK_PATH "/data/local/tmp/open_tee_sock"
 #else
 #define WELL_KNOWN_PUBLIC_SOCK_PATH "/tmp/open_tee_sock"
+#define WELL_KNOWN_TUI_SOCK_PATH "/tmp/open_tee_tui_display"
 #endif
 
 /* clang-format off */
@@ -71,8 +72,15 @@
 #define COM_MSG_NAME_OPEN_SHM_REGION		0x0C
 #define COM_MSG_NAME_UNLINK_SHM_REGION		0x0D
 #define COM_MSG_NAME_MANAGER_TERMINATION	0x0E
-#define COM_MSG_NAME_INVOKE_MGR_CMD			0x0F
+#define COM_MSG_NAME_INVOKE_MGR_CMD		0x0F
 
+#define COM_MSG_NAME_TUI_DISPLAY_INIT		0x10
+#define COM_MSG_NAME_TUI_CHECK_TEXT_FORMAT      0x11
+#define COM_MSG_NAME_TUI_GET_SCREEN_INFO        0x12
+#define COM_MSG_NAME_TUI_INIT_SESSION           0x13
+#define COM_MSG_NAME_TUI_CLOSE_SESSION          0x14
+#define COM_MSG_NAME_TUI_DISPLAY_SCREEN         0x15
+#define COM_MSG_NAME_TUI_ERROR			0x16
 
 /* Request is used internally */
 #define COM_TYPE_QUERY				1
@@ -80,6 +88,15 @@
 
 #define TA_MAX_NAME_LEN				255
 /* clang-format on */
+
+/* Transport information */
+struct com_transport_info {
+	uint64_t checksum;
+	uint32_t start;
+	uint32_t data_len; /* data_len: user message length */
+} __attribute__((aligned));
+
+#define COM_MSG_START 0xABCDEF12
 
 /*!
  * \brief The com_msg_hdr struct
@@ -293,6 +310,51 @@ struct com_msg_unlink_shm_region {
 struct com_msg_manager_termination {
 	struct com_msg_hdr msg_hdr;
 	/* Empty */
+} __attribute__((aligned));
+
+/*!
+ * \brief Trusted UI Display Initalization Message
+ */
+struct com_msg_tui_display_init {
+	struct com_msg_hdr msg_hdr;
+	uint32_t timeout;
+	uint32_t grayscaleBitsDepth;
+	uint32_t redBitsDepth;
+	uint32_t greenBitsDepth;
+	uint32_t blueBitsDepth;
+	uint32_t widthInch;
+	uint32_t heightInch;
+	uint32_t maxEntryFields;
+	uint32_t entryFieldLabelWidth;
+	uint32_t entryFieldLabelHeight;
+	uint32_t maxEntryFieldLength;
+	uint8_t labelColorRed;
+	uint8_t labelColorGreen;
+	uint8_t labelColorBlue;
+	uint32_t labelWidth;
+	uint32_t labelHeight;
+	struct {
+		uint32_t textLength;
+		uint32_t buttonWidth;
+		uint32_t buttonHeight;
+
+		/* These two are interpreted as boolean values */
+		uint32_t buttonTextCustom;
+		uint32_t buttonImageCustom;
+	} buttonInfo[6];
+	/* The message will be appended with 6 different null terminated button texts,
+	 * with their length described in the buttonInfo structure above. textLength
+	 * does not take terminating NULL-byte into account. */
+} __attribute__((aligned));
+
+struct com_msg_tui_ta2display {
+	struct com_msg_hdr msg_hdr;
+	/* Rest of the stuff will be appended in MessagePack serialization format */
+} __attribute__((aligned));
+
+struct com_msg_tui_error {
+	struct com_msg_hdr msg_hdr;
+	uint32_t ret;
 } __attribute__((aligned));
 
 /*

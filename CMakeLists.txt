@@ -11,7 +11,7 @@ project(OpenTEE
     VERSION 0.0.1
     DESCRIPTION "Open Source implementation of GlobalPlatform TEE"
     HOMEPAGE_URL "https://github.com/Open-TEE"
-    LANGUAGES C
+    LANGUAGES C CXX
 )
 
 # ============================================================================
@@ -207,6 +207,8 @@ if(OPENTEE_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
+
+add_subdirectory(virtualdisplay-qt)
 
 # ============================================================================
 # Configuration Summary
