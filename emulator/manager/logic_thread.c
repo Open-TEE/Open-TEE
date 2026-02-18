@@ -1531,6 +1531,7 @@ static void close_session(struct manager_msg *man_msg)
 	}
 
 	if (session->status == sess_panicked) {
+		list_unlink(&session->list);
 		free_sess(session);
 		return;
 	}
