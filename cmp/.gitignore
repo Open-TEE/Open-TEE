@@ -1,0 +1,54 @@
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Libraries
+*.lib
+*.a
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Vim swap files
+*.swp
+*.swo
+
+# Coverage files
+*.gcda
+*.gcno
+coverage/
+
+# Profiling files
+*.prof
+
+# Testing executable
+test/test-cmp
+cmptest
+cmptest2
+cmpaddrtest
+cmpmemtest
+cmpnofloattest
+cmpprof
+cmpubtest
+
+# Example executables
+examples/example1
+examples/example2
+example1
+example2
+
+# Test data
+cmp_data.dat

@@ -47,11 +47,14 @@ add_library(OpenTEE::CommonApi ALIAS CommonApi)
 add_library(ManagerApi SHARED
     manager/ext_storage_stream_api_posix.c
     manager/io_thread.c
+    manager/io_thread_tui.c
     manager/logic_thread.c
+    manager/logic_thread_tui.c
     manager/mainloop.c
     manager/opentee_manager_storage_api.c
     manager/shm_mem.c
     manager/ta_dir_watch.c
+    manager/tui_timeout.c
 )
 
 target_include_directories(ManagerApi
@@ -117,6 +120,9 @@ add_library(InternalApi SHARED
     internal_api/storage/storage_utils.c
     internal_api/storage/tee_storage_api.c
     internal_api/storage/transient_object_api.c
+
+    # Trusted User Interface
+    internal_api/tee_tui_api.c
 )
 
 target_include_directories(InternalApi
@@ -154,12 +160,14 @@ add_library(OpenTEE::InternalApi ALIAS InternalApi)
 # ============================================================================
 
 add_library(LauncherApi SHARED
-    launcher/dynamic_loader.c
     launcher/launcher_mainloop.c
     launcher/ta_internal_thread.c
+    launcher/ta_internal_thread_tui.c
+    launcher/dynamic_loader.c
     launcher/ta_io_thread.c
     launcher/ta_process.c
     launcher/ta_signal_handler.c
+    ../cmp/cmp.c
 )
 
 target_include_directories(LauncherApi
@@ -167,9 +175,9 @@ target_include_directories(LauncherApi
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/launcher>
     PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../cmp
         ${CMAKE_CURRENT_SOURCE_DIR}/common
         ${CMAKE_CURRENT_SOURCE_DIR}/internal_api
-        ${CMAKE_CURRENT_SOURCE_DIR}/manager
 )
 
 target_link_libraries(LauncherApi

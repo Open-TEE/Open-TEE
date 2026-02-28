@@ -27,6 +27,7 @@
 #include "epoll_wrapper.h"
 #include "extern_resources.h"
 #include "io_thread.h"
+#include "io_thread_tui.h"
 #include "logic_thread.h"
 #include "ta_dir_watch.h"
 #include "tee_logging.h"
@@ -73,20 +74,17 @@ int event_close_sock;
 
 /*!
  * \brief init_sock
- * Initialize the daemons main public socket and listen for inbound connections
- * \param pub_sockfd The main socket to which clients connect
+ * Initialize a socket and listen for inbound connections
+ * \param sock_path Socket path
+ * \param pub_sockfd The socket to which clients connect
  * \return 0 on success -1 otherwise
  */
-static int init_sock(int *pub_sockfd)
+static int init_sock(const char *sock_path, int *pub_sockfd)
 {
 	struct sockaddr_un sock_addr;
 
-	/* Try to get socket path from environment variable, otherwise fallback to hardcoded one. */
-	char *known_socket_path = getenv("OPENTEE_SOCKET_FILE_PATH");
-	if (known_socket_path == NULL)
-		known_socket_path = WELL_KNOWN_PUBLIC_SOCK_PATH;
-	if (remove(known_socket_path) == -1 && errno != ENOENT) {
-		OT_LOG(LOG_ERR, "Failed to remove %s : %s", known_socket_path, strerror(errno));
+	if (remove(sock_path) == -1 && errno != ENOENT) {
+		OT_LOG(LOG_ERR, "Failed to remove %s : %s", sock_path, strerror(errno));
 		return -1;
 	}
 
@@ -97,7 +95,7 @@ static int init_sock(int *pub_sockfd)
 	}
 
 	memset(&sock_addr, 0, sizeof(struct sockaddr_un));
-	strncpy(sock_addr.sun_path, known_socket_path, sizeof(sock_addr.sun_path) - 1);
+	strncpy(sock_addr.sun_path, sock_path, sizeof(sock_addr.sun_path) - 1);
 	sock_addr.sun_family = AF_UNIX;
 
 	if (bind(*pub_sockfd, (struct sockaddr *)&sock_addr, sizeof(struct sockaddr_un)) == -1) {
@@ -115,6 +113,38 @@ static int init_sock(int *pub_sockfd)
 err_out:
 	close(*pub_sockfd);
 	return -1;
+}
+
+/*!
+ * \brief init_main_sock
+ * Initialize the daemon's main public socket and listen for inbound connections
+ * \param pub_sockfd The main socket to which clients connect
+ * \return 0 on success -1 otherwise
+ */
+static int init_main_sock(int *pub_sockfd)
+{
+	/* Try to get socket path from environment variable, otherwise fallback to hardcoded one. */
+	char *known_socket_path = getenv("OPENTEE_SOCKET_FILE_PATH");
+	if (known_socket_path == NULL)
+		known_socket_path = WELL_KNOWN_PUBLIC_SOCK_PATH;
+
+	return init_sock(known_socket_path, pub_sockfd);
+}
+
+/*!
+ * \brief init_tui_sock
+ * Initialize the daemons Trusted UI display socket and listen for inbound connections
+ * \param pub_sockfd The Trusted UI socket to which clients connect
+ * \return 0 on success -1 otherwise
+ */
+static int init_tui_sock(int *pub_sockfd)
+{
+	/* Try to get socket path from environment variable, otherwise fallback to hardcoded one. */
+	char *known_socket_path = getenv("OPENTEE_TUI_SOCKET_FILE_PATH");
+	if (known_socket_path == NULL)
+		known_socket_path = WELL_KNOWN_TUI_SOCK_PATH;
+
+	return init_sock(known_socket_path, pub_sockfd);
 }
 
 static int init_extern_res(int launcher_proc_fd)
@@ -151,7 +181,11 @@ static int init_extern_res(int launcher_proc_fd)
 
 int lib_main_loop(struct core_control *control_params)
 {
-	int public_sockfd, i, event_count, event_ta_dir_watch_fd;
+	int public_sockfd;
+	int tui_display_sockfd;
+	int i;
+	int event_count;
+	int event_ta_dir_watch_fd;
 	struct epoll_event cur_events[MAX_CURR_EVENTS];
 	pthread_t logic_thread;
 	pthread_attr_t attr;
@@ -171,11 +205,18 @@ int lib_main_loop(struct core_control *control_params)
 	if (ta_dir_watch_init(control_params, &event_ta_dir_watch_fd))
 		return -1; /* err msg logged */
 
-	if (init_sock(&public_sockfd))
+	if (init_main_sock(&public_sockfd))
+		return -1; /* err msg logged */
+
+	if (init_tui_sock(&tui_display_sockfd))
 		return -1; /* err msg logged */
 
 	/* listen to inbound connections from userspace clients */
 	if (epoll_reg_fd(public_sockfd, EPOLLIN))
+		return -1; /* err msg logged */
+
+	/* listen to inbound connections from Trusted UI Virtual Display */
+	if (epoll_reg_fd(tui_display_sockfd, EPOLLIN))
 		return -1; /* err msg logged */
 
 	/* Done queue event fd */
@@ -238,6 +279,9 @@ int lib_main_loop(struct core_control *control_params)
 			if (cur_events[i].data.fd == public_sockfd) {
 				handle_public_fd(&cur_events[i]);
 
+			} else if (cur_events[i].data.fd == tui_display_sockfd) {
+				accept_tui_display_fd(&cur_events[i]);
+
 			} else if (cur_events[i].data.fd == event_out_queue_fd) {
 				handle_out_queue(&cur_events[i]);
 
@@ -249,6 +293,10 @@ int lib_main_loop(struct core_control *control_params)
 
 			} else if (cur_events[i].data.fd == event_ta_dir_watch_fd) {
 				ta_dir_watch_event(&cur_events[i], &event_ta_dir_watch_fd);
+
+			} else if(is_tui_socket_fd(cur_events[i].data.fd)) {
+				OT_LOG(LOG_ERR, "TUI Socket");
+				handle_tui_display_data(&cur_events[i]);
 
 			} else {
 				read_fd_and_add_inbound_queue(&cur_events[i]);
